@@ -242,7 +242,16 @@ class DiaryApp {
 
     // Sign out user
     async signOut() {
-        await supabase.auth.signOut();
+        try {
+            await supabase.auth.signOut();
+        } catch (error) {
+            // Ignore session_not_found errors (cross-domain logout)
+            if (error.code !== 'session_not_found') {
+                console.error('Logout error:', error);
+            }
+        }
+        // Always clear local state
+        this.user = null;
         this.hideHeaderMenu();
         this.showToast('You have been logged out');
     }

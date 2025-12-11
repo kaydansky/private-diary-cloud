@@ -245,13 +245,19 @@ class DiaryApp {
         try {
             await supabase.auth.signOut();
         } catch (error) {
-            // Ignore session_not_found errors (cross-domain logout)
-            if (error.code !== 'session_not_found') {
+            // Force local logout on session errors
+            if (error.code === 'session_not_found') {
+                localStorage.removeItem('supabase.auth.token');
+                sessionStorage.clear();
+            } else {
                 console.error('Logout error:', error);
             }
         }
-        // Always clear local state
+        // Always clear local state and update UI
         this.user = null;
+        this.updateAuthUI();
+        document.getElementById('authContainer').classList.remove('hidden');
+        document.getElementById('mainContainer').classList.add('hidden');
         this.hideHeaderMenu();
         this.showToast('You have been logged out');
     }

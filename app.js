@@ -180,7 +180,7 @@ class DiaryApp {
                     this.showAuthError('Passwords do not match');
                     return;
                 }
-                if (!/^[a-zA-Z0-9]+$/.test(username)) {
+                if (!/^[a-zA-Zа-яА-Я0-9]+$/.test(username)) {
                     this.showAuthError('Username must contain only letters and numbers');
                     return;
                 }
@@ -1402,20 +1402,22 @@ class DiaryApp {
         
         this.hideAccountModal();
         
-        await this.deleteAllUserImages();
-        
-        await supabase
-            .from('diary_entries')
-            .delete()
-            .eq('user_id', this.user.id);
-        
-        const { error } = await supabase.auth.admin.deleteUser(this.user.id);
-        
-        if (error) {
-            await supabase.auth.signOut();
+        try {
+            const { data: { session } } = await supabase.auth.getSession();
+            
+            await fetch(`${SUPABASE_URL}/functions/v1/delete-account`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${session.access_token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+            
+            this.showToast('Account deleted successfully');
+        } catch (error) {
+            console.error('Failed to delete account:', error);
+            this.showToast('Failed to delete account');
         }
-        
-        this.showToast('Account deleted');
     }
 
     // Toggle theme

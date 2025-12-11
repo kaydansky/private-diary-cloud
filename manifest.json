@@ -1,0 +1,32 @@
+{
+    "name": "Private Diary Cloud",
+    "short_name": "Diary Cloud",
+    "description": "Share your thoughts with the world",
+    "start_url": "/",
+    "display": "standalone",
+    "background_color": "#1a1a1a",
+    "theme_color": "#1a1a1a",
+    "orientation": "any",
+    "icons": [
+        {
+            "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 128 128'%3E%3Crect width='128' height='128' fill='%23667eea' rx='20'/%3E%3Cpath d='M32 32h64v8H32zM32 48h48v8H32zM32 64h56v8H32zM32 80h40v8H32z' fill='white'/%3E%3C/svg%3E",
+            "sizes": "144x144",
+            "type": "image/svg+xml"
+        }
+    ],
+    "categories": ["productivity", "lifestyle"],
+    "screenshots": [
+        {
+            "src": "assets/screenshots/screenshot-wide.png",
+            "sizes": "975x933",
+            "type": "image/png",
+            "form_factor": "wide"
+        },
+        {
+            "src": "assets/screenshots/screenshot-narrow.png",
+            "sizes": "385x606",
+            "type": "image/png",
+            "form_factor": "narrow"
+        }
+    ]
+}

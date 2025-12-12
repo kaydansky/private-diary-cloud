@@ -294,9 +294,14 @@ class DiaryApp {
 
     // Handle notification click from service worker
     handleNotificationClick() {
+        console.log('handleNotificationClick called');
+        console.log('Current URL:', window.location.href);
+        
         const params = new URLSearchParams(window.location.search);
         const date = params.get('date');
         const entryId = params.get('entryId');
+        
+        console.log('URL params - date:', date, 'entryId:', entryId);
         
         if (date) {
             console.log('Navigating to date from notification:', date, 'entryId:', entryId);
@@ -330,9 +335,10 @@ class DiaryApp {
         // Listen for messages from service worker
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.addEventListener('message', (event) => {
+                console.log('Received SW message:', event.data);
                 if (event.data.type === 'OPEN_ENTRY') {
                     const { date, entryId } = event.data;
-                    console.log('Received message from SW:', date, entryId);
+                    console.log('Processing OPEN_ENTRY message:', date, entryId);
                     if (date) {
                         const [year, month] = date.split('-').map(Number);
                         this.currentDate = new Date(year, month - 1, 1);

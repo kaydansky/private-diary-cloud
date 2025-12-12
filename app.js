@@ -366,25 +366,41 @@ class DiaryApp {
             });
             console.log('Push subscription created:', subscription);
 
-            // Delete existing subscription for this user first
-            await supabase
+            const subJSON = subscription.toJSON();
+            
+            // Check if subscription already exists
+            const { data: existing } = await supabase
                 .from('push_subscriptions')
-                .delete()
-                .eq('user_id', this.user.id);
+                .select('id')
+                .eq('user_id', this.user.id)
+                .single();
 
-            // Insert new subscription
-            const { data, error } = await supabase
-                .from('push_subscriptions')
-                .insert({
-                    user_id: this.user.id,
-                    subscription: subscription.toJSON()
-                })
-                .select();
-
-            if (error) {
-                console.error('Failed to save subscription to database:', error);
+            if (existing) {
+                // Update existing
+                const { error } = await supabase
+                    .from('push_subscriptions')
+                    .update({ subscription: subJSON })
+                    .eq('user_id', this.user.id);
+                    
+                if (error) {
+                    console.error('Failed to update subscription:', error);
+                } else {
+                    console.log('Push notification subscription updated');
+                }
             } else {
-                console.log('Push notification subscription saved to database:', data);
+                // Insert new
+                const { error } = await supabase
+                    .from('push_subscriptions')
+                    .insert({
+                        user_id: this.user.id,
+                        subscription: subJSON
+                    });
+                    
+                if (error) {
+                    console.error('Failed to save subscription:', error);
+                } else {
+                    console.log('Push notification subscription saved');
+                }
             }
         } catch (error) {
             console.error('Failed to subscribe to push notifications:', error);

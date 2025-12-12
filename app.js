@@ -371,6 +371,8 @@ class DiaryApp {
                 .upsert({
                     user_id: this.user.id,
                     subscription: subscription.toJSON()
+                }, {
+                    onConflict: 'user_id,subscription'
                 })
                 .select();
 

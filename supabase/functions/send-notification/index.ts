@@ -13,7 +13,7 @@ serve(async (req) => {
   }
 
   try {
-    const { username, type } = await req.json()
+    const { username, userId, type, date, entryId } = await req.json()
     
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
@@ -22,7 +22,8 @@ serve(async (req) => {
 
     const { data: subscriptions } = await supabaseClient
       .from('push_subscriptions')
-      .select('subscription')
+      .select('subscription, user_id')
+      .neq('user_id', userId)
 
     if (!subscriptions || subscriptions.length === 0) {
       return new Response(JSON.stringify({ message: 'No subscriptions' }), {
@@ -36,19 +37,24 @@ serve(async (req) => {
       Deno.env.get('VAPID_PUBLIC_KEY')!,
       Deno.env.get('VAPID_PRIVATE_KEY')!
     )
-
+    
     const notificationTitle = type === 'entry' 
-      ? `New Entry by ${username}` 
-      : `New Image by ${username}`
+      ? `Новое сообщение от ${username}` 
+      : `Новая картинка от ${username}`
     const notificationBody = type === 'entry'
-      ? 'Someone shared a new diary entry'
-      : 'Someone shared a new image'
+      ? 'Пополнение в летопись СНТ'
+      : 'Пополнение в летопись СНТ'
 
     const payload = JSON.stringify({
       title: notificationTitle,
       body: notificationBody,
       icon: '/assets/icons/icon.svg',
       badge: '/assets/icons/icon.svg',
+      data: {
+        url: '/',
+        date: date,
+        entryId: entryId
+      }
     })
 
     const results = await Promise.allSettled(

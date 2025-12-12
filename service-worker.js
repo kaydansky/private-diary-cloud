@@ -54,7 +54,25 @@ self.addEventListener('push', event => {
 // Notification click handler
 self.addEventListener('notificationclick', event => {
     event.notification.close();
+    
+    const data = event.notification.data || {};
+    let url = data.url || '/';
+    
+    if (data.date && data.entryId) {
+        url = `/?date=${data.date}&entryId=${data.entryId}`;
+    }
+    
     event.waitUntil(
-        clients.openWindow(event.notification.data.url || '/')
+        clients.matchAll({ type: 'window', includeUncontrolled: true }).then(clientList => {
+            for (let client of clientList) {
+                if (client.url.includes(self.location.origin) && 'focus' in client) {
+                    client.postMessage({ type: 'OPEN_ENTRY', date: data.date, entryId: data.entryId });
+                    return client.focus();
+                }
+            }
+            if (clients.openWindow) {
+                return clients.openWindow(url);
+            }
+        })
     );
 });

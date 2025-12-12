@@ -216,5 +216,12 @@
     <script src="config.js"></script>
     <script src="translations.js"></script>
     <script src="app.js"></script>
+    <script>
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('service-worker.js')
+                .then(reg => console.log('Service worker registered'))
+                .catch(err => console.error('Service worker registration failed:', err));
+        }
+    </script>
 </body>
 </html>

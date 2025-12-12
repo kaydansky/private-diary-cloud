@@ -287,6 +287,59 @@ class DiaryApp {
         if (this.user) {
             this.initPushNotifications();
         }
+        
+        // Handle notification click
+        this.handleNotificationClick();
+    }
+
+    // Handle notification click from service worker
+    handleNotificationClick() {
+        const params = new URLSearchParams(window.location.search);
+        const date = params.get('date');
+        const entryId = params.get('entryId');
+        
+        if (date) {
+            const [year, month] = date.split('-').map(Number);
+            this.currentDate = new Date(year, month - 1, 1);
+            this.selectedDate = date;
+            this.loadEntriesForMonth(year, month - 1).then(() => {
+                this.renderCalendar();
+                this.showEntries(date);
+                if (entryId) {
+                    setTimeout(() => {
+                        const entryEl = document.querySelector(`[data-entry-id="${entryId}"]`);
+                        if (entryEl) {
+                            entryEl.closest('.entry-item').scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        }
+                    }, 300);
+                }
+            });
+            window.history.replaceState({}, '', '/');
+        }
+        
+        // Listen for messages from service worker
+        navigator.serviceWorker.addEventListener('message', (event) => {
+            if (event.data.type === 'OPEN_ENTRY') {
+                const { date, entryId } = event.data;
+                if (date) {
+                    const [year, month] = date.split('-').map(Number);
+                    this.currentDate = new Date(year, month - 1, 1);
+                    this.selectedDate = date;
+                    this.loadEntriesForMonth(year, month - 1).then(() => {
+                        this.renderCalendar();
+                        this.showEntries(date);
+                        if (entryId) {
+                            setTimeout(() => {
+                                const entryEl = document.querySelector(`[data-entry-id="${entryId}"]`);
+                                if (entryEl) {
+                                    entryEl.closest('.entry-item').scrollIntoView({ behavior: 'smooth', block: 'center' });
+                                }
+                            }, 300);
+                        }
+                    });
+                }
+            }
+        });
     }
 
     // Initialize push notifications
@@ -343,8 +396,8 @@ class DiaryApp {
         return outputArray;
     }
 
-    // Send push notification to all users
-    async sendPushNotification(type) {
+    // Send push notification to all users except author
+    async sendPushNotification(type, entryId = null) {
         if (!this.user) return;
 
         try {
@@ -356,7 +409,10 @@ class DiaryApp {
                 },
                 body: JSON.stringify({
                     username: this.user.user_metadata?.username || 'Someone',
-                    type: type
+                    userId: this.user.id,
+                    type: type,
+                    date: this.selectedDate,
+                    entryId: entryId
                 })
             });
         } catch (error) {
@@ -710,6 +766,13 @@ class DiaryApp {
     renderEntries(date) {
         const entries = this.entries[date] || [];
         
+        // Sort entries by timestamp ascending (oldest first, newest last)
+        entries.sort((a, b) => {
+            const timeA = new Date(a.createdAt || 0).getTime();
+            const timeB = new Date(b.createdAt || 0).getTime();
+            return timeA - timeB;
+        });
+        
         this.shareDayBtn.style.display = entries.length === 0 ? 'none' : 'flex';
 
         if (entries.length === 0) {
@@ -822,8 +885,9 @@ class DiaryApp {
         this.renderEntries(this.selectedDate);
         this.renderCalendar();
         
-        // Send push notification
-        await this.sendPushNotification('entry');
+        // Send push notification with entry ID
+        const entryId = this.editingEntryId || this.autoSaveEntryId;
+        await this.sendPushNotification('entry', entryId);
         
         if (hideForm) {
             this.hideEntryForm();

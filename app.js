@@ -366,13 +366,18 @@ class DiaryApp {
             });
             console.log('Push subscription created:', subscription);
 
+            // Delete existing subscription for this user first
+            await supabase
+                .from('push_subscriptions')
+                .delete()
+                .eq('user_id', this.user.id);
+
+            // Insert new subscription
             const { data, error } = await supabase
                 .from('push_subscriptions')
-                .upsert({
+                .insert({
                     user_id: this.user.id,
                     subscription: subscription.toJSON()
-                }, {
-                    onConflict: 'user_id,subscription'
                 })
                 .select();
 

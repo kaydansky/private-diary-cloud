@@ -1,6 +1,6 @@
-// @deno-types="https://deno.land/std@0.168.0/http/server.ts"
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import * as webpush from 'https://esm.sh/web-push@3.6.6'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -34,6 +34,12 @@ serve(async (req) => {
     const vapidPublicKey = Deno.env.get('VAPID_PUBLIC_KEY')
     const vapidPrivateKey = Deno.env.get('VAPID_PRIVATE_KEY')
 
+    webpush.setVapidDetails(
+      'mailto:kaydansky@gmail.com',
+      vapidPublicKey!,
+      vapidPrivateKey!
+    )
+
     const notificationTitle = type === 'entry' 
       ? `New Entry by ${username}` 
       : `New Image by ${username}`
@@ -50,23 +56,12 @@ serve(async (req) => {
 
     const results = await Promise.allSettled(
       subscriptions.map(async ({ subscription }) => {
-        const response = await fetch('https://fcm.googleapis.com/fcm/send', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `key=${vapidPrivateKey}`,
-          },
-          body: JSON.stringify({
-            to: subscription.endpoint,
-            notification: JSON.parse(payload),
-          }),
-        })
-        return response.json()
+        return await webpush.sendNotification(subscription, payload)
       })
     )
 
     return new Response(
-      JSON.stringify({ message: 'Notifications sent', results }),
+      JSON.stringify({ message: 'Notifications sent', results: results.map(r => r.status) }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
   } catch (error) {

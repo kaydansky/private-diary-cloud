@@ -31,8 +31,11 @@ In your Supabase SQL Editor, run:
 ```bash
 supabase secrets set VAPID_PRIVATE_KEY="your-private-key"
 supabase secrets set VAPID_PUBLIC_KEY="your-public-key"
+supabase secrets set SUPABASE_URL="your-supabase-url"
+supabase secrets set SUPABASE_SERVICE_ROLE_KEY="your-service-role-key"
 ```
 5. Deploy: `supabase functions deploy send-notification`
+6. Update email in Edge Function: Replace `mailto:your-email@example.com` with your actual email
 
 ## Step 4: Update config.js
 

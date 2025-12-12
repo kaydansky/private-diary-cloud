@@ -37,7 +37,7 @@ self.addEventListener('fetch', event => {
 self.addEventListener('push', event => {
     const data = event.data ? event.data.json() : {};
     const options = {
-        body: data.body || 'New activity in your diary',
+        body: data.body || 'Новое сообщение | СНТ Тишинка',
         icon: data.icon || '/assets/icons/icon.svg',
         badge: data.badge || '/assets/icons/icon.svg',
         vibrate: [200, 100, 200],
@@ -47,7 +47,7 @@ self.addEventListener('push', event => {
         }
     };
     event.waitUntil(
-        self.registration.showNotification(data.title || 'Diary Cloud', options)
+        self.registration.showNotification(data.title || 'СНТ Тишинка', options)
     );
 });
 

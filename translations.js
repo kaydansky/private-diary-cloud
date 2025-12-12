@@ -53,7 +53,8 @@ const translations = {
         userName: 'Your Username',
         userEmail: 'Your Email',
         userPassword: 'Your Password',
-        userPasswordRepeat: 'Repeat Password'
+        userPasswordRepeat: 'Repeat Password',
+        footerText: 'Sign in to write entries'
     },
     fr: {
         appTitle: 'Journal Privé Cloud',
@@ -108,7 +109,8 @@ const translations = {
         userName: "Votre nom d'utilisateur",
         userEmail: 'Votre email',
         userPassword: 'Votre mot de passe',
-        userPasswordRepeat: 'Répétez le mot de passe'
+        userPasswordRepeat: 'Répétez le mot de passe',
+        footerText: 'Connectez-vous pour écrire des entrées'
     },
     de: {
         appTitle: 'Tagebuch Cloud',
@@ -163,7 +165,8 @@ const translations = {
         userName: 'Ihr Benutzername',
         userEmail: 'Ihre E-Mail',
         userPassword: 'Ihr Passwort',
-        userPasswordRepeat: 'Passwort wiederholen'
+        userPasswordRepeat: 'Passwort wiederholen',
+        footerText: 'Melden Sie sich an, um Tagebucheinträge zu schreiben'
     },
     ru: {
         appTitle: 'СНТ Тишинка',
@@ -217,6 +220,7 @@ const translations = {
         deleteAccountConfirm: 'Вы уверены, что хотите удалить свой аккаунт? ВСЕ ваши данные будут безвозвратно удалены. Это действие необратимо!',
         userName: 'Имя пользователя',
         userEmail: 'Ваш email',
-        userPasswordRepeat: 'Повторите пароль'
+        userPasswordRepeat: 'Повторите пароль',
+        footerText: 'Войдите, чтобы оставлять записи'
     }
 };

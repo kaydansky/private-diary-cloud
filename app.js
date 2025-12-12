@@ -98,12 +98,14 @@ class DiaryApp {
         
         if (this.user) {
             signInBtn.style.display = 'none';
+            footerText.style.display = 'none';
             signOutBtn.style.display = 'block';
             accountBtn.style.display = 'block';
             addEntryBtn.style.display = 'flex';
             addImageBtn.style.display = 'flex';
         } else {
             signInBtn.style.display = 'block';
+            footerText.style.display = 'block';
             signOutBtn.style.display = 'none';
             accountBtn.style.display = 'none';
             addEntryBtn.style.display = 'none';
@@ -439,6 +441,7 @@ class DiaryApp {
         });
         this.toggleThemeBtn.addEventListener('click', () => this.toggleTheme());
         document.getElementById('signInBtn').addEventListener('click', () => this.showSignIn());
+        document.getElementById('footerText').addEventListener('click', () => this.showSignIn());
         document.getElementById('accountBtn').addEventListener('click', () => this.showAccountModal());
         this.signOutBtn.addEventListener('click', () => this.signOut());
         document.getElementById('shareEntryModalBtn').addEventListener('click', () => this.handleEntryAction('share'));
@@ -1532,13 +1535,24 @@ class DiaryApp {
 
     // Animate page turning effect for mobile swipe
     async animatePageTurn(direction) {
-        const animationClass = direction > 0 ? 'swipe-left' : 'swipe-right';
+        const outClass = direction > 0 ? 'swipe-out-left' : 'swipe-out-right';
+        const inClass = direction > 0 ? 'swipe-in-right' : 'swipe-in-left';
         
-        this.calendarDays.classList.add(animationClass);
+        this.calendarDays.classList.add(outClass);
         
-        setTimeout(async () => {
-            await this.changeMonth(direction);
-            this.calendarDays.classList.remove(animationClass);
+        setTimeout(() => {
+            this.currentDate.setMonth(this.currentDate.getMonth() + direction);
+            this.renderCalendar();
+            this.calendarDays.classList.remove(outClass);
+            this.calendarDays.classList.add(inClass);
+            
+            requestAnimationFrame(() => {
+                this.calendarDays.classList.remove(inClass);
+            });
+            
+            this.loadEntriesForMonth(this.currentDate.getFullYear(), this.currentDate.getMonth()).then(() => {
+                this.renderCalendar();
+            });
         }, 150);
     }
 }

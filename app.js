@@ -299,47 +299,69 @@ class DiaryApp {
         const entryId = params.get('entryId');
         
         if (date) {
+            console.log('Navigating to date from notification:', date, 'entryId:', entryId);
             const [year, month] = date.split('-').map(Number);
             this.currentDate = new Date(year, month - 1, 1);
             this.selectedDate = date;
             this.loadEntriesForMonth(year, month - 1).then(() => {
                 this.renderCalendar();
                 this.showEntries(date);
+                this.entriesSection.classList.remove('hidden');
                 if (entryId) {
                     setTimeout(() => {
                         const entryEl = document.querySelector(`[data-entry-id="${entryId}"]`);
+                        console.log('Found entry element:', entryEl);
                         if (entryEl) {
-                            entryEl.closest('.entry-item').scrollIntoView({ behavior: 'smooth', block: 'center' });
+                            const entryItem = entryEl.closest('.entry-item');
+                            if (entryItem) {
+                                entryItem.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                                entryItem.style.backgroundColor = 'var(--hover-color)';
+                                setTimeout(() => {
+                                    entryItem.style.backgroundColor = '';
+                                }, 2000);
+                            }
                         }
-                    }, 300);
+                    }, 500);
                 }
             });
             window.history.replaceState({}, '', '/');
         }
         
         // Listen for messages from service worker
-        navigator.serviceWorker.addEventListener('message', (event) => {
-            if (event.data.type === 'OPEN_ENTRY') {
-                const { date, entryId } = event.data;
-                if (date) {
-                    const [year, month] = date.split('-').map(Number);
-                    this.currentDate = new Date(year, month - 1, 1);
-                    this.selectedDate = date;
-                    this.loadEntriesForMonth(year, month - 1).then(() => {
-                        this.renderCalendar();
-                        this.showEntries(date);
-                        if (entryId) {
-                            setTimeout(() => {
-                                const entryEl = document.querySelector(`[data-entry-id="${entryId}"]`);
-                                if (entryEl) {
-                                    entryEl.closest('.entry-item').scrollIntoView({ behavior: 'smooth', block: 'center' });
-                                }
-                            }, 300);
-                        }
-                    });
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.addEventListener('message', (event) => {
+                if (event.data.type === 'OPEN_ENTRY') {
+                    const { date, entryId } = event.data;
+                    console.log('Received message from SW:', date, entryId);
+                    if (date) {
+                        const [year, month] = date.split('-').map(Number);
+                        this.currentDate = new Date(year, month - 1, 1);
+                        this.selectedDate = date;
+                        this.loadEntriesForMonth(year, month - 1).then(() => {
+                            this.renderCalendar();
+                            this.showEntries(date);
+                            this.entriesSection.classList.remove('hidden');
+                            if (entryId) {
+                                setTimeout(() => {
+                                    const entryEl = document.querySelector(`[data-entry-id="${entryId}"]`);
+                                    console.log('Found entry element:', entryEl);
+                                    if (entryEl) {
+                                        const entryItem = entryEl.closest('.entry-item');
+                                        if (entryItem) {
+                                            entryItem.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                                            entryItem.style.backgroundColor = 'var(--hover-color)';
+                                            setTimeout(() => {
+                                                entryItem.style.backgroundColor = '';
+                                            }, 2000);
+                                        }
+                                    }
+                                }, 500);
+                            }
+                        });
+                    }
                 }
-            }
-        });
+            });
+        }
     }
 
     // Initialize push notifications

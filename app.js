@@ -298,25 +298,34 @@ class DiaryApp {
 
         try {
             const permission = await Notification.requestPermission();
+            console.log('Notification permission:', permission);
             if (permission !== 'granted') {
                 console.log('Notification permission denied');
                 return;
             }
 
             const registration = await navigator.serviceWorker.ready;
+            console.log('Service worker ready');
+            
             const subscription = await registration.pushManager.subscribe({
                 userVisibleOnly: true,
                 applicationServerKey: this.urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
             });
+            console.log('Push subscription created:', subscription);
 
-            await supabase
+            const { data, error } = await supabase
                 .from('push_subscriptions')
                 .upsert({
                     user_id: this.user.id,
                     subscription: subscription.toJSON()
-                });
+                })
+                .select();
 
-            console.log('Push notification subscription saved');
+            if (error) {
+                console.error('Failed to save subscription to database:', error);
+            } else {
+                console.log('Push notification subscription saved to database:', data);
+            }
         } catch (error) {
             console.error('Failed to subscribe to push notifications:', error);
         }

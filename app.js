@@ -360,15 +360,23 @@ class DiaryApp {
             const registration = await navigator.serviceWorker.ready;
             console.log('Service worker ready');
             
-            const subscription = await registration.pushManager.subscribe({
-                userVisibleOnly: true,
-                applicationServerKey: this.urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
-            });
-            console.log('Push subscription created:', subscription);
+            // Check if we already have a subscription
+            let subscription = await registration.pushManager.getSubscription();
+            
+            if (!subscription) {
+                // Create new subscription only if we don't have one
+                subscription = await registration.pushManager.subscribe({
+                    userVisibleOnly: true,
+                    applicationServerKey: this.urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
+                });
+                console.log('Push subscription created:', subscription);
+            } else {
+                console.log('Using existing push subscription');
+            }
 
             const subJSON = subscription.toJSON();
             
-            // Check if subscription already exists
+            // Check if subscription exists in database
             const { data: existing } = await supabase
                 .from('push_subscriptions')
                 .select('id')
@@ -376,17 +384,7 @@ class DiaryApp {
                 .single();
 
             if (existing) {
-                // Update existing
-                const { error } = await supabase
-                    .from('push_subscriptions')
-                    .update({ subscription: subJSON })
-                    .eq('user_id', this.user.id);
-                    
-                if (error) {
-                    console.error('Failed to update subscription:', error);
-                } else {
-                    console.log('Push notification subscription updated');
-                }
+                console.log('Subscription already in database');
             } else {
                 // Insert new
                 const { error } = await supabase

@@ -582,12 +582,13 @@ class DiaryApp {
     // Load entries for specific month from Supabase
     async loadEntriesForMonth(year, month) {
         const monthKey = `${year}-${String(month + 1).padStart(2, '0')}`;
+        const lastDay = new Date(year, month + 1, 0).getDate();
         
         const { data } = await supabase
             .from('diary_entries')
             .select('*')
             .gte('date', `${monthKey}-01`)
-            .lte('date', `${monthKey}-31`)
+            .lte('date', `${monthKey}-${String(lastDay).padStart(2, '0')}`)
             .order('date', { ascending: true });
 
         this.entries = {};

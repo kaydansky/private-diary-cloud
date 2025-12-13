@@ -508,6 +508,30 @@ body {
     font-weight: 500;
 }
 
+.date-jump-container {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    margin: 30px 0 25px;
+}
+
+.date-select {
+    padding: 8px 12px;
+    border: 2px solid var(--border-color);
+    border-radius: 4px;
+    background: var(--container-bg);
+    color: var(--text-color);
+    font-size: 1rem;
+    cursor: pointer;
+    outline: none;
+    transition: all 0.3s;
+}
+
+.date-select:focus {
+    border-color: #667eea;
+    box-shadow: 0 0 10px rgba(102, 126, 234, 0.3);
+}
+
 .add-entry-btn, .share-day-btn, .add-image-btn {
     background: var(--add-btn-bg);
     color: white;

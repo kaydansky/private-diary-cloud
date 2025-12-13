@@ -936,6 +936,12 @@ class DiaryApp {
         // Get reference to entry object before saving (so we can access updated ID after)
         const tempId = this.editingEntryId || this.autoSaveEntryId;
         const entryRef = this.entries[this.selectedDate].find(e => e.id === tempId);
+
+        // Show spinner and disable buttons
+        const originalText = this.saveEntryBtn.innerHTML;
+        this.saveEntryBtn.innerHTML = '<i class="bi bi-arrow-repeat" style="animation: spin 1s linear infinite;"></i>';
+        this.saveEntryBtn.disabled = true;
+        this.clearEntryBtn.disabled = true;
         
         await this.saveEntries();
         
@@ -946,10 +952,26 @@ class DiaryApp {
         if (entryRef && entryRef.id) {
             await this.sendPushNotification('entry', entryRef.id);
         }
-        
+
+        // Restore buttons
+        this.saveEntryBtn.innerHTML = originalText;
+        this.saveEntryBtn.disabled = false;
+        this.clearEntryBtn.disabled = false;
+
         if (hideForm) {
             this.hideEntryForm();
         }
+
+        // Focus on newly added entry
+        setTimeout(() => {
+            const entryEl = document.querySelector(`[data-entry-id="${entryRef.id}"]`);
+            if (entryEl) {
+                const entryItem = entryEl.closest('.entry-item');
+                if (entryItem) {
+                    entryItem.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+            }
+        }, 100);
     }
 
     // Clear entry

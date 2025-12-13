@@ -750,6 +750,15 @@ body {
     }
 }
 
+@keyframes spin {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
+}
+
 .toast-notification {
     position: fixed;
     bottom: 80px;

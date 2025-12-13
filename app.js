@@ -933,10 +933,11 @@ class DiaryApp {
 
         this.entryList.innerHTML = entries.map(entry => {
             const entryText = this.searchQuery ? this.highlightText(entry.text, this.searchQuery) : this.escapeHtml(entry.text);
+            const entryTime = entry.createdAt ? new Date(entry.createdAt).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }) : '';
             return `
                 <li class="entry-item">
                     <div class="entry-content">
-                        ${entry.username ? `<div class="entry-author">— ${this.escapeHtml(entry.username)}</div>` : ''}
+                        ${entry.username ? `<div class="entry-author">— ${this.escapeHtml(entry.username)} | ${entryTime}</div>` : ''}
                         <div class="entry-text">${entryText}</div>
                         <div class="entry-images" id="images-${entry.id}"></div>
                     </div>

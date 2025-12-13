@@ -40,7 +40,9 @@ class DiaryApp {
     // Update all UI text
     updateUI() {
         document.querySelectorAll('[data-i18n]').forEach(el => {
-            el.textContent = this.t(el.dataset.i18n);
+            if (el.id !== 'accountBtn' && !el.closest('#accountBtn')) {
+                el.textContent = this.t(el.dataset.i18n);
+            }
         });
         
         document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
@@ -61,6 +63,10 @@ class DiaryApp {
             this.renderEntries(this.selectedDate);
         }
         this.renderCalendar();
+        
+        if (this.user) {
+            this.updateAuthUI();
+        }
     }
 
     // Initialize authentication

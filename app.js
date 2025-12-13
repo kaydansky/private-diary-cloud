@@ -596,6 +596,7 @@ class DiaryApp {
         document.getElementById('deleteAllImagesBtn').addEventListener('click', () => this.deleteAllImages());
         document.getElementById('deleteAccountBtn').addEventListener('click', () => this.deleteAccountConfirm());
         document.getElementById('cancelAccountBtn').addEventListener('click', () => this.hideAccountModal());
+        document.getElementById('clearCacheBtn').addEventListener('click', () => this.clearCache());
         document.addEventListener('click', () => this.hideHeaderMenu());
     }
 
@@ -1623,6 +1624,22 @@ class DiaryApp {
         
         this.themeIcon.className = newTheme === 'dark' ? 'bi bi-sun-fill' : 'bi bi-moon-fill';
         this.hideHeaderMenu();
+    }
+
+    // Clear cache and reload
+    async clearCache() {
+        this.hideHeaderMenu();
+        if ('serviceWorker' in navigator) {
+            const registrations = await navigator.serviceWorker.getRegistrations();
+            for (const registration of registrations) {
+                await registration.unregister();
+            }
+        }
+        if ('caches' in window) {
+            const cacheNames = await caches.keys();
+            await Promise.all(cacheNames.map(name => caches.delete(name)));
+        }
+        window.location.reload(true);
     }
 
     // Escape HTML

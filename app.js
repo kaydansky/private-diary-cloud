@@ -103,6 +103,10 @@ class DiaryApp {
             accountBtn.style.display = 'block';
             addEntryBtn.style.display = 'flex';
             addImageBtn.style.display = 'flex';
+            
+            const username = this.user.user_metadata?.username || 'User';
+            const accountSpan = accountBtn.querySelector('span');
+            accountSpan.textContent = `${this.t('account')} | ${username}`;
         } else {
             signInBtn.style.display = 'block';
             footerText.style.display = 'block';

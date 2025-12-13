@@ -1240,11 +1240,14 @@ class DiaryApp {
 
     // Attach image to entry
     async attachImageToEntry(imageUrl) {
+        let entryRef;
+        
         if (this.currentEntryId) {
             const entry = this.entries[this.selectedDate].find(e => e.id === this.currentEntryId);
             if (entry) {
                 if (!entry.images) entry.images = [];
                 entry.images.push(imageUrl);
+                entryRef = entry;
             }
             this.currentEntryId = null;
         } else {
@@ -1259,6 +1262,7 @@ class DiaryApp {
                 createdAt: new Date().toISOString()
             };
             this.entries[this.selectedDate].push(newEntry);
+            entryRef = newEntry;
         }
         
         await this.saveEntries();
@@ -1266,7 +1270,9 @@ class DiaryApp {
         this.renderCalendar();
         
         // Send push notification for image
-        await this.sendPushNotification('image');
+        if (entryRef && entryRef.id) {
+            await this.sendPushNotification('image', entryRef.id);
+        }
     }
 
     // Show image modal

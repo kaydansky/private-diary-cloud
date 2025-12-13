@@ -54,7 +54,9 @@ const translations = {
         userEmail: 'Your Email',
         userPassword: 'Your Password',
         userPasswordRepeat: 'Repeat Password',
-        footerText: 'Sign in to write entries'
+        footerText: 'Sign in to write entries',
+        checkEmail: 'Check Your Email',
+        checkEmailNote: "We've sent you a confirmation link. Please check your email to verify your account."
     },
     fr: {
         appTitle: 'Journal Privé Cloud',
@@ -110,7 +112,9 @@ const translations = {
         userEmail: 'Votre email',
         userPassword: 'Votre mot de passe',
         userPasswordRepeat: 'Répétez le mot de passe',
-        footerText: 'Connectez-vous pour écrire des entrées'
+        footerText: 'Connectez-vous pour écrire des entrées',
+        checkEmail: 'Vérifiez votre email',
+        checkEmailNote: "Nous vous avons envoyé un lien de confirmation. Veuillez vérifier votre email pour vérifier votre compte."
     },
     de: {
         appTitle: 'Tagebuch Cloud',
@@ -166,7 +170,9 @@ const translations = {
         userEmail: 'Ihre E-Mail',
         userPassword: 'Ihr Passwort',
         userPasswordRepeat: 'Passwort wiederholen',
-        footerText: 'Melden Sie sich an, um Tagebucheinträge zu schreiben'
+        footerText: 'Melden Sie sich an, um Tagebucheinträge zu schreiben',
+        checkEmail: 'Überprüfen Sie Ihre E-Mail',
+        checkEmailNote: 'Wir haben Ihnen einen Bestätigungslink gesendet. Bitte überprüfen Sie Ihre E-Mail, um Ihr Konto zu verifizieren.'
     },
     ru: {
         appTitle: 'СНТ Тишинка',
@@ -221,6 +227,8 @@ const translations = {
         userName: 'Имя пользователя',
         userEmail: 'Ваш email',
         userPasswordRepeat: 'Повторите пароль',
-        footerText: 'Войдите, чтобы оставлять записи'
+        footerText: 'Войдите, чтобы оставлять записи',
+        checkEmail: 'Проверьте вашу почту',
+        checkEmailNote: "Мы отправили вам ссылку для подтверждения. Пожалуйста, проверьте вашу почту, чтобы подтвердить ваш аккаунт."
     }
 };

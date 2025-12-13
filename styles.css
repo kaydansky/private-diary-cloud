@@ -729,7 +729,7 @@ body {
 }
 
 .image-action-btn.delete {
-    color: #dc3545;
+    color: #dc707b;
 }
 
 .image-action-btn.share {
@@ -955,7 +955,7 @@ body {
     border-radius: 8px;
     box-shadow: 0 4px 12px var(--shadow);
     z-index: 1000;
-    min-width: 190px;
+    min-width: 290px;
     display: none;
     margin-top: 5px;
 }

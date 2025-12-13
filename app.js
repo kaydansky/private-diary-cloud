@@ -934,9 +934,13 @@ class DiaryApp {
         this.renderEntries(this.selectedDate);
         this.renderCalendar();
         
-        // Send push notification with entry ID
-        const entryId = this.editingEntryId || this.autoSaveEntryId;
-        await this.sendPushNotification('entry', entryId);
+        // Send push notification with actual database entry ID
+        const entry = this.entries[this.selectedDate].find(e => 
+            e.id === (this.editingEntryId || this.autoSaveEntryId)
+        );
+        if (entry && entry.id) {
+            await this.sendPushNotification('entry', entry.id);
+        }
         
         if (hideForm) {
             this.hideEntryForm();

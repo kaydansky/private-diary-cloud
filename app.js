@@ -1082,12 +1082,7 @@ class DiaryApp {
             .delete()
             .eq('id', id);
 
-        this.entries[this.selectedDate] = this.entries[this.selectedDate].filter(e => e.id !== id);
-
-        if (this.entries[this.selectedDate].length === 0) {
-            delete this.entries[this.selectedDate];
-        }
-
+        await this.loadEntriesForMonth(this.currentDate.getFullYear(), this.currentDate.getMonth());
         this.renderEntries(this.selectedDate);
         this.renderCalendar();
     }
@@ -1517,7 +1512,7 @@ class DiaryApp {
             return;
         }
         
-        this.entries = {};
+        await this.loadEntriesForMonth(this.currentDate.getFullYear(), this.currentDate.getMonth());
         this.renderCalendar();
         if (this.selectedDate) {
             this.renderEntries(this.selectedDate);

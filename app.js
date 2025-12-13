@@ -89,7 +89,7 @@ class DiaryApp {
     }
 
     // Update auth UI
-    updateAuthUI() {
+    async updateAuthUI() {
         const signInBtn = document.getElementById('signInBtn');
         const signOutBtn = document.getElementById('signOutBtn');
         const accountBtn = document.getElementById('accountBtn');
@@ -104,7 +104,17 @@ class DiaryApp {
             addEntryBtn.style.display = 'flex';
             addImageBtn.style.display = 'flex';
             
-            const username = this.user.user_metadata?.username || 'User';
+            let username = this.user.user_metadata?.username;
+            if (!username) {
+                const { data } = await supabase
+                    .from('diary_entries')
+                    .select('username')
+                    .eq('user_id', this.user.id)
+                    .limit(1)
+                    .single();
+                username = data?.username || 'User';
+            }
+            
             const accountSpan = accountBtn.querySelector('span');
             accountSpan.textContent = `${this.t('account')} | ${username}`;
         } else {

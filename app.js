@@ -59,6 +59,22 @@ class DiaryApp {
             ).join('');
         }
         
+        this.monthSelect.innerHTML = '';
+        const placeholder = document.createElement('option');
+        placeholder.value = '';
+        placeholder.textContent = this.t('selectMonth');
+        placeholder.disabled = true;
+        placeholder.selected = true;
+        this.monthSelect.appendChild(placeholder);
+        
+        for (let month = 0; month < 12; month++) {
+            const option = document.createElement('option');
+            option.value = month;
+            option.textContent = this.t('months')[month];
+            this.monthSelect.appendChild(option);
+        }
+        this.updateDateSelects();
+        
         if (this.selectedDate) {
             this.renderEntries(this.selectedDate);
         }
@@ -199,15 +215,15 @@ class DiaryApp {
             if (!isLogin) {
                 const passwordRepeatValue = passwordRepeat.value;
                 if (password !== passwordRepeatValue) {
-                    this.showAuthError('Passwords do not match');
+                    this.showAuthError(this.t('passwordsDoNotMatch'));
                     return;
                 }
                 if (!/^[a-zA-Zа-яА-Я0-9]+$/.test(username)) {
-                    this.showAuthError('Username must contain only letters and numbers');
+                    this.showAuthError(this.t('usernameInvalid'));
                     return;
                 }
                 if (username.length > 20) {
-                    this.showAuthError('Username must be 20 characters or less');
+                    this.showAuthError(this.t('usernameTooLong'));
                     return;
                 }
             }
@@ -240,7 +256,7 @@ class DiaryApp {
             .limit(1);
         
         if (existingUsers && existingUsers.length > 0) {
-            throw new Error('Username already taken');
+            throw new Error(this.t('usernameTaken'));
         }
         
         const { data, error } = await supabase.auth.signUp({
@@ -281,7 +297,7 @@ class DiaryApp {
         document.getElementById('authContainer').classList.remove('hidden');
         document.getElementById('mainContainer').classList.add('hidden');
         this.hideHeaderMenu();
-        this.showToast('You have been logged out');
+        this.showToast(this.t('loggedOut'));
     }
 
     // Show auth error
@@ -314,17 +330,17 @@ class DiaryApp {
 
     // Handle notification click from service worker
     handleNotificationClick() {
-        console.log('handleNotificationClick called');
-        console.log('Current URL:', window.location.href);
+        // console.log('handleNotificationClick called');
+        // console.log('Current URL:', window.location.href);
         
         const params = new URLSearchParams(window.location.search);
         const date = params.get('date');
         const entryId = params.get('entryId');
         
-        console.log('URL params - date:', date, 'entryId:', entryId);
+        // console.log('URL params - date:', date, 'entryId:', entryId);
         
         if (date) {
-            console.log('Navigating to date from notification:', date, 'entryId:', entryId);
+            // console.log('Navigating to date from notification:', date, 'entryId:', entryId);
             const [year, month] = date.split('-').map(Number);
             this.currentDate = new Date(year, month - 1, 1);
             this.selectedDate = date;
@@ -333,12 +349,12 @@ class DiaryApp {
                 this.showEntries(date);
                 this.entriesSection.classList.remove('hidden');
                 if (entryId) {
-                    console.log('Looking for entryId:', entryId);
-                    console.log('Available entries:', this.entries[date]);
-                    console.log('Available entry IDs:', this.entries[date]?.map(e => e.id));
+                    // console.log('Looking for entryId:', entryId);
+                    // console.log('Available entries:', this.entries[date]);
+                    // console.log('Available entry IDs:', this.entries[date]?.map(e => e.id));
                     setTimeout(() => {
                         const entryEl = document.querySelector(`[data-entry-id="${entryId}"]`);
-                        console.log('Found entry element:', entryEl);
+                        // console.log('Found entry element:', entryEl);
                         if (entryEl) {
                             const entryItem = entryEl.closest('.entry-item');
                             if (entryItem) {
@@ -358,10 +374,10 @@ class DiaryApp {
         // Listen for messages from service worker
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.addEventListener('message', (event) => {
-                console.log('Received SW message:', event.data);
+                // console.log('Received SW message:', event.data);
                 if (event.data.type === 'OPEN_ENTRY') {
                     const { date, entryId } = event.data;
-                    console.log('Processing OPEN_ENTRY message:', date, entryId);
+                    // console.log('Processing OPEN_ENTRY message:', date, entryId);
                     if (date) {
                         const [year, month] = date.split('-').map(Number);
                         this.currentDate = new Date(year, month - 1, 1);
@@ -373,7 +389,7 @@ class DiaryApp {
                             if (entryId) {
                                 setTimeout(() => {
                                     const entryEl = document.querySelector(`[data-entry-id="${entryId}"]`);
-                                    console.log('Found entry element:', entryEl);
+                                    // console.log('Found entry element:', entryEl);
                                     if (entryEl) {
                                         const entryItem = entryEl.closest('.entry-item');
                                         if (entryItem) {
@@ -402,14 +418,14 @@ class DiaryApp {
 
         try {
             const permission = await Notification.requestPermission();
-            console.log('Notification permission:', permission);
+            // console.log('Notification permission:', permission);
             if (permission !== 'granted') {
                 console.log('Notification permission denied');
                 return;
             }
 
             const registration = await navigator.serviceWorker.ready;
-            console.log('Service worker ready');
+            // console.log('Service worker ready');
             
             // Check if we already have a subscription
             let subscription = await registration.pushManager.getSubscription();
@@ -420,9 +436,9 @@ class DiaryApp {
                     userVisibleOnly: true,
                     applicationServerKey: this.urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
                 });
-                console.log('Push subscription created:', subscription);
+                // console.log('Push subscription created:', subscription);
             } else {
-                console.log('Using existing push subscription');
+                // console.log('Using existing push subscription');
             }
 
             const subJSON = subscription.toJSON();
@@ -435,7 +451,7 @@ class DiaryApp {
                 .maybeSingle();
 
             if (existing) {
-                console.log('Subscription already in database');
+                // console.log('Subscription already in database');
             } else if (!selectError) {
                 // Insert new
                 const { error } = await supabase
@@ -445,11 +461,11 @@ class DiaryApp {
                         subscription: subJSON
                     });
                     
-                if (error) {
-                    console.error('Failed to save subscription:', error);
-                } else {
-                    console.log('Push notification subscription saved');
-                }
+                // if (error) {
+                //     console.error('Failed to save subscription:', error);
+                // } else {
+                //     console.log('Push notification subscription saved');
+                // }
             }
         } catch (error) {
             console.error('Failed to subscribe to push notifications:', error);
@@ -513,6 +529,8 @@ class DiaryApp {
         this.addEntryBtn = document.getElementById('addEntryBtn');
         this.addImageBtn = document.getElementById('addImageBtn');
         this.shareDayBtn = document.getElementById('shareDayBtn');
+        this.yearSelect = document.getElementById('yearSelect');
+        this.monthSelect = document.getElementById('monthSelect');
         this.imageModal = document.getElementById('imageModal');
         this.imageModalClose = document.getElementById('imageModalClose');
         this.modalImage = document.getElementById('modalImage');
@@ -545,11 +563,11 @@ class DiaryApp {
         this.todayBtn.addEventListener('click', () => this.goToToday());
         this.initSwipeAndWheelNavigation();
         this.addEntryBtn.addEventListener('click', () => {
-            if (!this.user) return alert('Please sign in to add entries');
+            if (!this.user) return alert(this.t('signInToAddEntries'));
             this.showEntryForm();
         });
         this.addImageBtn.addEventListener('click', () => {
-            if (!this.user) return alert('Please sign in to add images');
+            if (!this.user) return alert(this.t('signInToAddImages'));
             this.handleImageUpload();
         });
         this.shareDayBtn.addEventListener('click', () => this.shareDay());
@@ -598,6 +616,9 @@ class DiaryApp {
         document.getElementById('cancelAccountBtn').addEventListener('click', () => this.hideAccountModal());
         document.getElementById('clearCacheBtn').addEventListener('click', () => this.clearCache());
         document.addEventListener('click', () => this.hideHeaderMenu());
+        this.yearSelect.addEventListener('change', () => this.resetMonthSelect());
+        this.monthSelect.addEventListener('change', () => this.jumpToDate());
+        this.populateDateSelects();
     }
 
     // Load entries for specific month from Supabase
@@ -756,6 +777,60 @@ class DiaryApp {
         this.showEntries(this.selectedDate);
     }
 
+    // Populate date selects
+    populateDateSelects() {
+        const now = new Date();
+        const currentYear = now.getFullYear();
+        const currentMonth = now.getMonth();
+        
+        for (let year = 1994; year <= currentYear; year++) {
+            const option = document.createElement('option');
+            option.value = year;
+            option.textContent = year;
+            this.yearSelect.appendChild(option);
+        }
+        this.yearSelect.value = currentYear;
+        
+        const placeholder = document.createElement('option');
+        placeholder.value = '';
+        placeholder.textContent = this.t('selectMonth');
+        placeholder.disabled = true;
+        placeholder.selected = true;
+        this.monthSelect.appendChild(placeholder);
+        
+        for (let month = 0; month < 12; month++) {
+            const option = document.createElement('option');
+            option.value = month;
+            option.textContent = this.t('months')[month];
+            this.monthSelect.appendChild(option);
+        }
+        this.monthSelect.value = currentMonth;
+    }
+
+    // Update date selects
+    updateDateSelects() {
+        if (this.selectedDate) {
+            const [year, month] = this.selectedDate.split('-').map(Number);
+            this.yearSelect.value = year;
+            this.monthSelect.value = month - 1;
+        }
+    }
+
+    // Reset month select to placeholder
+    resetMonthSelect() {
+        this.monthSelect.value = '';
+    }
+
+    // Jump to selected date
+    async jumpToDate() {
+        if (this.monthSelect.value === '') return;
+        const year = parseInt(this.yearSelect.value);
+        const month = parseInt(this.monthSelect.value);
+        this.currentDate = new Date(year, month, 1);
+        await this.loadEntriesForMonth(year, month);
+        this.renderCalendar();
+    }
+
     // Render the calendar grid
     renderCalendar() {
         const year = this.currentDate.getFullYear();
@@ -834,6 +909,7 @@ class DiaryApp {
         this.entriesSection.classList.remove('hidden');
         this.selectedDateTitle.textContent = this.formatDate(date);
         this.renderEntries(date);
+        this.updateDateSelects();
     }
 
     // Render list of entries
@@ -923,7 +999,7 @@ class DiaryApp {
         const text = this.entryTextarea.value.trim();
         if (!text) return;
         if (text.length > 1000) {
-            alert('Entry text must be 1000 characters or less');
+            alert(this.t('entryTextMaxLength'));
             return;
         }
 
@@ -1173,7 +1249,7 @@ class DiaryApp {
         const entries = this.entries[this.selectedDate] || [];
         
         if (entries.length === 0) {
-            alert("No entries to share for this day.");
+            alert(this.t('noEntriesToShare'));
             return;
         }
         
@@ -1182,7 +1258,7 @@ class DiaryApp {
         const entriesText = entries.map(entry => entry.text).filter(text => text && text.trim()).join(separator);
         
         if (!entriesText.trim()) {
-            alert("No text entries to share for this day.");
+            alert(this.t('noTextEntriesToShare'));
             return;
         }
         
@@ -1194,7 +1270,7 @@ class DiaryApp {
                 text: sharedText
             }).catch(err => console.log("Share cancelled or failed", err));
         } else {
-            alert("Share failed — the option is not supported on this device.");
+            alert(this.t('shareNotSupported'));
         }
     }
 
@@ -1224,7 +1300,7 @@ class DiaryApp {
         this.hideMobileOptions();
         
         if (file.size > 15 * 1024 * 1024) {
-            alert('Image file is too large. Please select an image smaller than 15MB.');
+            alert(this.t('imageTooLarge'));
             return;
         }
         
@@ -1438,7 +1514,7 @@ class DiaryApp {
                 console.log('Share cancelled or failed', err);
             }
         } else {
-            alert('Image sharing not supported on this device.');
+            alert(this.t('imageSharingNotSupported'));
         }
     }
 
@@ -1558,7 +1634,7 @@ class DiaryApp {
             .eq('user_id', this.user.id);
         
         if (error) {
-            alert('Error deleting entries: ' + error.message);
+            alert(this.t('errorDeletingEntries') + error.message);
             return;
         }
         
@@ -1567,7 +1643,7 @@ class DiaryApp {
         if (this.selectedDate) {
             this.renderEntries(this.selectedDate);
         }
-        this.showToast('All entries deleted');
+        this.showToast(this.t('allEntriesDeleted'));
     }
 
     // Delete all images
@@ -1587,7 +1663,7 @@ class DiaryApp {
         if (this.selectedDate) {
             this.renderEntries(this.selectedDate);
         }
-        this.showToast('All images deleted');
+        this.showToast(this.t('allImagesDeleted'));
     }
 
     // Delete account
@@ -1607,10 +1683,10 @@ class DiaryApp {
                 }
             });
             
-            this.showToast('Account deleted successfully');
+            this.showToast(this.t('accountDeleted'));
         } catch (error) {
-            console.error('Failed to delete account:', error);
-            this.showToast('Failed to delete account');
+            // console.error('Failed to delete account:', error);
+            this.showToast(this.t('failedToDeleteAccount'));
         }
     }
 

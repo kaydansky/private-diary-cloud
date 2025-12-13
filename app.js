@@ -933,20 +933,18 @@ class DiaryApp {
             this.autoSaveEntryId = newEntry.id;
         }
 
+        // Get reference to entry object before saving (so we can access updated ID after)
         const tempId = this.editingEntryId || this.autoSaveEntryId;
-        await this.saveEntries();
+        const entryRef = this.entries[this.selectedDate].find(e => e.id === tempId);
         
-        // Get the updated entry with database UUID
-        const entry = this.entries[this.selectedDate].find(e => 
-            e.id === tempId || (e.text === text && e.user_id === this.user.id)
-        );
+        await this.saveEntries();
         
         this.renderEntries(this.selectedDate);
         this.renderCalendar();
         
-        // Send push notification with actual database UUID
-        if (entry && entry.id) {
-            await this.sendPushNotification('entry', entry.id);
+        // Send push notification with actual database UUID (entryRef.id is now updated)
+        if (entryRef && entryRef.id) {
+            await this.sendPushNotification('entry', entryRef.id);
         }
         
         if (hideForm) {

@@ -313,6 +313,9 @@ class DiaryApp {
                 this.showEntries(date);
                 this.entriesSection.classList.remove('hidden');
                 if (entryId) {
+                    console.log('Looking for entryId:', entryId);
+                    console.log('Available entries:', this.entries[date]);
+                    console.log('Available entry IDs:', this.entries[date]?.map(e => e.id));
                     setTimeout(() => {
                         const entryEl = document.querySelector(`[data-entry-id="${entryId}"]`);
                         console.log('Found entry element:', entryEl);

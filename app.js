@@ -408,15 +408,15 @@ class DiaryApp {
             const subJSON = subscription.toJSON();
             
             // Check if subscription exists in database
-            const { data: existing } = await supabase
+            const { data: existing, error: selectError } = await supabase
                 .from('push_subscriptions')
                 .select('id')
                 .eq('user_id', this.user.id)
-                .single();
+                .maybeSingle();
 
             if (existing) {
                 console.log('Subscription already in database');
-            } else {
+            } else if (!selectError) {
                 // Insert new
                 const { error } = await supabase
                     .from('push_subscriptions')

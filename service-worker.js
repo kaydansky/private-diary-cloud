@@ -66,8 +66,7 @@ self.addEventListener('notificationclick', event => {
         clients.matchAll({ type: 'window', includeUncontrolled: true }).then(clientList => {
             for (let client of clientList) {
                 if (client.url.includes(self.location.origin) && 'focus' in client) {
-                    client.postMessage({ type: 'OPEN_ENTRY', date: data.date, entryId: data.entryId });
-                    return client.focus();
+                    return client.focus().then(() => client.navigate(url));
                 }
             }
             if (clients.openWindow) {

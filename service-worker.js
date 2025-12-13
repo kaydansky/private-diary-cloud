@@ -50,25 +50,16 @@ self.addEventListener('push', event => {
 
 // Notification click handler
 self.addEventListener('notificationclick', event => {
-    console.log('SW: Notification clicked');
-    console.log('SW: Notification data:', event.notification.data);
     event.notification.close();
     
     const data = event.notification.data || {};
-    console.log('SW: Extracted data:', data);
     let url = '/';
     
     if (data.date && data.entryId) {
         url = `/?date=${data.date}&entryId=${data.entryId}`;
-        console.log('SW: Constructed URL:', url);
-    } else {
-        console.log('SW: No date/entryId, using default URL');
     }
     
     event.waitUntil(
-        clients.openWindow(url).then(client => {
-            console.log('SW: Window opened:', client);
-            return client;
-        })
+        clients.openWindow(url)
     );
 });

@@ -937,18 +937,13 @@ class DiaryApp {
         const tempId = this.editingEntryId || this.autoSaveEntryId;
         const entryRef = this.entries[this.selectedDate].find(e => e.id === tempId);
         
-        console.log('Before save - tempId:', tempId, 'entryRef.id:', entryRef?.id);
-        
         await this.saveEntries();
-        
-        console.log('After save - entryRef.id:', entryRef?.id);
         
         this.renderEntries(this.selectedDate);
         this.renderCalendar();
         
         // Send push notification with actual database UUID (entryRef.id is now updated)
         if (entryRef && entryRef.id) {
-            console.log('Sending notification with UUID:', entryRef.id);
             await this.sendPushNotification('entry', entryRef.id);
         }
         

@@ -933,14 +933,18 @@ class DiaryApp {
             this.autoSaveEntryId = newEntry.id;
         }
 
+        const tempId = this.editingEntryId || this.autoSaveEntryId;
         await this.saveEntries();
+        
+        // Get the updated entry with database UUID
+        const entry = this.entries[this.selectedDate].find(e => 
+            e.id === tempId || (e.text === text && e.user_id === this.user.id)
+        );
+        
         this.renderEntries(this.selectedDate);
         this.renderCalendar();
         
-        // Send push notification with actual database entry ID
-        const entry = this.entries[this.selectedDate].find(e => 
-            e.id === (this.editingEntryId || this.autoSaveEntryId)
-        );
+        // Send push notification with actual database UUID
         if (entry && entry.id) {
             await this.sendPushNotification('entry', entry.id);
         }

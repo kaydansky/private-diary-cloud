@@ -937,7 +937,7 @@ class DiaryApp {
             return `
                 <li class="entry-item">
                     <div class="entry-content">
-                        ${entry.username ? `<div class="entry-author">— ${this.escapeHtml(entry.username)} | ${entryTime}</div>` : ''}
+                        ${entry.username ? `<div class="entry-author">— ${this.escapeHtml(entry.username)} &bull; ${entryTime}</div>` : ''}
                         <div class="entry-text">${entryText}</div>
                         <div class="entry-images" id="images-${entry.id}"></div>
                     </div>

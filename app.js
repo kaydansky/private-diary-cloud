@@ -1758,6 +1758,7 @@ class DiaryApp {
                 }
             });
             
+            await supabase.auth.signOut();
             this.showToast(this.t('accountDeleted'));
         } catch (error) {
             // console.error('Failed to delete account:', error);

@@ -732,6 +732,24 @@ body {
     font-size: 1.1rem;
 }
 
+.modal-input {
+    width: 100%;
+    padding: 16px;
+    margin-bottom: 12px;
+    background: var(--container-bg);
+    border: 2px solid var(--border-color);
+    border-radius: 12px;
+    color: var(--text-color);
+    font-size: 1rem;
+    outline: none;
+    transition: all 0.3s;
+}
+
+.modal-input:focus {
+    border-color: var(--add-btn-bg);
+    box-shadow: 0 0 15px rgba(118, 169, 130, 0.3);
+}
+
 .image-action-btn {
     display: flex;
     align-items: center;
@@ -1022,6 +1040,14 @@ body {
     margin-bottom: 0;
     word-wrap: break-word;
     text-align: center;
+}
+
+.text-link {
+    background: none;
+    border: none;
+    color: #667eea;
+    cursor: pointer;
+    padding: 0;
 }
 
 [data-theme="dark"] {

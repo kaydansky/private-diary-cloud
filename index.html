@@ -28,6 +28,7 @@
                 <input type="password" id="authPassword" placeholder="Password" data-i18n-placeholder="password" required>
                 <input type="password" id="authPasswordRepeat" placeholder="Repeat Password" data-i18n-placeholder="userPasswordRepeat" class="hidden">
                 <button data-i18n="signIn" type="submit" id="authSubmit">Log In</button>
+                <a id="forgotPasswordLink" class="text-link" data-i18n="forgotPassword">Забыли пароль?</a>
             </form>
             
             <div class="auth-error hidden" id="authError"></div>
@@ -217,6 +218,15 @@
                 <i class="bi bi-person-x"></i> <span data-i18n="deleteAccount">Delete My Account</span>
             </button>
             <button class="image-action-btn cancel" id="cancelAccountBtn" data-i18n="cancel">Cancel</button>
+        </div>
+    </div>
+
+    <div class="image-actions-modal" id="resetPasswordModal">
+        <div class="image-actions-content">
+            <h3 data-i18n="resetPassword">Reset Password</h3>
+            <input type="email" class="modal-input" id="resetEmail" data-i18n-placeholder="email" placeholder="Email" />
+            <button class="image-action-btn" id="sendResetBtn" data-i18n="sendResetLink">Send Reset Link</button>
+            <button class="image-action-btn cancel" id="cancelResetBtn" data-i18n="cancel">Cancel</button>
         </div>
     </div>
 

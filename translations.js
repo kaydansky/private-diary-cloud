@@ -75,7 +75,12 @@ const translations = {
         allEntriesDeleted: 'All entries deleted',
         allImagesDeleted: 'All images deleted',
         accountDeleted: 'Account deleted successfully',
-        failedToDeleteAccount: 'Failed to delete account'
+        failedToDeleteAccount: 'Failed to delete account',
+        forgotPassword: 'Forgot Password?',
+        resetPassword: 'Reset Password',
+        sendResetLink: 'Send Reset Link',
+        resetEmailSent: 'Password reset email sent! Check your inbox.',
+        resetEmailError: 'Failed to send reset email. Please try again.'
     },
     fr: {
         appTitle: 'Journal Privé Cloud',
@@ -152,7 +157,12 @@ const translations = {
         allEntriesDeleted: 'Toutes les entrées supprimées',
         allImagesDeleted: 'Toutes les images supprimées',
         accountDeleted: 'Compte supprimé avec succès',
-        failedToDeleteAccount: 'Échec de la suppression du compte'
+        failedToDeleteAccount: 'Échec de la suppression du compte',
+        forgotPassword: 'Mot de passe oublié?',
+        resetPassword: 'Réinitialiser le mot de passe',
+        sendResetLink: 'Envoyer le lien de réinitialisation',
+        resetEmailSent: 'Email de réinitialisation envoyé ! Vérifiez votre boîte de réception.',
+        resetEmailError: "Échec de l'envoi de l'email. Veuillez réessayer."
     },
     de: {
         appTitle: 'Tagebuch Cloud',
@@ -229,7 +239,12 @@ const translations = {
         allEntriesDeleted: 'Alle Einträge gelöscht',
         allImagesDeleted: 'Alle Bilder gelöscht',
         accountDeleted: 'Konto erfolgreich gelöscht',
-        failedToDeleteAccount: 'Fehler beim Löschen des Kontos'
+        failedToDeleteAccount: 'Fehler beim Löschen des Kontos',
+        forgotPassword: 'Passwort vergessen?',
+        resetPassword: 'Passwort zurücksetzen',
+        sendResetLink: 'Link zum Zurücksetzen senden',
+        resetEmailSent: 'E-Mail zum Zurücksetzen gesendet! Überprüfen Sie Ihren Posteingang.',
+        resetEmailError: 'Senden der E-Mail fehlgeschlagen. Bitte versuchen Sie es erneut.'
     },
     ru: {
         appTitle: 'СНТ Тишинка',
@@ -305,6 +320,11 @@ const translations = {
         allEntriesDeleted: 'Все записи удалены',
         allImagesDeleted: 'Все изображения удалены',
         accountDeleted: 'Аккаунт успешно удален',
-        failedToDeleteAccount: 'Не удалось удалить аккаунт'
+        failedToDeleteAccount: 'Не удалось удалить аккаунт',
+        forgotPassword: 'Забыли пароль?',
+        resetPassword:  'Сбросить пароль',
+        sendResetLink: 'Отправить ссылку для сброса пароля',
+        resetEmailSent: 'Письмо для сброса пароля отправлено! Проверьте вашу почту.',
+        resetEmailError: 'Не удалось отправить письмо. Пожалуйста, попробуйте снова.'
     }
 };

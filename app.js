@@ -552,6 +552,7 @@ class DiaryApp {
         this.toggleThemeBtn = document.getElementById('toggleThemeBtn');
         this.themeIcon = document.getElementById('themeIcon');
         this.signOutBtn = document.getElementById('signOutBtn');
+        this.resetEmail = document.getElementById('resetEmail');
     }
 
     // Set up event listeners
@@ -619,6 +620,9 @@ class DiaryApp {
         this.yearSelect.addEventListener('change', () => this.resetMonthSelect());
         this.monthSelect.addEventListener('change', () => this.jumpToDate());
         this.populateDateSelects();
+        document.getElementById('forgotPasswordLink').addEventListener('click', () => this.showResetPasswordModal());
+        document.getElementById('sendResetBtn').addEventListener('click', () => this.sendPasswordReset());
+        document.getElementById('cancelResetBtn').addEventListener('click', () => this.hideResetPasswordModal());
     }
 
     // Load entries for specific month from Supabase
@@ -1621,6 +1625,34 @@ class DiaryApp {
     // Hide account modal
     hideAccountModal() {
         document.getElementById('accountModal').classList.remove('show');
+    }
+
+    // Show reset password modal
+    showResetPasswordModal() {
+        document.getElementById('resetPasswordModal').classList.add('show');
+    }
+
+    // Hide reset password modal
+    hideResetPasswordModal() {
+        document.getElementById('resetPasswordModal').classList.remove('show');
+        this.resetEmail.value = '';
+    }
+
+    // Send password reset email
+    async sendPasswordReset() {
+        const email = this.resetEmail.value.trim();
+        if (!email) return;
+
+        const { error } = await supabase.auth.resetPasswordForEmail(email, {
+            redirectTo: `${window.location.origin}/index.html`
+        });
+
+        if (error) {
+            alert(this.t('resetEmailError'));
+        } else {
+            alert(this.t('resetEmailSent'));
+            this.hideResetPasswordModal();
+        }
     }
 
     // Delete all entries

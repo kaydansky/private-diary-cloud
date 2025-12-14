@@ -92,19 +92,7 @@ class DiaryApp {
             supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
         }
         
-        const { data: { session } } = await supabase.auth.getSession();
-        this.user = session?.user || null;
-        
-        // Check for password recovery in URL hash
-        const hashParams = new URLSearchParams(window.location.hash.substring(1));
-        if (hashParams.get('type') === 'recovery') {
-            this.showUpdatePasswordModal();
-        }
-        
-        this.showMainApp();
-        await this.init();
-
-        supabase.auth.onAuthStateChange((event, session) => {
+        supabase.auth.onAuthStateChange(async (event, session) => {
             if (event === 'PASSWORD_RECOVERY') {
                 this.user = session.user;
                 this.showUpdatePasswordModal();
@@ -118,6 +106,11 @@ class DiaryApp {
                 this.updateAuthUI();
             }
         });
+        
+        const { data: { session } } = await supabase.auth.getSession();
+        this.user = session?.user || null;
+        this.showMainApp();
+        await this.init();
     }
 
     // Update auth UI
@@ -1659,7 +1652,7 @@ class DiaryApp {
         if (!email) return;
 
         const { error } = await supabase.auth.resetPasswordForEmail(email, {
-            redirectTo: `${window.location.origin}/index.html`
+            redirectTo: `${window.location.origin}/`
         });
 
         if (error) {

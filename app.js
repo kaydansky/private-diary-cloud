@@ -1079,6 +1079,9 @@ class DiaryApp {
 
     // Clear entry
     async clearEntry() {
+        if (this.entryTextarea.value.trim() && !confirm(this.t('undoConfirm'))) {
+            return;
+        }
         this.entryTextarea.value = this.originalText;
         
         if (this.editingEntryId) {

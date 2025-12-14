@@ -8,7 +8,6 @@ const urlsToCache = [
     '/translations.js',
     '/manifest.json',
     'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2',
-    'https://cdn.jsdelivr.net/npm/minisearch@6.3.0/dist/umd/index.min.js',
     'https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css'
 ];
 

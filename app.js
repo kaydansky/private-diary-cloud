@@ -98,7 +98,10 @@ class DiaryApp {
         await this.init();
 
         supabase.auth.onAuthStateChange((event, session) => {
-            if (event === 'SIGNED_IN') {
+            if (event === 'PASSWORD_RECOVERY') {
+                this.user = session.user;
+                this.showUpdatePasswordModal();
+            } else if (event === 'SIGNED_IN') {
                 this.user = session.user;
                 document.getElementById('authContainer').classList.add('hidden');
                 document.getElementById('mainContainer').classList.remove('hidden');
@@ -623,6 +626,8 @@ class DiaryApp {
         document.getElementById('forgotPasswordLink').addEventListener('click', () => this.showResetPasswordModal());
         document.getElementById('sendResetBtn').addEventListener('click', () => this.sendPasswordReset());
         document.getElementById('cancelResetBtn').addEventListener('click', () => this.hideResetPasswordModal());
+        document.getElementById('updatePasswordBtn').addEventListener('click', () => this.updatePassword());
+        document.getElementById('cancelUpdatePasswordBtn').addEventListener('click', () => this.hideUpdatePasswordModal());
     }
 
     // Load entries for specific month from Supabase
@@ -1655,6 +1660,39 @@ class DiaryApp {
         } else {
             alert(this.t('resetEmailSent'));
             this.hideResetPasswordModal();
+        }
+    }
+
+    // Show update password modal
+    showUpdatePasswordModal() {
+        document.getElementById('updatePasswordModal').classList.add('show');
+    }
+
+    // Hide update password modal
+    hideUpdatePasswordModal() {
+        document.getElementById('updatePasswordModal').classList.remove('show');
+        document.getElementById('newPassword').value = '';
+        document.getElementById('confirmNewPassword').value = '';
+    }
+
+    // Update password
+    async updatePassword() {
+        const newPassword = document.getElementById('newPassword').value;
+        const confirmPassword = document.getElementById('confirmNewPassword').value;
+
+        if (!newPassword || !confirmPassword) return;
+        if (newPassword !== confirmPassword) {
+            alert(this.t('passwordsDoNotMatch'));
+            return;
+        }
+
+        const { error } = await supabase.auth.updateUser({ password: newPassword });
+
+        if (error) {
+            alert(this.t('passwordUpdateError'));
+        } else {
+            alert(this.t('passwordUpdated'));
+            this.hideUpdatePasswordModal();
         }
     }
 

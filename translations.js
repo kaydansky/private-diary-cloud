@@ -81,7 +81,13 @@ const translations = {
         resetPassword: 'Reset Password',
         sendResetLink: 'Send Reset Link',
         resetEmailSent: 'Password reset email sent! Check your inbox.',
-        resetEmailError: 'Failed to send reset email. Please try again.'
+        resetEmailError: 'Failed to send reset email. Please try again.',
+        updatePassword: 'Update Password',
+        newPassword: 'New Password',
+        confirmPassword: 'Confirm Password',
+        updatePasswordBtn: 'Update Password',
+        passwordUpdated: 'Password updated successfully!',
+        passwordUpdateError: 'Failed to update password. Please try again.'
     },
     fr: {
         appTitle: 'Journal Privé Cloud',
@@ -164,7 +170,13 @@ const translations = {
         resetPassword: 'Réinitialiser le mot de passe',
         sendResetLink: 'Envoyer le lien de réinitialisation',
         resetEmailSent: 'Email de réinitialisation envoyé ! Vérifiez votre boîte de réception.',
-        resetEmailError: "Échec de l'envoi de l'email. Veuillez réessayer."
+        resetEmailError: "Échec de l'envoi de l'email. Veuillez réessayer.",
+        updatePassword: 'Mettre à jour le mot de passe',
+        newPassword: 'Nouveau mot de passe',
+        confirmPassword: 'Confirmer le mot de passe',
+        updatePasswordBtn: 'Mettre à jour',
+        passwordUpdated: 'Mot de passe mis à jour avec succès!',
+        passwordUpdateError: 'Échec de la mise à jour. Veuillez réessayer.'
     },
     de: {
         appTitle: 'Tagebuch Cloud',
@@ -247,7 +259,13 @@ const translations = {
         resetPassword: 'Passwort zurücksetzen',
         sendResetLink: 'Link zum Zurücksetzen senden',
         resetEmailSent: 'E-Mail zum Zurücksetzen gesendet! Überprüfen Sie Ihren Posteingang.',
-        resetEmailError: 'Senden der E-Mail fehlgeschlagen. Bitte versuchen Sie es erneut.'
+        resetEmailError: 'Senden der E-Mail fehlgeschlagen. Bitte versuchen Sie es erneut.',
+        updatePassword: 'Passwort aktualisieren',
+        newPassword: 'Neues Passwort',
+        confirmPassword: 'Passwort bestätigen',
+        updatePasswordBtn: 'Aktualisieren',
+        passwordUpdated: 'Passwort erfolgreich aktualisiert!',
+        passwordUpdateError: 'Aktualisierung fehlgeschlagen. Bitte versuchen Sie es erneut.'
     },
     ru: {
         appTitle: 'СНТ Тишинка',
@@ -329,6 +347,12 @@ const translations = {
         resetPassword:  'Сбросить пароль',
         sendResetLink: 'Отправить ссылку для сброса пароля',
         resetEmailSent: 'Письмо для сброса пароля отправлено! Проверьте вашу почту.',
-        resetEmailError: 'Не удалось отправить письмо. Пожалуйста, попробуйте снова.'
+        resetEmailError: 'Не удалось отправить письмо. Пожалуйста, попробуйте снова.',
+        updatePassword: 'Обновить пароль',
+        newPassword: 'Новый пароль',
+        confirmPassword: 'Подтвердите пароль',
+        updatePasswordBtn: 'Обновить пароль',
+        passwordUpdated: 'Пароль успешно обновлен!',
+        passwordUpdateError: 'Не удалось обновить пароль. Попробуйте снова.'
     }
 };

@@ -94,6 +94,13 @@ class DiaryApp {
         
         const { data: { session } } = await supabase.auth.getSession();
         this.user = session?.user || null;
+        
+        // Check for password recovery in URL hash
+        const hashParams = new URLSearchParams(window.location.hash.substring(1));
+        if (hashParams.get('type') === 'recovery') {
+            this.showUpdatePasswordModal();
+        }
+        
         this.showMainApp();
         await this.init();
 
@@ -1693,6 +1700,7 @@ class DiaryApp {
         } else {
             alert(this.t('passwordUpdated'));
             this.hideUpdatePasswordModal();
+            window.location.hash = '';
         }
     }
 

@@ -580,6 +580,9 @@ class DiaryApp {
         this.clearEntryBtn = document.getElementById('clearEntryBtn');
         this.entryList = document.getElementById('entryList');
         this.searchInput = document.getElementById('searchInput');
+        this.searchInput.setAttribute('autocomplete', 'new-password');
+        this.searchInput.setAttribute('readonly', 'readonly');
+        setTimeout(() => this.searchInput.removeAttribute('readonly'), 100);
         this.searchResults = document.getElementById('searchResults');
         this.headerMenuToggle = document.getElementById('headerMenuToggle');
         this.headerDropdown = document.getElementById('headerDropdown');

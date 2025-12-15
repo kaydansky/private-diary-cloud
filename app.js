@@ -277,7 +277,7 @@ class DiaryApp {
 
     // Sign in
     showSignIn() {
-        this.hideHeaderMenu();
+        document.getElementById('mainContainer').classList.add('hidden');
         this.showAuthForm();
     }
 
@@ -600,7 +600,7 @@ class DiaryApp {
         });
         this.toggleThemeBtn.addEventListener('click', () => this.toggleTheme());
         document.getElementById('signInBtn').addEventListener('click', () => this.showSignIn());
-        document.getElementById('footerText').addEventListener('click', () => this.showSignIn());
+        document.getElementById('footerSignInLink').addEventListener('click', () => this.showSignIn());
         document.getElementById('accountBtn').addEventListener('click', () => this.showAccountModal());
         this.signOutBtn.addEventListener('click', () => this.signOut());
         document.getElementById('shareEntryModalBtn').addEventListener('click', () => this.handleEntryAction('share'));

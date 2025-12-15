@@ -204,11 +204,33 @@ body {
     color: var(--text-color);
     outline: none;
     transition: all 0.3s;
+    width: 100%;
 }
 
 .auth-form input:focus {
     border-color: var(--add-btn-bg);
     box-shadow: 0 0 15px rgba(118, 169, 130, 0.3);
+}
+
+.password-wrapper {
+    position: relative;
+}
+
+.password-wrapper input {
+    padding-right: 45px;
+}
+
+.password-toggle {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--text-color);
+    font-size: 1.2rem;
+    padding: 4px;
 }
 
 .auth-form button {

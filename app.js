@@ -187,6 +187,21 @@ class DiaryApp {
         const authSubmit = document.getElementById('authSubmit');
         const usernameInput = document.getElementById('authUsername');
         const passwordRepeat = document.getElementById('authPasswordRepeat');
+        const togglePassword = document.getElementById('togglePassword');
+        const togglePasswordRepeat = document.getElementById('togglePasswordRepeat');
+        const authPassword = document.getElementById('authPassword');
+
+        togglePassword.addEventListener('click', () => {
+            const type = authPassword.type === 'password' ? 'text' : 'password';
+            authPassword.type = type;
+            togglePassword.querySelector('i').className = type === 'password' ? 'bi bi-eye' : 'bi bi-eye-slash';
+        });
+
+        togglePasswordRepeat.addEventListener('click', () => {
+            const type = passwordRepeat.type === 'password' ? 'text' : 'password';
+            passwordRepeat.type = type;
+            togglePasswordRepeat.querySelector('i').className = type === 'password' ? 'bi bi-eye' : 'bi bi-eye-slash';
+        });
 
         loginTab.addEventListener('click', () => {
             loginTab.classList.add('active');
@@ -195,7 +210,7 @@ class DiaryApp {
             usernameInput.removeAttribute('required');
             passwordRepeat.removeAttribute('required');
             usernameInput.classList.add('hidden');
-            passwordRepeat.classList.add('hidden');
+            passwordRepeat.parentElement.classList.add('hidden');
         });
 
         signupTab.addEventListener('click', () => {
@@ -204,7 +219,7 @@ class DiaryApp {
             authSubmit.textContent = this.t('signUp');
             usernameInput.classList.remove('hidden');
             usernameInput.setAttribute('required', '');
-            passwordRepeat.classList.remove('hidden');
+            passwordRepeat.parentElement.classList.remove('hidden');
             passwordRepeat.setAttribute('required', '');
         });
 

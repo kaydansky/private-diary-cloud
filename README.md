@@ -10,23 +10,33 @@ A cloud-based Progressive Web App (PWA) for sharing diary entries with the world
 - **User Registration**: Sign up with email and password
 - **Secure Login**: Authentication powered by Supabase Auth
 - **Session Management**: Automatic session handling and persistence
+- **Password Reset**: Forgot password functionality with email recovery
+- **Password Update**: Change password for existing accounts
+- **Username Management**: Change username with uniqueness validation
 
 ### 📖 Public Diary Entries
 - **Read All Entries**: Anyone can view all diary entries from all users
 - **Write Your Own**: Only registered users can create, edit, and delete their own entries
 - **Rich Content**: Support for text entries with image attachments
 - **Real-time Updates**: Entries are instantly available to all users
+- **Author Attribution**: Entries display username and timestamp
+- **Entry Management**: Edit, delete, share, and copy your own entries
 
 ### 🎨 Modern Interface
 - **Responsive Design**: Works perfectly on mobile, tablet, and desktop
 - **Dark/Light Themes**: Toggle between themes with system preference detection
 - **Multi-language Support**: Available in English, French, German, and Russian
 - **Intuitive Calendar**: Visual calendar interface with entry indicators
+- **Search Functionality**: Full-text search across all diary entries
+- **Account Management**: Comprehensive account settings and data management
 
 ### 📱 Progressive Web App
 - **Installable**: Add to home screen on mobile and desktop
 - **Offline Ready**: Service worker enables offline functionality
 - **Native Feel**: Fullscreen experience when installed
+- **Push Notifications**: Get notified about new entries from other users
+- **Image Sharing**: Native sharing of images and entries
+- **Touch Gestures**: Swipe navigation and long-press actions
 
 ## 🚀 Getting Started
 

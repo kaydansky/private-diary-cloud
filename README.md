@@ -74,33 +74,93 @@ A cloud-based Progressive Web App (PWA) for sharing diary entries with the world
        updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
    );
 
-   -- Enable RLS (Row Level Security)
-   ALTER TABLE diary_entries ENABLE ROW LEVEL SECURITY;
+   -- Ensure RLS is enabled on target tables (no-op if already enabled)
+    ALTER TABLE public.diary_entries ENABLE ROW LEVEL SECURITY;
+    ALTER TABLE public.push_subscriptions ENABLE ROW LEVEL SECURITY;
+    
+    -- storage.objects is in the storage schema
+    ALTER TABLE storage.objects ENABLE ROW LEVEL SECURITY;
 
-   -- Policy: Users can only modify their own entries
-   CREATE POLICY "Users can only modify their own entries" ON diary_entries
-       FOR ALL USING (auth.uid() = user_id);
+    -- Policies for public.diary_entries
+    CREATE POLICY "Everyone can read all entries"
+    ON public.diary_entries
+    FOR SELECT
+    TO public
+    USING (true);
 
-   -- Policy: Everyone can read all entries
-   CREATE POLICY "Everyone can read all entries" ON diary_entries
-       FOR SELECT USING (true);
+    CREATE POLICY "Users can delete their own entries"
+    ON public.diary_entries
+    FOR DELETE
+    TO authenticated
+    USING (user_id = (SELECT auth.uid() AS uid));
 
+    CREATE POLICY "Users can insert their own entries"
+    ON public.diary_entries
+    FOR INSERT
+    TO authenticated
+    WITH CHECK (user_id = (SELECT auth.uid() AS uid));
+
+    CREATE POLICY "Users can update their own entries"
+    ON public.diary_entries
+    FOR UPDATE
+    TO authenticated
+    USING (user_id = (SELECT auth.uid() AS uid))
+    WITH CHECK (user_id = (SELECT auth.uid() AS uid));
+
+    -- Policies for storage.objects (diary-images bucket)
+    CREATE POLICY "Everyone can view images"
+    ON storage.objects
+    FOR SELECT
+    TO public
+    USING (bucket_id = 'diary-images'::text);
+
+    CREATE POLICY "Users can delete their own images"
+    ON storage.objects
+    FOR DELETE
+    TO public
+    USING (
+        (bucket_id = 'diary-images'::text)
+        AND ((auth.uid())::text = (storage.foldername(name))[1])
+    );
+
+    CREATE POLICY "Users can upload their own images"
+    ON storage.objects
+    FOR INSERT
+    TO public
+    WITH CHECK (
+        (bucket_id = 'diary-images'::text)
+        AND ((auth.uid())::text = (storage.foldername(name))[1])
+    );
+
+    -- Policies for public.push_subscriptions
+    CREATE POLICY "authenticated_select_own_push_subscriptions"
+    ON public.push_subscriptions
+    FOR SELECT
+    TO authenticated
+    USING (user_id = (SELECT auth.uid() AS uid));
+
+    CREATE POLICY "authenticated_insert_own_push_subscriptions"
+    ON public.push_subscriptions
+    FOR INSERT
+    TO authenticated
+    WITH CHECK (user_id = (SELECT auth.uid() AS uid));
+
+    CREATE POLICY "authenticated_update_own_push_subscriptions"
+    ON public.push_subscriptions
+    FOR UPDATE
+    TO authenticated
+    USING (user_id = (SELECT auth.uid() AS uid))
+    WITH CHECK (user_id = (SELECT auth.uid() AS uid));
+
+    CREATE POLICY "authenticated_delete_own_push_subscriptions"
+    ON public.push_subscriptions
+    FOR DELETE
+    TO authenticated
+    USING (user_id = (SELECT auth.uid() AS uid));
+   
    -- Indexes for performance
    CREATE INDEX idx_diary_entries_user_date ON diary_entries(user_id, date);
    CREATE INDEX idx_diary_entries_text_search ON diary_entries USING gin(to_tsvector('english', text));
-
-   -- Storage bucket for images
-   INSERT INTO storage.buckets (id, name, public) VALUES ('diary-images', 'diary-images', true);
-
-   -- Storage policies
-   CREATE POLICY "Users can upload their own images" ON storage.objects
-       FOR INSERT WITH CHECK (bucket_id = 'diary-images' AND auth.uid()::text = (storage.foldername(name))[1]);
-
-   CREATE POLICY "Everyone can view images" ON storage.objects
-       FOR SELECT USING (bucket_id = 'diary-images');
-
-   CREATE POLICY "Users can delete their own images" ON storage.objects
-       FOR DELETE USING (bucket_id = 'diary-images' AND auth.uid()::text = (storage.foldername(name))[1]);
    ```
 
 4. **Serve the application**

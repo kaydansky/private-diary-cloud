@@ -214,6 +214,9 @@
     <div class="image-actions-modal" id="accountModal">
         <div class="image-actions-content">
             <h3 data-i18n="accountOptions">Account Options</h3>
+            <button class="image-action-btn" id="changeUsernameBtn">
+                <i class="bi bi-person-badge"></i> <span data-i18n="changeUsername">Change Username</span>
+            </button>
             <button class="image-action-btn delete" id="deleteAllEntriesBtn">
                 <i class="bi bi-trash"></i> <span data-i18n="deleteAllEntries">Delete All My Entries</span>
             </button>
@@ -243,6 +246,15 @@
             <input type="password" class="modal-input" id="confirmNewPassword" data-i18n-placeholder="confirmPassword" placeholder="Confirm Password" />
             <button class="image-action-btn" id="updatePasswordBtn" data-i18n="updatePasswordBtn">Update Password</button>
             <button class="image-action-btn cancel" id="cancelUpdatePasswordBtn" data-i18n="cancel">Cancel</button>
+        </div>
+    </div>
+
+    <div class="image-actions-modal" id="changeUsernameModal">
+        <div class="image-actions-content">
+            <h3 data-i18n="changeUsername">Change Username</h3>
+            <input type="text" class="modal-input" id="newUsername" data-i18n-placeholder="newUsername" placeholder="New Username" maxlength="20" pattern="[a-zA-Zа-яА-Я0-9]+" />
+            <button class="image-action-btn" id="updateUsernameBtn" data-i18n="updateUsernameBtn">Update Username</button>
+            <button class="image-action-btn cancel" id="cancelUsernameBtn" data-i18n="cancel">Cancel</button>
         </div>
     </div>
 

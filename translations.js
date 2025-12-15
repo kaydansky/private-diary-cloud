@@ -64,6 +64,7 @@ const translations = {
         passwordsDoNotMatch: 'Passwords do not match',
         usernameLettersNumbers: 'Username must contain only letters and numbers',
         usernameMaxLength: 'Username must be 20 characters or less',
+        usernameMinLength: 'Username must be at least 2 characters',
         usernameTaken: 'Username already taken',
         loggedOut: 'You have been logged out',
         entryTextMaxLength: 'Entry text must be 1000 characters or less',
@@ -87,7 +88,10 @@ const translations = {
         confirmPassword: 'Confirm Password',
         updatePasswordBtn: 'Update Password',
         passwordUpdated: 'Password updated successfully!',
-        passwordUpdateError: 'Failed to update password. Please try again.'
+        passwordUpdateError: 'Failed to update password. Please try again.',
+        changeUsername: 'Change Username',
+        newUsername: 'New Username',
+        updateUsernameBtn: 'Update Username'
     },
     fr: {
         appTitle: 'Journal Privé Cloud',
@@ -153,6 +157,7 @@ const translations = {
         passwordsDoNotMatch: 'Les mots de passe ne correspondent pas',
         usernameLettersNumbers: "Le nom d'utilisateur ne doit contenir que des lettres et des chiffres",
         usernameMaxLength: "Le nom d'utilisateur doit contenir 20 caractères ou moins",
+        usernameMinLength: "Le nom d'utilisateur doit contenir au moins 2 caractères",
         usernameTaken: "Nom d'utilisateur déjà pris",
         loggedOut: 'Vous avez été déconnecté',
         entryTextMaxLength: "Le texte de l'entrée doit contenir 1000 caractères ou moins",
@@ -176,7 +181,10 @@ const translations = {
         confirmPassword: 'Confirmer le mot de passe',
         updatePasswordBtn: 'Mettre à jour',
         passwordUpdated: 'Mot de passe mis à jour avec succès!',
-        passwordUpdateError: 'Échec de la mise à jour. Veuillez réessayer.'
+        passwordUpdateError: 'Échec de la mise à jour. Veuillez réessayer.',
+        changeUsername: "Changer le nom d'utilisateur",
+        newUsername: "Nouveau nom d'utilisateur",
+        updateUsernameBtn: 'Mettre à jour'
     },
     de: {
         appTitle: 'Tagebuch Cloud',
@@ -242,6 +250,7 @@ const translations = {
         passwordsDoNotMatch: 'Passwörter stimmen nicht überein',
         usernameLettersNumbers: 'Benutzername darf nur Buchstaben und Zahlen enthalten',
         usernameMaxLength: 'Benutzername darf maximal 20 Zeichen lang sein',
+        usernameMinLength: 'Benutzername muss mindestens 2 Zeichen lang sein',
         usernameTaken: 'Benutzername bereits vergeben',
         loggedOut: 'Sie wurden abgemeldet',
         entryTextMaxLength: 'Eintragstext darf maximal 1000 Zeichen lang sein',
@@ -265,7 +274,10 @@ const translations = {
         confirmPassword: 'Passwort bestätigen',
         updatePasswordBtn: 'Aktualisieren',
         passwordUpdated: 'Passwort erfolgreich aktualisiert!',
-        passwordUpdateError: 'Aktualisierung fehlgeschlagen. Bitte versuchen Sie es erneut.'
+        passwordUpdateError: 'Aktualisierung fehlgeschlagen. Bitte versuchen Sie es erneut.',
+        changeUsername: 'Benutzername ändern',
+        newUsername: 'Neuer Benutzername',
+        updateUsernameBtn: 'Aktualisieren'
     },
     ru: {
         appTitle: 'СНТ Тишинка',
@@ -330,6 +342,7 @@ const translations = {
         passwordsDoNotMatch: 'Пароли не совпадают',
         usernameLettersNumbers: 'Имя пользователя должно содержать только буквы и цифры',
         usernameMaxLength: 'Имя пользователя должно быть не более 20 символов',
+        usernameMinLength: 'Имя пользователя должно быть не менее 2 символов',
         usernameTaken: 'Имя пользователя уже занято',
         loggedOut: 'Вы вышли из системы',
         entryTextMaxLength: 'Текст записи должен быть не более 1000 символов',
@@ -353,6 +366,9 @@ const translations = {
         confirmPassword: 'Подтвердите пароль',
         updatePasswordBtn: 'Обновить пароль',
         passwordUpdated: 'Пароль успешно обновлен!',
-        passwordUpdateError: 'Не удалось обновить пароль. Попробуйте снова.'
+        passwordUpdateError: 'Не удалось обновить пароль. Попробуйте снова.',
+        changeUsername: 'Изменить имя пользователя',
+        newUsername: 'Новое имя пользователя',
+        updateUsernameBtn: 'Обновить имя'
     }
 };

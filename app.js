@@ -653,6 +653,9 @@ class DiaryApp {
         document.getElementById('cancelResetBtn').addEventListener('click', () => this.hideResetPasswordModal());
         document.getElementById('updatePasswordBtn').addEventListener('click', () => this.updatePassword());
         document.getElementById('cancelUpdatePasswordBtn').addEventListener('click', () => this.hideUpdatePasswordModal());
+        document.getElementById('changeUsernameBtn').addEventListener('click', () => this.showChangeUsernameModal());
+        document.getElementById('updateUsernameBtn').addEventListener('click', () => this.updateUsername());
+        document.getElementById('cancelUsernameBtn').addEventListener('click', () => this.hideChangeUsernameModal());
     }
 
     // Load entries for specific month from Supabase
@@ -1698,6 +1701,7 @@ class DiaryApp {
         document.getElementById('updatePasswordModal').classList.remove('show');
         document.getElementById('newPassword').value = '';
         document.getElementById('confirmNewPassword').value = '';
+        document.getElementById('newUsername').value = '';
     }
 
     // Update password
@@ -1718,7 +1722,78 @@ class DiaryApp {
         } else {
             alert(this.t('passwordUpdated'));
             this.hideUpdatePasswordModal();
+        this.hideChangeUsernameModal();
             window.location.hash = '';
+        }
+    }
+
+    // Show change username modal
+    showChangeUsernameModal() {
+        this.hideAccountModal();
+        document.getElementById('newUsername').value = this.user.user_metadata?.username || '';
+        document.getElementById('changeUsernameModal').classList.add('show');
+        document.getElementById('newUsername').focus();
+    }
+
+    // Hide change username modal
+    hideChangeUsernameModal() {
+        document.getElementById('changeUsernameModal').classList.remove('show');
+        document.getElementById('newUsername').value = '';
+    }
+
+    // Update username
+    async updateUsername() {
+        const newUsername = document.getElementById('newUsername').value.trim();
+        
+        if (!newUsername || newUsername.length < 2) {
+            alert(this.t('usernameMinLength'));
+            return;
+        }
+        
+        if (newUsername.length > 20) {
+            alert(this.t('usernameMaxLength'));
+            return;
+        }
+        
+        if (!/^[a-zA-Zа-яА-Я0-9]+$/.test(newUsername)) {
+            alert(this.t('usernameLettersNumbers'));
+            return;
+        }
+        
+        if (newUsername === this.user.user_metadata?.username) {
+            this.hideChangeUsernameModal();
+            return;
+        }
+        
+        try {
+            const { data: existingUsers } = await supabase
+                .from('diary_entries')
+                .select('username')
+                .ilike('username', newUsername)
+                .limit(1);
+            
+            if (existingUsers && existingUsers.length > 0) {
+                alert(this.t('usernameTaken'));
+                return;
+            }
+            
+            const { error } = await supabase.auth.updateUser({
+                data: { username: newUsername }
+            });
+            
+            if (error) throw error;
+            
+            this.user.user_metadata.username = newUsername;
+            this.updateAuthUI();
+            alert('Username updated successfully!');
+            this.hideChangeUsernameModal();
+            
+            if (this.selectedDate) {
+                this.renderEntries(this.selectedDate);
+            }
+        } catch (error) {
+            console.error('Error updating username:', error);
+            alert('Error updating username: ' + error.message);
         }
     }
 

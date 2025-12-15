@@ -960,7 +960,7 @@ class DiaryApp {
         this.shareDayBtn.style.display = entries.length === 0 ? 'none' : 'flex';
 
         if (entries.length === 0) {
-            const message = this.user ? this.t('noEntries') : this.t('noEntriesGuest');
+            const message = this.t('noEntries');
             this.entryList.innerHTML = `<li class="no-entries">${message}</li>`;
             return;
         }

@@ -329,6 +329,16 @@ class DiaryApp {
         
         // Handle notification click
         this.handleNotificationClick();
+        
+        // Focus on last entry or current date
+        const allDates = Object.keys(this.entries).sort().reverse();
+        if (allDates.length > 0) {
+            this.selectedDate = allDates[0];
+            this.showEntries(allDates[0]);
+        } else {
+            this.selectedDate = this.formatDateKey(new Date());
+            this.showEntries(this.selectedDate);
+        }
     }
 
     // Handle notification click from service worker

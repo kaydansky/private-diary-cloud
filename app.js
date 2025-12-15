@@ -1080,10 +1080,9 @@ class DiaryApp {
         const entryRef = this.entries[this.selectedDate].find(e => e.id === tempId);
 
         // Show spinner and disable buttons
-        const originalText = this.saveEntryBtn.innerHTML;
-        this.saveEntryBtn.innerHTML = '<i class="bi bi-arrow-repeat" style="animation: spin 1s linear infinite;"></i>';
         this.saveEntryBtn.disabled = true;
         this.clearEntryBtn.disabled = true;
+        this.saveEntryBtn.classList.add('spinning');
         
         await this.saveEntries();
         
@@ -1096,7 +1095,7 @@ class DiaryApp {
         }
 
         // Restore buttons
-        this.saveEntryBtn.innerHTML = originalText;
+        this.saveEntryBtn.classList.remove('spinning');
         this.saveEntryBtn.disabled = false;
         this.clearEntryBtn.disabled = false;
 

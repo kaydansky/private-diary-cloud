@@ -1271,3 +1271,10 @@ body {
         font-size: 1rem;
     }
 }
+
+.save-btn.spinning::before {
+    content: '\21BB';
+    display: inline-block;
+    margin-right: 5px;
+    animation: spin 1s linear infinite;
+}

@@ -335,6 +335,22 @@ class DiaryApp {
         this.initTheme();
         this.initEventListeners();
         
+        // Find most recent entry date
+        const { data: recentEntry } = await supabase
+            .from('diary_entries')
+            .select('date')
+            .order('date', { ascending: false })
+            .limit(1)
+            .single();
+        
+        if (recentEntry) {
+            const [year, month] = recentEntry.date.split('-').map(Number);
+            this.currentDate = new Date(year, month - 1, 1);
+            this.selectedDate = recentEntry.date;
+        } else {
+            this.selectedDate = this.formatDateKey(new Date());
+        }
+        
         await this.loadEntriesForMonth(this.currentDate.getFullYear(), this.currentDate.getMonth());
         this.updateUI();
         
@@ -342,18 +358,8 @@ class DiaryApp {
             this.initPushNotifications();
         }
         
-        // Handle notification click
         this.handleNotificationClick();
-        
-        // Focus on last entry or current date
-        const allDates = Object.keys(this.entries).sort().reverse();
-        if (allDates.length > 0) {
-            this.selectedDate = allDates[0];
-            this.showEntries(allDates[0]);
-        } else {
-            this.selectedDate = this.formatDateKey(new Date());
-            this.showEntries(this.selectedDate);
-        }
+        this.showEntries(this.selectedDate);
     }
 
     // Handle notification click from service worker

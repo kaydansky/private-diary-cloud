@@ -740,7 +740,7 @@ class DiaryApp {
                 .limit(10);
 
             if (!data || data.length === 0) {
-                this.searchResults.innerHTML = '<div class="no-entries">No results found</div>';
+                this.searchResults.innerHTML = '<div class="no-entries">' + this.t('noResults') + '</div>';
                 this.searchResults.classList.remove('hidden');
                 return;
             }

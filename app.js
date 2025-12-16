@@ -2266,6 +2266,8 @@ class DiaryApp {
 }
 
 // Initialize app
-window.addEventListener('load', () => {
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => new DiaryApp());
+} else {
     new DiaryApp();
-});
+}

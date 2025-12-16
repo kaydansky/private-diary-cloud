@@ -672,6 +672,9 @@ class DiaryApp {
         this.saveEntryBtn = document.getElementById('saveEntryBtn');
         this.clearEntryBtn = document.getElementById('clearEntryBtn');
         this.entryList = document.getElementById('entryList');
+        this.entryNavigation = document.getElementById('entryNavigation');
+        this.prevEntryBtn = document.getElementById('prevEntryBtn');
+        this.nextEntryBtn = document.getElementById('nextEntryBtn');
         this.searchInput = document.getElementById('searchInput');
         this.searchInput.setAttribute('autocomplete', 'new-password');
         this.searchInput.setAttribute('readonly', 'readonly');
@@ -693,6 +696,9 @@ class DiaryApp {
         });
         this.todayBtn.addEventListener('click', () => this.goToToday());
         this.initSwipeAndWheelNavigation();
+        this.prevEntryBtn.addEventListener('click', () => this.navigateEntry(-1));
+        this.nextEntryBtn.addEventListener('click', () => this.navigateEntry(1));
+        this.initEntrySwipeNavigation();
         this.addEntryBtn.addEventListener('click', () => {
             if (!this.user) return alert(this.t('signInToAddEntries'));
             this.showEntryForm();
@@ -1064,6 +1070,7 @@ class DiaryApp {
         });
         
         this.shareDayBtn.style.display = entries.length === 0 ? 'none' : 'flex';
+        this.updateEntryNavigation();
 
         if (entries.length === 0) {
             const message = this.t('noEntries');
@@ -2131,6 +2138,127 @@ class DiaryApp {
                 this.renderCalendar();
             });
         }, 150);
+    }
+
+    // Initialize entry swipe navigation
+    initEntrySwipeNavigation() {
+        let startX = 0;
+        let startY = 0;
+        
+        this.entryList.addEventListener('touchstart', (e) => {
+            if (e.target.closest('.image-thumbnail') || e.target.closest('.menu-btn')) return;
+            startX = e.touches[0].clientX;
+            startY = e.touches[0].clientY;
+            this.entryList.style.transition = 'none';
+        }, { passive: true });
+        
+        this.entryList.addEventListener('touchmove', (e) => {
+            if (!startX || e.target.closest('.image-thumbnail') || e.target.closest('.menu-btn')) return;
+            
+            const currentX = e.touches[0].clientX;
+            const diffX = currentX - startX;
+            
+            if (Math.abs(diffX) > 10) {
+                const translateX = Math.max(-100, Math.min(100, diffX * 0.3));
+                this.entryList.style.transform = `translateX(${translateX}px)`;
+            }
+        }, { passive: true });
+        
+        this.entryList.addEventListener('touchend', (e) => {
+            if (!startX || !startY || e.target.closest('.image-thumbnail') || e.target.closest('.menu-btn')) return;
+            
+            const endX = e.changedTouches[0].clientX;
+            const endY = e.changedTouches[0].clientY;
+            const diffX = startX - endX;
+            const diffY = startY - endY;
+            
+            this.entryList.style.transition = '';
+            this.entryList.style.transform = '';
+            
+            if (Math.abs(diffX) > Math.abs(diffY) && Math.abs(diffX) > 50) {
+                const direction = diffX > 0 ? 1 : -1;
+                this.navigateEntry(direction);
+            }
+            
+            startX = 0;
+            startY = 0;
+        }, { passive: true });
+    }
+
+    // Navigate to previous/next entry
+    async navigateEntry(direction) {
+        // Get all dates with entries from database
+        const { data } = await supabase
+            .from('diary_entries')
+            .select('date')
+            .order('date', { ascending: true });
+        
+        if (!data || data.length === 0) return;
+        
+        const allDates = [...new Set(data.map(entry => entry.date))].sort();
+        const currentIndex = allDates.indexOf(this.selectedDate);
+        if (currentIndex === -1) return;
+        
+        const newIndex = currentIndex + direction;
+        if (newIndex < 0 || newIndex >= allDates.length) return;
+        
+        const newDate = allDates[newIndex];
+        const [year, month] = newDate.split('-').map(Number);
+        
+        // Previous entry (direction < 0): current out right, new in from left
+        // Next entry (direction > 0): current out left, new in from right
+        const outClass = direction < 0 ? 'swipe-out-right' : 'swipe-out-left';
+        const inClass = direction < 0 ? 'swipe-in-left' : 'swipe-in-right';
+        
+        this.entryList.classList.add(outClass);
+        
+        setTimeout(async () => {
+            if (year !== this.currentDate.getFullYear() || month - 1 !== this.currentDate.getMonth()) {
+                this.currentDate = new Date(year, month - 1, 1);
+                await this.loadEntriesForMonth(year, month - 1);
+                this.renderCalendar();
+            }
+            
+            this.selectedDate = newDate;
+            this.selectedDateTitle.textContent = this.formatDate(newDate);
+            this.updateDateSelects();
+            this.renderCalendar();
+            
+            this.entryList.classList.remove(outClass);
+            this.entryList.classList.add(inClass);
+            this.renderEntries(newDate);
+            
+            requestAnimationFrame(() => {
+                this.entryList.classList.remove(inClass);
+            });
+        }, 150);
+    }
+
+    // Update entry navigation buttons state
+    async updateEntryNavigation() {
+        // Get all dates with entries from database
+        const { data } = await supabase
+            .from('diary_entries')
+            .select('date')
+            .order('date', { ascending: true });
+        
+        if (!data || data.length === 0) {
+            this.entryNavigation.classList.add('hidden');
+            return;
+        }
+        
+        const allDates = [...new Set(data.map(entry => entry.date))].sort();
+        
+        if (allDates.length <= 1) {
+            this.entryNavigation.classList.add('hidden');
+            return;
+        }
+        
+        this.entryNavigation.classList.remove('hidden');
+        
+        const currentIndex = allDates.indexOf(this.selectedDate);
+        this.prevEntryBtn.disabled = currentIndex <= 0;
+        this.nextEntryBtn.disabled = currentIndex >= allDates.length - 1;
     }
 }
 

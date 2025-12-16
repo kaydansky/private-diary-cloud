@@ -13,7 +13,7 @@ class DiaryApp {
         this.isNotificationsEnabled = false;
 
         this.initElements();
-        setTimeout(() => this.initAuth(), 100);
+        this.initAuth();
     }
 
     // Initialize language from localStorage or browser
@@ -2275,6 +2275,6 @@ class DiaryApp {
 }
 
 // Initialize app
-document.addEventListener('DOMContentLoaded', () => {
+window.addEventListener('load', () => {
     new DiaryApp();
 });

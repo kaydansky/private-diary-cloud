@@ -8,5 +8,14 @@ const VAPID_PUBLIC_KEY = 'BCLXLvNmnL-Zs6JsqSm5D0nDU_ZZH4BfKXEne06bPrDNfbXEUdMdZ-
 // App share URL
 const APP_SHARE_URL = 'https://snt-tishinka.ru';
 
-// Initialize Supabase client (will be set when library loads)
-var supabase;
+// Initialize Supabase client
+var supabase = null;
+
+// Wait for Supabase library and initialize
+if (typeof window !== 'undefined') {
+    window.addEventListener('load', () => {
+        if (window.supabase && window.supabase.createClient) {
+            supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        }
+    });
+}

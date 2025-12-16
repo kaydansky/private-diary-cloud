@@ -759,6 +759,7 @@ class DiaryApp {
         document.getElementById('updateUsernameBtn').addEventListener('click', () => this.updateUsername());
         document.getElementById('cancelUsernameBtn').addEventListener('click', () => this.hideChangeUsernameModal());
         document.getElementById('notificationsBtn').addEventListener('click', () => this.toggleNotifications());
+        document.getElementById('shareAppBtn').addEventListener('click', () => this.shareApp());
         document.getElementById('howItWorksBtn').addEventListener('click', () => this.showHowItWorksModal());
         document.getElementById('closeHowItWorksBtn').addEventListener('click', () => this.hideHowItWorksModal());
     }
@@ -1851,6 +1852,26 @@ class DiaryApp {
     // Hide how it works modal
     hideHowItWorksModal() {
         document.getElementById('howItWorksModal').classList.remove('show');
+    }
+
+    // Share app
+    async shareApp() {
+        this.hideHeaderMenu();
+        if (navigator.share) {
+            try {
+                await navigator.share({
+                    title: this.t('appTitle'),
+                    text: this.t('appSubtitle'),
+                    url: APP_SHARE_URL
+                });
+            } catch (err) {
+                if (err.name !== 'AbortError') {
+                    console.log('Share failed:', err);
+                }
+            }
+        } else {
+            alert(this.t('shareNotSupported'));
+        }
     }
 
     // Update username

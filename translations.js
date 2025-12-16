@@ -99,6 +99,7 @@ const translations = {
         notificationBannerText: 'Stay updated! Enable notifications to know when others share new entries.',
         enableNotifications: 'Enable',
         notNow: 'Not Now',
+        shareApp: 'Share this app',
         howItWorks: 'How It Works',
         howItWorksTitle: 'How It Works',
         howItWorksPoint1: 'Sign up with email and username to create entries and receive notifications about new posts from others.',
@@ -210,6 +211,7 @@ const translations = {
         notificationBannerText: 'Restez informé ! Activez les notifications pour savoir quand d\'autres partagent de nouvelles entrées.',
         enableNotifications: 'Activer',
         notNow: 'Pas maintenant',
+        shareApp: 'Partager cette app',
         howItWorks: 'Comment ça marche',
         howItWorksTitle: 'Comment ça marche',
         howItWorksPoint1: 'Inscrivez-vous avec email et nom d\'utilisateur pour créer des entrées et recevoir des notifications.',
@@ -321,6 +323,7 @@ const translations = {
         notificationBannerText: 'Bleiben Sie auf dem Laufenden! Aktivieren Sie Benachrichtigungen, um zu erfahren, wann andere neue Einträge teilen.',
         enableNotifications: 'Aktivieren',
         notNow: 'Nicht jetzt',
+        shareApp: 'App teilen',
         howItWorks: 'Wie es funktioniert',
         howItWorksTitle: 'Wie es funktioniert',
         howItWorksPoint1: 'Registrieren Sie sich mit E-Mail und Benutzername, um Einträge zu erstellen und Benachrichtigungen zu erhalten.',
@@ -431,6 +434,7 @@ const translations = {
         notificationBannerText: 'Будьте в курсе! Включите уведомления, чтобы узнавать о новых записях.',
         enableNotifications: 'Включить',
         notNow: 'Не сейчас',
+        shareApp: 'Поделиться приложением',
         howItWorks: 'Как это работает',
         howItWorksTitle: 'Как это работает',
         howItWorksPoint1: 'Зарегистрируйтесь с email и именем пользователя, чтобы создавать записи и получать уведомления о новых записях других пользователей. Имя пользователя видят все, email — никто.',
@@ -440,7 +444,7 @@ const translations = {
         howItWorksPoint5: 'Выберите дату и нажмите "Запись" или "Фото", чтобы добавить контент. Три точки возле записи — вызов меню: пересылайте свои записи и изображения куда угодно, редактируйте или удаляйте их.',
         howItWorksPoint6: 'Можно изменить своё имя пользователя или удалить аккаунт без следов. Можно удалить все свои записи или фото одним нажатием. Для этого перейдите в \"Аккаунт\" в верхнем меню.',
         howItWorksPoint7: 'Без регистрации вы можете просматривать все записи, искать контент, делиться им и просто изучать летопись по календарю.',
-        howItWorksPoint8: 'Приложение работает как на мобильном устройстве, так и на настольном компьютере. Чтобы поделиться приложением, просто отправьте ссылку https://snt-tishinka.ru.',
+        howItWorksPoint8: 'Приложение работает как на мобильном устройстве, так и на настольном компьютере. Чтобы поделиться приложением, просто отправьте ссылку https://snt-tishinka.ru. Для этого в верхнем меню есть опция"Поделиться приложением".',
         close: 'Закрыть'
     }
 };

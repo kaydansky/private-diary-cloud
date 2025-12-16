@@ -5,5 +5,8 @@ const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 // VAPID public key for push notifications (generate with: npx web-push generate-vapid-keys)
 const VAPID_PUBLIC_KEY = 'BCLXLvNmnL-Zs6JsqSm5D0nDU_ZZH4BfKXEne06bPrDNfbXEUdMdZ-pXWDM2GQvPj6s32Da7szWWDehbM88AOOk';
 
+// App share URL
+const APP_SHARE_URL = 'https://snt-tishinka.ru';
+
 // Initialize Supabase client (will be set when library loads)
 let supabase;

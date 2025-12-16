@@ -1371,3 +1371,18 @@ body {
         flex: 1;
     }
 }
+
+/* How It Works Modal */
+.how-it-works-list {
+    list-style: disc;
+    padding-left: 20px;
+    margin: 0 0 20px 0;
+    text-align: left;
+}
+
+.how-it-works-list li {
+    color: var(--text-color);
+    font-size: 0.95rem;
+    line-height: 1.6;
+    margin-bottom: 12px;
+}

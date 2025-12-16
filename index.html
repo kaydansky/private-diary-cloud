@@ -65,6 +65,9 @@
                     <button class="header-menu-item" id="languageBtn">
                         <i class="bi bi-translate"></i> <span data-i18n="language">Language</span>
                     </button>
+                    <button class="header-menu-item" id="howItWorksBtn">
+                        <i class="bi bi-info-circle"></i> <span data-i18n="howItWorks">How It Works</span>
+                    </button>
                     <button class="header-menu-item" id="clearCacheBtn">
                         <i class="bi bi-arrow-clockwise"></i> <span>Clear Cache</span>
                     </button>
@@ -111,7 +114,7 @@
                     <div class="entries-buttons">
                         <button class="add-entry-btn" id="addEntryBtn"><i class="bi bi-calendar-plus"></i> <span data-i18n="addEntry">Entry</span></button>
                         <button class="add-image-btn" id="addImageBtn"><i class="bi bi-image"></i> <span data-i18n="addImage">Image</span></button>
-                        <button class="share-day-btn" id="shareDayBtn" title="Share this day's entries"><i class="bi bi-share-fill"></i></button>
+                        <button class="share-day-btn" id="shareDayBtn" title="Переслать все сообщения за этот день"><i class="bi bi-share-fill"></i></button>
                     </div>
                 </div>
 
@@ -259,6 +262,23 @@
             <input type="text" class="modal-input" id="newUsername" data-i18n-placeholder="newUsername" placeholder="New Username" maxlength="20" pattern="[a-zA-Zа-яА-Я0-9]+" />
             <button class="image-action-btn" id="updateUsernameBtn" data-i18n="updateUsernameBtn">Update Username</button>
             <button class="image-action-btn cancel" id="cancelUsernameBtn" data-i18n="cancel">Cancel</button>
+        </div>
+    </div>
+
+    <div class="image-actions-modal" id="howItWorksModal">
+        <div class="image-actions-content">
+            <h3 data-i18n="howItWorksTitle">How It Works</h3>
+            <ul class="how-it-works-list">
+                <li data-i18n="howItWorksPoint1">Sign up with email and username to create entries and receive notifications about new posts from others.</li>
+                <li data-i18n="howItWorksPoint2">Your email is needed for password recovery and account security.</li>
+                <li data-i18n="howItWorksPoint3">Enable notifications to get instant alerts when others share new entries. Toggle on/off anytime in the header menu.</li>
+                <li data-i18n="howItWorksPoint4">Navigate the calendar to view entries by date. Click "Entry" or "Image" buttons to add content.</li>
+                <li data-i18n="howItWorksPoint5">Edit or delete your own entries and images. Change your username or delete your account without leaving any traces.</li>
+                <li data-i18n="howItWorksPoint6">You can change your username or delete your account without leaving any traces. You can delete all your entries or photos with one click. To do this, go to "Account" in the top menu.</li>
+                <li data-i18n="howItWorksPoint7">Without signing up, you can browse all entries, search content, and explore the calendar.</li>
+                <li data-i18n="howItWorksPoint8">The app works on both mobile devices and desktop computers. To share the app, simply send the link https://snt-tishinka.ru to your friends and acquaintances.</li>
+            </ul>
+            <button class="image-action-btn cancel" id="closeHowItWorksBtn" data-i18n="close">Close</button>
         </div>
     </div>
 

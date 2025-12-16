@@ -98,7 +98,18 @@ const translations = {
         notificationsDisabled: 'Notifications disabled',
         notificationBannerText: 'Stay updated! Enable notifications to know when others share new entries.',
         enableNotifications: 'Enable',
-        notNow: 'Not Now'
+        notNow: 'Not Now',
+        howItWorks: 'How It Works',
+        howItWorksTitle: 'How It Works',
+        howItWorksPoint1: 'Sign up with email and username to create entries and receive notifications about new posts from others.',
+        howItWorksPoint2: 'Your email is needed for password recovery and account security.',
+        howItWorksPoint3: 'Enable notifications to get instant alerts when others share new entries. Toggle on/off anytime in the header menu.',
+        howItWorksPoint4: 'Navigate the calendar to view entries by date. Click "Entry" or "Image" buttons to add content.',
+        howItWorksPoint5: 'Edit or delete your own entries and images. Change your username or delete your account without leaving any traces.',
+        howItWorksPoint6: 'Without signing up, you can browse all entries, search content, and explore the calendar.',
+        howItWorksPoint7: 'The app works on both mobile devices and desktop computers. To share the app, simply send the link https://snt-tishinka.ru to your friends and acquaintances.',
+        howItWorksPoint8: 'The app is open source and can be found on GitHub: XXXXXXXXXXXXXXXXX',
+        close: 'Close'
     },
     fr: {
         appTitle: 'Journal Privé Cloud',
@@ -198,7 +209,18 @@ const translations = {
         notificationsDisabled: 'Notifications désactivées',
         notificationBannerText: 'Restez informé ! Activez les notifications pour savoir quand d\'autres partagent de nouvelles entrées.',
         enableNotifications: 'Activer',
-        notNow: 'Pas maintenant'
+        notNow: 'Pas maintenant',
+        howItWorks: 'Comment ça marche',
+        howItWorksTitle: 'Comment ça marche',
+        howItWorksPoint1: 'Inscrivez-vous avec email et nom d\'utilisateur pour créer des entrées et recevoir des notifications.',
+        howItWorksPoint2: 'Votre email est nécessaire pour la récupération du mot de passe et la sécurité du compte.',
+        howItWorksPoint3: 'Activez les notifications pour recevoir des alertes instantanées. Activez/désactivez à tout moment dans le menu.',
+        howItWorksPoint4: 'Naviguez dans le calendrier pour voir les entrées par date. Cliquez sur "Entrée" ou "Image" pour ajouter du contenu.',
+        howItWorksPoint5: 'Modifiez ou supprimez vos propres entrées et images. Changez votre nom d\'utilisateur ou supprimez votre compte sans laisser de traces.',
+        howItWorksPoint6: 'Sans inscription, vous pouvez parcourir toutes les entrées, rechercher du contenu et explorer le calendrier.',
+        howItWorksPoint7: 'L\'application fonctionne à la fois sur les appareils mobiles et les ordinateurs de bureau. Pour partager l\'application, envoyez simplement le lien https://snt-tishinka.ru à vos amis et connaissances.',
+        howItWorksPoint8: 'L\'application est open source et peut être trouvée sur GitHub : XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX',
+        close: 'Fermer'
     },
     de: {
         appTitle: 'Tagebuch Cloud',
@@ -298,7 +320,18 @@ const translations = {
         notificationsDisabled: 'Benachrichtigungen deaktiviert',
         notificationBannerText: 'Bleiben Sie auf dem Laufenden! Aktivieren Sie Benachrichtigungen, um zu erfahren, wann andere neue Einträge teilen.',
         enableNotifications: 'Aktivieren',
-        notNow: 'Nicht jetzt'
+        notNow: 'Nicht jetzt',
+        howItWorks: 'Wie es funktioniert',
+        howItWorksTitle: 'Wie es funktioniert',
+        howItWorksPoint1: 'Registrieren Sie sich mit E-Mail und Benutzername, um Einträge zu erstellen und Benachrichtigungen zu erhalten.',
+        howItWorksPoint2: 'Ihre E-Mail wird für die Passwortwiederherstellung und Kontosicherheit benötigt.',
+        howItWorksPoint3: 'Aktivieren Sie Benachrichtigungen für sofortige Benachrichtigungen. Jederzeit im Menü ein-/ausschalten.',
+        howItWorksPoint4: 'Navigieren Sie im Kalender, um Einträge nach Datum anzuzeigen. Klicken Sie auf "Eintrag" oder "Bild", um Inhalte hinzuzufügen.',
+        howItWorksPoint5: 'Bearbeiten oder löschen Sie Ihre eigenen Einträge und Bilder. Ändern Sie Ihren Benutzernamen oder löschen Sie Ihr Konto ohne Spuren.',
+        howItWorksPoint6: 'Ohne Anmeldung können Sie alle Einträge durchsuchen, Inhalte suchen und den Kalender erkunden.',
+        howItWorksPoint7: 'Das Programm funktioniert sowohl auf mobilen Geräten als auch auf Desktop-Computern. Um das Programm zu teilen, senden Sie einfach den Link https://snt-tishinka.ru an Ihre Freunde und Bekannten.',
+        howItWorksPoint8: 'Der Quellcode ist öffentlich und kann auf GitHub gefunden werden: XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX',
+        close: 'Schließen'
     },
     ru: {
         appTitle: 'СНТ Тишинка',
@@ -397,6 +430,17 @@ const translations = {
         notificationsDisabled: 'Уведомления выключены',
         notificationBannerText: 'Будьте в курсе! Включите уведомления, чтобы узнавать о новых записях.',
         enableNotifications: 'Включить',
-        notNow: 'Не сейчас'
+        notNow: 'Не сейчас',
+        howItWorks: 'Как это работает',
+        howItWorksTitle: 'Как это работает',
+        howItWorksPoint1: 'Зарегистрируйтесь с email и именем пользователя, чтобы создавать записи и получать уведомления о новых записях других пользователей. Имя пользователя видят все, email — никто.',
+        howItWorksPoint2: 'Ваш email нужен для восстановления пароля, если забудете, и безопасности аккаунта.',
+        howItWorksPoint3: 'Включите уведомления, чтобы получать мгновенные оповещения о новых записях. Включайте и выключайте в любое время в верхнем меню.',
+        howItWorksPoint4: 'Используйте календарь для просмотра записей по датам. Внизу есть быстрый переход на далёкую дату. Вверху есть поиск.',
+        howItWorksPoint5: 'Выберите дату и нажмите "Запись" или "Фото", чтобы добавить контент. Три точки возле записи — вызов меню: пересылайте свои записи и изображения куда угодно, редактируйте или удаляйте их.',
+        howItWorksPoint6: 'Можно изменить своё имя пользователя или удалить аккаунт без следов. Можно удалить все свои записи или фото одним нажатием. Для этого перейдите в \"Аккаунт\" в верхнем меню.',
+        howItWorksPoint7: 'Без регистрации вы можете просматривать все записи, искать контент, делиться им и просто изучать летопись по календарю.',
+        howItWorksPoint8: 'Приложение работает как на мобильном устройстве, так и на настольном компьютере. Чтобы поделиться приложением, просто отправьте ссылку https://snt-tishinka.ru.',
+        close: 'Закрыть'
     }
 };

@@ -759,6 +759,8 @@ class DiaryApp {
         document.getElementById('updateUsernameBtn').addEventListener('click', () => this.updateUsername());
         document.getElementById('cancelUsernameBtn').addEventListener('click', () => this.hideChangeUsernameModal());
         document.getElementById('notificationsBtn').addEventListener('click', () => this.toggleNotifications());
+        document.getElementById('howItWorksBtn').addEventListener('click', () => this.showHowItWorksModal());
+        document.getElementById('closeHowItWorksBtn').addEventListener('click', () => this.hideHowItWorksModal());
     }
 
     // Load entries for specific month from Supabase
@@ -1079,7 +1081,7 @@ class DiaryApp {
                         <div class="entry-images" id="images-${entry.id}"></div>
                     </div>
                     <div class="entry-actions">
-                        <button class="menu-btn" data-entry-id="${entry.id}" data-date="${date}" title="Entry options">
+                        <button class="menu-btn" data-entry-id="${entry.id}" data-date="${date}" title="` + this.t('entryOptions') + `">
                             <i class="bi bi-three-dots-vertical"></i>
                         </button>
                     </div>
@@ -1838,6 +1840,17 @@ class DiaryApp {
     hideChangeUsernameModal() {
         document.getElementById('changeUsernameModal').classList.remove('show');
         document.getElementById('newUsername').value = '';
+    }
+
+    // Show how it works modal
+    showHowItWorksModal() {
+        document.getElementById('howItWorksModal').classList.add('show');
+        this.hideHeaderMenu();
+    }
+
+    // Hide how it works modal
+    hideHowItWorksModal() {
+        document.getElementById('howItWorksModal').classList.remove('show');
     }
 
     // Update username

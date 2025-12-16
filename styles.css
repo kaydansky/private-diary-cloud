@@ -1373,6 +1373,11 @@ body {
 }
 
 /* How It Works Modal */
+#howItWorksModal .image-actions-content {
+    max-height: 80vh;
+    overflow-y: auto;
+}
+
 .how-it-works-list {
     list-style: disc;
     padding-left: 20px;

@@ -88,6 +88,10 @@ class DiaryApp {
 
     // Initialize authentication
     async initAuth() {
+        if (!supabase && window.supabase && window.supabase.createClient) {
+            supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        }
+        
         if (!supabase) {
             console.error('Supabase failed to initialize');
             alert('Failed to load app. Please refresh the page.');

@@ -10,8 +10,3 @@ const APP_SHARE_URL = 'https://snt-tishinka.ru';
 
 // Initialize Supabase client
 var supabase = null;
-
-// Initialize immediately when script loads
-if (typeof window !== 'undefined' && window.supabase && window.supabase.createClient) {
-    supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-}

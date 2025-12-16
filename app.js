@@ -124,15 +124,15 @@ class DiaryApp {
         const addImageBtn = document.getElementById('addImageBtn');
         
         if (this.user) {
-            signInBtn.style.display = 'none';
-            footerText.style.display = 'none';
-            signOutBtn.style.display = 'block';
-            accountBtn.style.display = 'block';
-            notificationsBtn.style.display = 'block';
-            addEntryBtn.style.display = 'flex';
-            addImageBtn.style.display = 'flex';
+            if (signInBtn) signInBtn.style.display = 'none';
+            if (footerText) footerText.style.display = 'none';
+            if (signOutBtn) signOutBtn.style.display = 'block';
+            if (accountBtn) accountBtn.style.display = 'block';
+            if (notificationsBtn) notificationsBtn.style.display = 'block';
+            if (addEntryBtn) addEntryBtn.style.display = 'flex';
+            if (addImageBtn) addImageBtn.style.display = 'flex';
             
-            await this.updateNotificationButtonState();
+            if (notificationsBtn) await this.updateNotificationButtonState();
             
             let username = this.user.user_metadata?.username;
             if (!username) {
@@ -145,16 +145,18 @@ class DiaryApp {
                 username = data?.username || 'User';
             }
             
-            const accountSpan = accountBtn.querySelector('span');
-            accountSpan.textContent = `${this.t('account')} | ${username}`;
+            if (accountBtn) {
+                const accountSpan = accountBtn.querySelector('span');
+                if (accountSpan) accountSpan.textContent = `${this.t('account')} | ${username}`;
+            }
         } else {
-            signInBtn.style.display = 'block';
-            footerText.style.display = 'block';
-            signOutBtn.style.display = 'none';
-            accountBtn.style.display = 'none';
-            notificationsBtn.style.display = 'none';
-            addEntryBtn.style.display = 'none';
-            addImageBtn.style.display = 'none';
+            if (signInBtn) signInBtn.style.display = 'block';
+            if (footerText) footerText.style.display = 'block';
+            if (signOutBtn) signOutBtn.style.display = 'none';
+            if (accountBtn) accountBtn.style.display = 'none';
+            if (notificationsBtn) notificationsBtn.style.display = 'none';
+            if (addEntryBtn) addEntryBtn.style.display = 'none';
+            if (addImageBtn) addImageBtn.style.display = 'none';
         }
     }
 

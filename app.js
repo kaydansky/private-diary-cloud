@@ -88,9 +88,19 @@ class DiaryApp {
 
     // Initialize authentication
     async initAuth() {
+        if (!window.supabase) {
+            console.error('Supabase library not loaded');
+            return;
+        }
+        
         if (!supabase) {
             const { createClient } = window.supabase;
             supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        }
+        
+        if (!supabase) {
+            console.error('Failed to initialize Supabase');
+            return;
         }
         
         supabase.auth.onAuthStateChange(async (event, session) => {

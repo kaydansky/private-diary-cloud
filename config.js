@@ -10,12 +10,3 @@ const APP_SHARE_URL = 'https://snt-tishinka.ru';
 
 // Initialize Supabase client
 var supabase = null;
-
-// Wait for Supabase library and initialize
-if (typeof window !== 'undefined') {
-    window.addEventListener('load', () => {
-        if (window.supabase && window.supabase.createClient) {
-            supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-        }
-    });
-}

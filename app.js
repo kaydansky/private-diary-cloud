@@ -88,12 +88,6 @@ class DiaryApp {
 
     // Initialize authentication
     async initAuth() {
-        let retries = 0;
-        while (!supabase && retries < 20) {
-            await new Promise(resolve => setTimeout(resolve, 100));
-            retries++;
-        }
-        
         if (!supabase) {
             console.error('Supabase failed to initialize');
             alert('Failed to load app. Please refresh the page.');

@@ -827,13 +827,10 @@ class DiaryApp {
         if (this.searchTimeout) clearTimeout(this.searchTimeout);
         
         this.searchTimeout = setTimeout(async () => {
-            // Format query for tsquery: replace spaces with & (AND operator)
-            const formattedQuery = query.trim().split(/\s+/).join(' & ');
-            
             const { data } = await supabase
                 .from('diary_entries')
                 .select('*')
-                .textSearch('text', formattedQuery)
+                .ilike('text', `%${query.trim()}%`)
                 .limit(10);
 
             if (!data || data.length === 0) {

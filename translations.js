@@ -91,7 +91,14 @@ const translations = {
         passwordUpdateError: 'Failed to update password. Please try again.',
         changeUsername: 'Change Username',
         newUsername: 'New Username',
-        updateUsernameBtn: 'Update Username'
+        updateUsernameBtn: 'Update Username',
+        turnOnNotifications: 'Turn On Notifications',
+        turnOffNotifications: 'Turn Off Notifications',
+        notificationsEnabled: 'Notifications enabled',
+        notificationsDisabled: 'Notifications disabled',
+        notificationBannerText: 'Stay updated! Enable notifications to know when others share new entries.',
+        enableNotifications: 'Enable',
+        notNow: 'Not Now'
     },
     fr: {
         appTitle: 'Journal Privé Cloud',
@@ -184,7 +191,14 @@ const translations = {
         passwordUpdateError: 'Échec de la mise à jour. Veuillez réessayer.',
         changeUsername: "Changer le nom d'utilisateur",
         newUsername: "Nouveau nom d'utilisateur",
-        updateUsernameBtn: 'Mettre à jour'
+        updateUsernameBtn: 'Mettre à jour',
+        turnOnNotifications: 'Activer les notifications',
+        turnOffNotifications: 'Désactiver les notifications',
+        notificationsEnabled: 'Notifications activées',
+        notificationsDisabled: 'Notifications désactivées',
+        notificationBannerText: 'Restez informé ! Activez les notifications pour savoir quand d\'autres partagent de nouvelles entrées.',
+        enableNotifications: 'Activer',
+        notNow: 'Pas maintenant'
     },
     de: {
         appTitle: 'Tagebuch Cloud',
@@ -277,7 +291,14 @@ const translations = {
         passwordUpdateError: 'Aktualisierung fehlgeschlagen. Bitte versuchen Sie es erneut.',
         changeUsername: 'Benutzername ändern',
         newUsername: 'Neuer Benutzername',
-        updateUsernameBtn: 'Aktualisieren'
+        updateUsernameBtn: 'Aktualisieren',
+        turnOnNotifications: 'Benachrichtigungen aktivieren',
+        turnOffNotifications: 'Benachrichtigungen deaktivieren',
+        notificationsEnabled: 'Benachrichtigungen aktiviert',
+        notificationsDisabled: 'Benachrichtigungen deaktiviert',
+        notificationBannerText: 'Bleiben Sie auf dem Laufenden! Aktivieren Sie Benachrichtigungen, um zu erfahren, wann andere neue Einträge teilen.',
+        enableNotifications: 'Aktivieren',
+        notNow: 'Nicht jetzt'
     },
     ru: {
         appTitle: 'СНТ Тишинка',
@@ -369,6 +390,13 @@ const translations = {
         passwordUpdateError: 'Не удалось обновить пароль. Попробуйте снова.',
         changeUsername: 'Изменить имя пользователя',
         newUsername: 'Новое имя пользователя',
-        updateUsernameBtn: 'Обновить имя'
+        updateUsernameBtn: 'Изменить имя',
+        turnOnNotifications: 'Включить уведомления',
+        turnOffNotifications: 'Выключить уведомления',
+        notificationsEnabled: 'Уведомления включены',
+        notificationsDisabled: 'Уведомления выключены',
+        notificationBannerText: 'Будьте в курсе! Включите уведомления, чтобы узнавать о новых записях.',
+        enableNotifications: 'Включить',
+        notNow: 'Не сейчас'
     }
 };

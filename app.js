@@ -10,6 +10,7 @@ class DiaryApp {
         this.user = null;
         this.isAuthMode = true;
         this.searchQuery = '';
+        this.isNotificationsEnabled = false;
 
         this.initElements();
         this.initAuth();
@@ -118,6 +119,7 @@ class DiaryApp {
         const signInBtn = document.getElementById('signInBtn');
         const signOutBtn = document.getElementById('signOutBtn');
         const accountBtn = document.getElementById('accountBtn');
+        const notificationsBtn = document.getElementById('notificationsBtn');
         const addEntryBtn = document.getElementById('addEntryBtn');
         const addImageBtn = document.getElementById('addImageBtn');
         
@@ -126,8 +128,11 @@ class DiaryApp {
             footerText.style.display = 'none';
             signOutBtn.style.display = 'block';
             accountBtn.style.display = 'block';
+            notificationsBtn.style.display = 'block';
             addEntryBtn.style.display = 'flex';
             addImageBtn.style.display = 'flex';
+            
+            await this.updateNotificationButtonState();
             
             let username = this.user.user_metadata?.username;
             if (!username) {
@@ -147,6 +152,7 @@ class DiaryApp {
             footerText.style.display = 'block';
             signOutBtn.style.display = 'none';
             accountBtn.style.display = 'none';
+            notificationsBtn.style.display = 'none';
             addEntryBtn.style.display = 'none';
             addImageBtn.style.display = 'none';
         }
@@ -443,67 +449,154 @@ class DiaryApp {
         }
     }
 
-    // Initialize push notifications
-    async initPushNotifications() {
+    // Update notification button state
+    async updateNotificationButtonState() {
+        const notificationsBtn = document.getElementById('notificationsBtn');
+        const { data } = await supabase
+            .from('push_subscriptions')
+            .select('id')
+            .eq('user_id', this.user.id)
+            .maybeSingle();
+        
+        this.isNotificationsEnabled = !!data;
+        const icon = notificationsBtn.querySelector('i');
+        const span = notificationsBtn.querySelector('span');
+        
+        if (this.isNotificationsEnabled) {
+            icon.className = 'bi bi-bell-slash';
+            span.setAttribute('data-i18n', 'turnOffNotifications');
+            span.textContent = this.t('turnOffNotifications');
+        } else {
+            icon.className = 'bi bi-bell';
+            span.setAttribute('data-i18n', 'turnOnNotifications');
+            span.textContent = this.t('turnOnNotifications');
+        }
+    }
+
+    // Toggle notifications
+    async toggleNotifications() {
+        this.hideHeaderMenu();
+        
+        if (this.isNotificationsEnabled) {
+            await this.unsubscribeFromNotifications();
+        } else {
+            await this.subscribeToNotifications();
+        }
+    }
+
+    // Subscribe to notifications
+    async subscribeToNotifications() {
         if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
-            console.log('Push notifications not supported');
+            alert('Push notifications not supported on this device');
             return;
         }
 
         try {
             const permission = await Notification.requestPermission();
-            // console.log('Notification permission:', permission);
             if (permission !== 'granted') {
-                console.log('Notification permission denied');
+                alert('Notification permission denied');
                 return;
             }
 
             const registration = await navigator.serviceWorker.ready;
-            // console.log('Service worker ready');
-            
-            // Check if we already have a subscription
             let subscription = await registration.pushManager.getSubscription();
             
             if (!subscription) {
-                // Create new subscription only if we don't have one
                 subscription = await registration.pushManager.subscribe({
                     userVisibleOnly: true,
                     applicationServerKey: this.urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
                 });
-                // console.log('Push subscription created:', subscription);
-            } else {
-                // console.log('Using existing push subscription');
             }
 
-            const subJSON = subscription.toJSON();
-            
-            // Check if subscription exists in database
-            const { data: existing, error: selectError } = await supabase
+            const { error } = await supabase
                 .from('push_subscriptions')
-                .select('id')
-                .eq('user_id', this.user.id)
-                .maybeSingle();
+                .insert({
+                    user_id: this.user.id,
+                    subscription: subscription.toJSON()
+                });
 
-            if (existing) {
-                // console.log('Subscription already in database');
-            } else if (!selectError) {
-                // Insert new
-                const { error } = await supabase
-                    .from('push_subscriptions')
-                    .insert({
-                        user_id: this.user.id,
-                        subscription: subJSON
-                    });
-                    
-                // if (error) {
-                //     console.error('Failed to save subscription:', error);
-                // } else {
-                //     console.log('Push notification subscription saved');
-                // }
-            }
+            if (error) throw error;
+            
+            await this.updateNotificationButtonState();
+            this.showToast(this.t('notificationsEnabled'));
         } catch (error) {
-            console.error('Failed to subscribe to push notifications:', error);
+            console.error('Failed to subscribe:', error);
+            alert('Failed to enable notifications');
         }
+    }
+
+    // Unsubscribe from notifications
+    async unsubscribeFromNotifications() {
+        try {
+            const { error } = await supabase
+                .from('push_subscriptions')
+                .delete()
+                .eq('user_id', this.user.id);
+
+            if (error) throw error;
+            
+            await this.updateNotificationButtonState();
+            this.showToast(this.t('notificationsDisabled'));
+        } catch (error) {
+            console.error('Failed to unsubscribe:', error);
+            alert('Failed to disable notifications');
+        }
+    }
+
+    // Initialize push notifications
+    async initPushNotifications() {
+        const hasDismissed = localStorage.getItem('notificationBannerDismissed');
+        if (hasDismissed) return;
+        
+        const { data } = await supabase
+            .from('push_subscriptions')
+            .select('id')
+            .eq('user_id', this.user.id)
+            .maybeSingle();
+        
+        if (data) return; // Already subscribed
+        
+        // Show banner for new users
+        if (Notification.permission !== 'denied') {
+            this.showNotificationBanner();
+        }
+    }
+
+    // Show notification banner
+    showNotificationBanner() {
+        const banner = document.getElementById('notificationBanner');
+        banner.innerHTML = `
+            <div class="notification-banner">
+                <div class="notification-banner-content">
+                    <i class="bi bi-bell notification-banner-icon"></i>
+                    <span class="notification-banner-text">${this.t('notificationBannerText')}</span>
+                </div>
+                <div class="notification-banner-actions">
+                    <button class="notification-banner-btn primary" id="enableNotificationsBtn">
+                        ${this.t('enableNotifications')}
+                    </button>
+                    <button class="notification-banner-btn secondary" id="dismissBannerBtn">
+                        ${this.t('notNow')}
+                    </button>
+                </div>
+            </div>
+        `;
+        
+        document.getElementById('enableNotificationsBtn').addEventListener('click', () => {
+            this.hideNotificationBanner();
+            this.subscribeToNotifications();
+        });
+        
+        document.getElementById('dismissBannerBtn').addEventListener('click', () => {
+            this.hideNotificationBanner();
+        });
+    }
+
+    // Hide notification banner
+    hideNotificationBanner() {
+        const banner = document.getElementById('notificationBanner');
+        banner.innerHTML = '';
+        localStorage.setItem('notificationBannerDismissed', 'true');
     }
 
     // Convert VAPID key
@@ -665,6 +758,7 @@ class DiaryApp {
         document.getElementById('changeUsernameBtn').addEventListener('click', () => this.showChangeUsernameModal());
         document.getElementById('updateUsernameBtn').addEventListener('click', () => this.updateUsername());
         document.getElementById('cancelUsernameBtn').addEventListener('click', () => this.hideChangeUsernameModal());
+        document.getElementById('notificationsBtn').addEventListener('click', () => this.toggleNotifications());
     }
 
     // Load entries for specific month from Supabase

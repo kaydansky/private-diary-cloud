@@ -936,7 +936,7 @@ class DiaryApp {
         const currentYear = now.getFullYear();
         const currentMonth = now.getMonth();
         
-        for (let year = 1994; year <= currentYear; year++) {
+        for (let year = 1993; year <= currentYear; year++) {
             const option = document.createElement('option');
             option.value = year;
             option.textContent = year;

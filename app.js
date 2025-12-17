@@ -2222,13 +2222,44 @@ class DiaryApp {
         if (!data || data.length === 0) return;
         
         const allDates = [...new Set(data.map(entry => entry.date))].sort();
-        const currentIndex = allDates.indexOf(this.selectedDate);
-        if (currentIndex === -1) return;
         
-        const newIndex = currentIndex + direction;
-        if (newIndex < 0 || newIndex >= allDates.length) return;
+        // Check if allDates is empty/null/undefined
+        if (!allDates || allDates.length === 0) return;
         
-        const newDate = allDates[newIndex];
+        // Find the first and last dates
+        const firstDate = allDates[0];
+        const lastDate = allDates[allDates.length - 1];
+        
+        // Check if we can navigate in the requested direction
+        if (direction < 0 && this.selectedDate <= firstDate) return; // Can't go before first date
+        if (direction > 0 && this.selectedDate >= lastDate) return; // Can't go after last date
+        
+        // Find the current date index in the sorted array
+        let currentIndex = allDates.indexOf(this.selectedDate);
+        
+        // If the current date isn't in the array, find the closest date
+        if (currentIndex === -1) {
+            // Find the first date that is greater than the selected date
+            currentIndex = allDates.findIndex(date => date > this.selectedDate);
+            
+            // If we're going backwards and didn't find a date, use the last date
+            if (direction < 0 && currentIndex === -1) {
+                currentIndex = allDates.length;
+            }
+            
+            // Adjust the index for backwards navigation
+            if (direction < 0) {
+                currentIndex = currentIndex === -1 ? allDates.length - 1 : currentIndex - 1;
+            }
+        } else {
+            // Normal navigation
+            currentIndex += direction;
+        }
+        
+        // Check bounds
+        if (currentIndex < 0 || currentIndex >= allDates.length) return;
+        
+        const newDate = allDates[currentIndex];
         const [year, month] = newDate.split('-').map(Number);
         
         // Previous entry (direction < 0): current out right, new in from left
@@ -2257,6 +2288,9 @@ class DiaryApp {
             requestAnimationFrame(() => {
                 this.entryList.classList.remove(inClass);
             });
+            
+            // Update navigation button states
+            this.updateEntryNavigation();
         }, 150);
     }
 
@@ -2274,7 +2308,7 @@ class DiaryApp {
         }
         
         const allDates = [...new Set(data.map(entry => entry.date))].sort();
-        
+        console.log('All entry dates:', allDates);
         if (allDates.length <= 1) {
             this.entryNavigation.classList.add('hidden');
             return;
@@ -2282,9 +2316,22 @@ class DiaryApp {
         
         this.entryNavigation.classList.remove('hidden');
         
-        const currentIndex = allDates.indexOf(this.selectedDate);
-        this.prevEntryBtn.disabled = currentIndex <= 0;
-        this.nextEntryBtn.disabled = currentIndex >= allDates.length - 1;
+        // Check if allDates is empty/null/undefined
+        if (!allDates || allDates.length === 0) {
+            this.prevEntryBtn.disabled = true;
+            this.nextEntryBtn.disabled = true;
+            return;
+        }
+        
+        // Find the first and last dates
+        const firstDate = allDates[0];
+        const lastDate = allDates[allDates.length - 1];
+        console.log('First entry date:', firstDate);
+        console.log('Last entry date:', lastDate);
+        console.log('Selected entry date:', this.selectedDate);
+        // Compare this.selectedDate with first and last dates
+        this.prevEntryBtn.disabled = this.selectedDate <= firstDate;
+        this.nextEntryBtn.disabled = this.selectedDate >= lastDate;
     }
 }
 

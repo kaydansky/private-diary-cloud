@@ -1,5 +1,6 @@
 class DiaryApp {
     constructor() {
+        this.supabase = null;
         this.currentDate = new Date();
         this.selectedDate = null;
         this.entries = {};
@@ -88,17 +89,16 @@ class DiaryApp {
 
     // Initialize authentication
     async initAuth() {
-        if (!supabase && window.supabase && window.supabase.createClient) {
-            supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        if (window.supabase?.createClient) {
+            this.supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
         }
         
-        if (!supabase) {
+        if (!this.supabase) {
             console.error('Supabase failed to initialize');
-            alert('Failed to load app. Please refresh the page.');
             return;
         }
         
-        supabase.auth.onAuthStateChange(async (event, session) => {
+        this.supabase.auth.onAuthStateChange(async (event, session) => {
             if (event === 'PASSWORD_RECOVERY') {
                 this.user = session.user;
                 this.showUpdatePasswordModal();
@@ -113,7 +113,7 @@ class DiaryApp {
             }
         });
         
-        const { data: { session } } = await supabase.auth.getSession();
+        const { data: { session } } = await this.supabase.auth.getSession();
         this.user = session?.user || null;
         this.showMainApp();
         await this.init();
@@ -141,7 +141,7 @@ class DiaryApp {
             
             let username = this.user.user_metadata?.username;
             if (!username) {
-                const { data } = await supabase
+                const { data } = await this.supabase
                     .from('diary_entries')
                     .select('username')
                     .eq('user_id', this.user.id)
@@ -274,13 +274,13 @@ class DiaryApp {
 
     // Sign in user
     async signIn(email, password) {
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        const { error } = await this.supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
     }
 
     // Sign up user
     async signUp(email, password, username) {
-        const { data: existingUsers } = await supabase
+        const { data: existingUsers } = await this.supabase
             .from('diary_entries')
             .select('username')
             .ilike('username', username)
@@ -290,7 +290,7 @@ class DiaryApp {
             throw new Error(this.t('usernameTaken'));
         }
         
-        const { data, error } = await supabase.auth.signUp({
+        const { data, error } = await this.supabase.auth.signUp({
             email,
             password,
             options: {
@@ -312,7 +312,7 @@ class DiaryApp {
     // Sign out user
     async signOut() {
         try {
-            await supabase.auth.signOut();
+            await this.supabase.auth.signOut();
         } catch (error) {
             // Force local logout on session errors
             if (error.code === 'session_not_found') {
@@ -349,7 +349,7 @@ class DiaryApp {
         this.initEventListeners();
         
         // Find most recent entry date
-        const { data: recentEntry } = await supabase
+        const { data: recentEntry } = await this.supabase
             .from('diary_entries')
             .select('date')
             .order('date', { ascending: false })
@@ -459,7 +459,7 @@ class DiaryApp {
     // Update notification button state
     async updateNotificationButtonState() {
         const notificationsBtn = document.getElementById('notificationsBtn');
-        const { data } = await supabase
+        const { data } = await this.supabase
             .from('push_subscriptions')
             .select('id')
             .eq('user_id', this.user.id)
@@ -515,7 +515,7 @@ class DiaryApp {
                 });
             }
 
-            const { error } = await supabase
+            const { error } = await this.supabase
                 .from('push_subscriptions')
                 .insert({
                     user_id: this.user.id,
@@ -535,7 +535,7 @@ class DiaryApp {
     // Unsubscribe from notifications
     async unsubscribeFromNotifications() {
         try {
-            const { error } = await supabase
+            const { error } = await this.supabase
                 .from('push_subscriptions')
                 .delete()
                 .eq('user_id', this.user.id);
@@ -555,7 +555,7 @@ class DiaryApp {
         const hasDismissed = localStorage.getItem('notificationBannerDismissed');
         if (hasDismissed) return;
         
-        const { data } = await supabase
+        const { data } = await this.supabase
             .from('push_subscriptions')
             .select('id')
             .eq('user_id', this.user.id)
@@ -758,7 +758,7 @@ class DiaryApp {
         document.getElementById('deleteAllImagesBtn').addEventListener('click', () => this.deleteAllImages());
         document.getElementById('deleteAccountBtn').addEventListener('click', () => this.deleteAccountConfirm());
         document.getElementById('cancelAccountBtn').addEventListener('click', () => this.hideAccountModal());
-        document.getElementById('clearCacheBtn').addEventListener('click', () => this.clearCache());
+        // document.getElementById('clearCacheBtn').addEventListener('click', () => this.clearCache());
         document.addEventListener('click', () => this.hideHeaderMenu());
         this.yearSelect.addEventListener('change', () => this.resetMonthSelect());
         this.monthSelect.addEventListener('change', () => this.jumpToDate());
@@ -782,7 +782,7 @@ class DiaryApp {
         const monthKey = `${year}-${String(month + 1).padStart(2, '0')}`;
         const lastDay = new Date(year, month + 1, 0).getDate();
         
-        const { data } = await supabase
+        const { data } = await this.supabase
             .from('diary_entries')
             .select('*')
             .gte('date', `${monthKey}-01`)
@@ -821,7 +821,7 @@ class DiaryApp {
                     payload.id = entry.id;
                 }
                 
-                const { data } = await supabase
+                const { data } = await this.supabase
                     .from('diary_entries')
                     .upsert(payload)
                     .select();
@@ -843,7 +843,7 @@ class DiaryApp {
         if (this.searchTimeout) clearTimeout(this.searchTimeout);
         
         this.searchTimeout = setTimeout(async () => {
-            const { data } = await supabase
+            const { data } = await this.supabase
                 .from('diary_entries')
                 .select('*')
                 .ilike('text', `%${query.trim()}%`)
@@ -887,11 +887,11 @@ class DiaryApp {
     async saveImageToIndexedDB(blob) {
         const fileName = `${this.user.id}/${Date.now()}.jpg`;
         
-        const { data } = await supabase.storage
+        const { data } = await this.supabase.storage
             .from('diary-images')
             .upload(fileName, blob);
 
-        const { data: { publicUrl } } = supabase.storage
+        const { data: { publicUrl } } = this.supabase.storage
             .from('diary-images')
             .getPublicUrl(fileName);
 
@@ -1354,7 +1354,7 @@ class DiaryApp {
             }
         }
 
-        await supabase
+        await this.supabase
             .from('diary_entries')
             .delete()
             .eq('id', id);
@@ -1691,7 +1691,7 @@ class DiaryApp {
         const urlParts = imageUrl.split('/object/public/diary-images/');
         if (urlParts.length > 1) {
             const filePath = decodeURIComponent(urlParts[1]);
-            await supabase.storage
+            await this.supabase.storage
                 .from('diary-images')
                 .remove([filePath]);
         }
@@ -1699,13 +1699,13 @@ class DiaryApp {
 
     // Delete all user images from storage
     async deleteAllUserImages() {
-        const { data: files } = await supabase.storage
+        const { data: files } = await this.supabase.storage
             .from('diary-images')
             .list(this.user.id);
         
         if (files && files.length > 0) {
             const filePaths = files.map(file => `${this.user.id}/${file.name}`);
-            await supabase.storage
+            await this.supabase.storage
                 .from('diary-images')
                 .remove(filePaths);
         }
@@ -1722,7 +1722,7 @@ class DiaryApp {
                 delete entry.images;
             }
             
-            await supabase
+            await this.supabase
                 .from('diary_entries')
                 .update({ 
                     images: entry.images || [],
@@ -1731,7 +1731,7 @@ class DiaryApp {
                 .eq('id', entryId);
             
             if ((!entry.text || entry.text.trim() === '') && !entry.images) {
-                await supabase
+                await this.supabase
                     .from('diary_entries')
                     .delete()
                     .eq('id', entryId);
@@ -1795,7 +1795,7 @@ class DiaryApp {
         const email = this.resetEmail.value.trim();
         if (!email) return;
 
-        const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        const { error } = await this.supabase.auth.resetPasswordForEmail(email, {
             redirectTo: `${window.location.origin}/`
         });
 
@@ -1831,7 +1831,7 @@ class DiaryApp {
             return;
         }
 
-        const { error } = await supabase.auth.updateUser({ password: newPassword });
+        const { error } = await this.supabase.auth.updateUser({ password: newPassword });
 
         if (error) {
             alert(this.t('passwordUpdateError'));
@@ -1913,7 +1913,7 @@ class DiaryApp {
         }
         
         try {
-            const { data: existingUsers } = await supabase
+            const { data: existingUsers } = await this.supabase
                 .from('diary_entries')
                 .select('username')
                 .ilike('username', newUsername)
@@ -1924,7 +1924,7 @@ class DiaryApp {
                 return;
             }
             
-            const { error } = await supabase.auth.updateUser({
+            const { error } = await this.supabase.auth.updateUser({
                 data: { username: newUsername }
             });
             
@@ -1950,7 +1950,7 @@ class DiaryApp {
         
         this.hideAccountModal();
         
-        const { error } = await supabase
+        const { error } = await this.supabase
             .from('diary_entries')
             .delete()
             .eq('user_id', this.user.id);
@@ -1976,7 +1976,7 @@ class DiaryApp {
         
         await this.deleteAllUserImages();
         
-        await supabase
+        await this.supabase
             .from('diary_entries')
             .update({ images: [] })
             .eq('user_id', this.user.id);
@@ -1995,7 +1995,7 @@ class DiaryApp {
         this.hideAccountModal();
         
         try {
-            const { data: { session } } = await supabase.auth.getSession();
+            const { data: { session } } = await this.supabase.auth.getSession();
             
             await fetch(`${SUPABASE_URL}/functions/v1/delete-account`, {
                 method: 'POST',
@@ -2005,7 +2005,7 @@ class DiaryApp {
                 }
             });
             
-            await supabase.auth.signOut();
+            await this.supabase.auth.signOut();
             this.showToast(this.t('accountDeleted'));
         } catch (error) {
             // console.error('Failed to delete account:', error);
@@ -2195,7 +2195,7 @@ class DiaryApp {
     // Navigate to previous/next entry
     async navigateEntry(direction) {
         // Get all dates with entries from database
-        const { data } = await supabase
+        const { data } = await this.supabase
             .from('diary_entries')
             .select('date')
             .order('date', { ascending: true });
@@ -2244,7 +2244,7 @@ class DiaryApp {
     // Update entry navigation buttons state
     async updateEntryNavigation() {
         // Get all dates with entries from database
-        const { data } = await supabase
+        const { data } = await this.supabase
             .from('diary_entries')
             .select('date')
             .order('date', { ascending: true });

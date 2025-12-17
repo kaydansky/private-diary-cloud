@@ -7,6 +7,3 @@ const VAPID_PUBLIC_KEY = 'BCLXLvNmnL-Zs6JsqSm5D0nDU_ZZH4BfKXEne06bPrDNfbXEUdMdZ-
 
 // App share URL
 const APP_SHARE_URL = 'https://snt-tishinka.ru';
-
-// Initialize Supabase client
-var supabase = null;

@@ -982,6 +982,25 @@ class DiaryApp {
         this.currentDate = new Date(year, month, 1);
         await this.loadEntriesForMonth(year, month);
         this.renderCalendar();
+        
+        // Find the first entry in the month and focus on that date
+        let firstEntryDate = null;
+        const monthKey = `${year}-${String(month + 1).padStart(2, '0')}`;
+        
+        // Sort the dates to find the earliest one with entries
+        const sortedDates = Object.keys(this.entries)
+            .filter(date => date.startsWith(monthKey))
+            .sort();
+            
+        if (sortedDates.length > 0) {
+            firstEntryDate = sortedDates[0];
+        } else {
+            // If no entries, default to first day of month
+            firstEntryDate = this.formatDateKey(new Date(year, month, 1));
+        }
+        
+        this.selectedDate = firstEntryDate;
+        this.showEntries(this.selectedDate);
     }
 
     // Render the calendar grid

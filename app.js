@@ -2308,7 +2308,7 @@ class DiaryApp {
         }
         
         const allDates = [...new Set(data.map(entry => entry.date))].sort();
-        console.log('All entry dates:', allDates);
+        
         if (allDates.length <= 1) {
             this.entryNavigation.classList.add('hidden');
             return;
@@ -2326,9 +2326,7 @@ class DiaryApp {
         // Find the first and last dates
         const firstDate = allDates[0];
         const lastDate = allDates[allDates.length - 1];
-        console.log('First entry date:', firstDate);
-        console.log('Last entry date:', lastDate);
-        console.log('Selected entry date:', this.selectedDate);
+        
         // Compare this.selectedDate with first and last dates
         this.prevEntryBtn.disabled = this.selectedDate <= firstDate;
         this.nextEntryBtn.disabled = this.selectedDate >= lastDate;

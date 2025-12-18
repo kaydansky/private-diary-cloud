@@ -12,7 +12,7 @@ class DiaryApp {
         this.isAuthMode = true;
         this.searchQuery = '';
         this.isNotificationsEnabled = false;
-        this.pollCountdowns = new Map(); // Initialize poll countdowns map
+        //this.pollCountdowns = new Map(); // Initialize poll countdowns map
         
         this.initElements();
         this.initAuth();
@@ -1260,6 +1260,13 @@ class DiaryApp {
     // Render list of entries
     renderEntries(date) {
         const entries = this.entries[date] || [];
+
+        // Hide add poll button for past dates
+        if (this.isDateEarlierThanToday(date)) {
+            this.addPollBtn.style.display = 'none';
+        } else {
+            this.addPollBtn.style.display = 'block';
+        }
         
         // Sort entries by timestamp ascending (oldest first, newest last)
         entries.sort((a, b) => {
@@ -1288,7 +1295,7 @@ class DiaryApp {
         this.searchQuery = '';
         
         // Initialize poll countdown timers
-        this.pollCountdowns = new Map();
+        // this.pollCountdowns = new Map();
         // this.updatePollCountdowns(entries);
 
         // Add event listeners for entry actions
@@ -1329,6 +1336,17 @@ class DiaryApp {
                 this.loadEntryImages(entry.id, entry.images);
             }
         });
+    }
+
+    // Check if a date is earlier than today
+    isDateEarlierThanToday(dateString) {
+        // Get today's date in YYYY-MM-DD format (local time zone)
+        const today = new Date();
+        const todayStr = today.getFullYear() + '-' +
+            String(today.getMonth() + 1).padStart(2, '0') + '-' +
+            String(today.getDate()).padStart(2, '0');
+
+        return dateString < todayStr;
     }
 
     // Update poll countdowns in real-time
@@ -1479,7 +1497,7 @@ class DiaryApp {
         return `
             <li class="entry-item poll-item" data-poll-id="${poll.id}">
                 <div class="entry-content">
-                    ${poll.username ? `<div class="entry-author">— ${this.escapeHtml(poll.username)} &bull; ${pollTime} &bull; ${expirationDate && !isExpired ? `${this.t('pollExpDate')}${expirationDate}` : ''} ${isExpired ? `<span class="poll-expired">${this.t('pollExpired')}</span>` : ''}</div>` : ''}
+                    ${poll.username ? `<div class="entry-author">— ${this.escapeHtml(poll.username)} &bull; ${pollTime} <br> ${expirationDate && !isExpired ? `${this.t('pollExpDate')}${expirationDate}` : ''} ${isExpired ? `<span class="poll-expired">${this.t('pollExpired')}</span>` : ''}</div>` : ''}
                     <div class="poll-question">${this.escapeHtml(poll.question)}</div>
                     <div class="poll-options">
                         ${optionsHtml}

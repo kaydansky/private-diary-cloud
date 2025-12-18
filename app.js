@@ -98,6 +98,9 @@ class DiaryApp {
             console.error('Supabase failed to initialize');
             return;
         }
+
+        const { data: { session } } = await this.supabase.auth.getSession();
+        this.user = session?.user || null;
         
         this.supabase.auth.onAuthStateChange(async (event, session) => {
             if (event === 'PASSWORD_RECOVERY') {
@@ -108,14 +111,16 @@ class DiaryApp {
                 document.getElementById('authContainer').classList.add('hidden');
                 document.getElementById('mainContainer').classList.remove('hidden');
                 this.updateAuthUI();
+                // Re-render entries when user signs in to update UI
+                if (this.selectedDate) {
+                    this.renderEntries(this.selectedDate);
+                }
             } else if (event === 'SIGNED_OUT') {
                 this.user = null;
                 this.updateAuthUI();
             }
         });
         
-        const { data: { session } } = await this.supabase.auth.getSession();
-        this.user = session?.user || null;
         this.showMainApp();
         await this.init();
     }
@@ -167,6 +172,8 @@ class DiaryApp {
             if (addImageBtn) addImageBtn.style.display = 'none';
             if (addPollBtn) addPollBtn.style.display = 'none';
         }
+
+        this.toggleAddPollBtn();
     }
 
     // Show authentication form
@@ -1262,14 +1269,8 @@ class DiaryApp {
     // Render list of entries
     renderEntries(date) {
         const entries = this.entries[date] || [];
+        this.toggleAddPollBtn();
 
-        // Hide add poll button for past dates
-        if (this.isDateEarlierThanToday(date)) {
-            this.addPollBtn.style.display = 'none';
-        } else if (this.user) {
-            this.addPollBtn.style.display = 'flex';
-        }
-        
         // Sort entries by timestamp ascending (oldest first, newest last)
         entries.sort((a, b) => {
             const timeA = new Date(a.createdAt || 0).getTime();
@@ -1349,6 +1350,14 @@ class DiaryApp {
             String(today.getDate()).padStart(2, '0');
 
         return dateString < todayStr;
+    }
+
+    toggleAddPollBtn() {
+        if (this.isDateEarlierThanToday(this.selectedDate)) {
+            this.addPollBtn.style.display = 'none';
+        } else if (this.user) {
+            this.addPollBtn.style.display = 'flex';
+        }
     }
 
     // Update poll countdowns in real-time
@@ -1479,6 +1488,7 @@ class DiaryApp {
         const optionsHtml = poll.options.map(option => {
             // Check if user has voted for this option
             let checkedAttr = '';
+            
             if (this.user && poll.userVote && poll.userVote.option_id === option.id) {
                 checkedAttr = 'checked="true"';
             }
@@ -1505,10 +1515,10 @@ class DiaryApp {
                         ${optionsHtml}
                     </div>
                 </div>
-                <div class="entry-actions">
+                <div class="entry-actions">${this.user && poll.user_id === this.user.id ? `
                     <button class="menu-btn" data-entry-id="${poll.id}" data-date="${date}" data-user-id="${poll.user_id}" title="` + this.t('entryOptions') + `">
                         <i class="bi bi-three-dots-vertical"></i>
-                    </button>
+                    </button> ` : ``} 
                 </div>
             </li>
         `;

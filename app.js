@@ -163,6 +163,7 @@ class DiaryApp {
             if (notificationsBtn) notificationsBtn.style.display = 'none';
             if (addEntryBtn) addEntryBtn.style.display = 'none';
             if (addImageBtn) addImageBtn.style.display = 'none';
+            if (addPollBtn) addPollBtn.style.display = 'none';
         }
     }
 
@@ -811,7 +812,7 @@ class DiaryApp {
         
         // Poll event listeners
         this.addPollBtn.addEventListener('click', () => {
-            if (!this.user) return alert(this.t('signInToAddEntries'));
+            if (!this.user) return alert(this.t('alertSignInToCreatePoll'));
             this.showPollForm();
         });
         
@@ -928,8 +929,7 @@ class DiaryApp {
            const { data: userVotes, error: userVotesError } = await this.supabase
                 .from('poll_votes')
                 .select('poll_id, option_id')
-                .in('poll_id', pollIds)
-                .eq('user_id', this.user.id);
+                .in('poll_id', pollIds);
                 
            // Add user votes to poll entries
            if (userVotes) {
@@ -1498,6 +1498,7 @@ class DiaryApp {
     async voteOnPoll(pollId, optionId) {
         if (!this.user) {
             alert(this.t('alertSignInToVote'));
+            this.renderEntries(this.selectedDate);
             return;
         }
 

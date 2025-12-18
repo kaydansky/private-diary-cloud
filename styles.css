@@ -609,6 +609,7 @@ body {
     border: none;
     font-size: 1.3rem;
     margin-top: 4px;
+    cursor: pointer;
 }
 
 .share-day-btn:disabled {

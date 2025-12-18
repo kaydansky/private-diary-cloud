@@ -22,6 +22,12 @@ A cloud-based Progressive Web App (PWA) for sharing diary entries with the world
 - **Author Attribution**: Entries display username and timestamp
 - **Entry Management**: Edit, delete, share, and copy your own entries
 
+### 📊 Polls
+- **Create Polls**: Registered users can create polls with custom questions and multiple options
+- **Vote on Polls**: Anyone can vote on polls with real-time results
+- **View Results**: Poll results displayed with vote counts for each option
+- **Poll Management**: Poll creators can edit or delete their own polls
+
 ### 🎨 Modern Interface
 - **Responsive Design**: Works perfectly on mobile, tablet, and desktop
 - **Dark/Light Themes**: Toggle between themes with system preference detection

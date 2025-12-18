@@ -7,3 +7,6 @@ const VAPID_PUBLIC_KEY = 'BCLXLvNmnL-Zs6JsqSm5D0nDU_ZZH4BfKXEne06bPrDNfbXEUdMdZ-
 
 // App share URL
 const APP_SHARE_URL = 'https://snt-tishinka.ru';
+
+// Poll lifetime in seconds (e.g., 7 days)
+const POLL_LIFETIME_SECONDS = 7 * 24 * 60 * 60;

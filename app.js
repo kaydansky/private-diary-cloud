@@ -12,7 +12,8 @@ class DiaryApp {
         this.isAuthMode = true;
         this.searchQuery = '';
         this.isNotificationsEnabled = false;
-
+        this.pollCountdowns = new Map(); // Initialize poll countdowns map
+        
         this.initElements();
         this.initAuth();
     }
@@ -348,18 +349,40 @@ class DiaryApp {
         this.initTheme();
         this.initEventListeners();
         
-        // Find most recent entry date
-        const { data: recentEntry } = await this.supabase
-            .from('diary_entries')
-            .select('date')
-            .order('date', { ascending: false })
-            .limit(1)
-            .single();
+        // Find most recent entry date from both diary entries and polls
+        const [recentEntry, recentPoll] = await Promise.all([
+            this.supabase
+                .from('diary_entries')
+                .select('date')
+                .order('date', { ascending: false })
+                .limit(1)
+                .single(),
+            this.supabase
+                .from('polls')
+                .select('date')
+                .order('date', { ascending: false })
+                .limit(1)
+                .single()
+        ]);
         
-        if (recentEntry) {
-            const [year, month] = recentEntry.date.split('-').map(Number);
+        // Determine the most recent date between entries and polls
+        let mostRecentDate = null;
+        
+        if (recentEntry?.data?.date && recentPoll?.data?.date) {
+            // Both exist, choose the more recent one
+            mostRecentDate = recentEntry.data.date > recentPoll.data.date ? recentEntry.data.date : recentPoll.data.date;
+        } else if (recentEntry?.data?.date) {
+            // Only entry exists
+            mostRecentDate = recentEntry.data.date;
+        } else if (recentPoll?.data?.date) {
+            // Only poll exists
+            mostRecentDate = recentPoll.data.date;
+        }
+        
+        if (mostRecentDate) {
+            const [year, month] = mostRecentDate.split('-').map(Number);
             this.currentDate = new Date(year, month - 1, 1);
-            this.selectedDate = recentEntry.date;
+            this.selectedDate = mostRecentDate;
         } else {
             this.selectedDate = this.formatDateKey(new Date());
         }
@@ -494,14 +517,14 @@ class DiaryApp {
     // Subscribe to notifications
     async subscribeToNotifications() {
         if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
-            alert('Push notifications not supported on this device');
+            alert(this.t('alertPushNotificationsNotSupported'));
             return;
         }
 
         try {
             const permission = await Notification.requestPermission();
             if (permission !== 'granted') {
-                alert('Notification permission denied');
+                alert(this.t('alertNotificationsDenied'));
                 return;
             }
 
@@ -528,7 +551,7 @@ class DiaryApp {
             this.showToast(this.t('notificationsEnabled'));
         } catch (error) {
             console.error('Failed to subscribe:', error);
-            alert('Failed to enable notifications');
+            alert(this.t('alertFailedToEnableNotifications'));
         }
     }
 
@@ -546,7 +569,7 @@ class DiaryApp {
             this.showToast(this.t('notificationsDisabled'));
         } catch (error) {
             console.error('Failed to unsubscribe:', error);
-            alert('Failed to disable notifications');
+            alert(this.t('alertFailedToDisableNotifications'));
         }
     }
 
@@ -693,6 +716,14 @@ class DiaryApp {
         this.themeIcon = document.getElementById('themeIcon');
         this.signOutBtn = document.getElementById('signOutBtn');
         this.resetEmail = document.getElementById('resetEmail');
+        
+        // Poll elements
+        this.pollForm = document.getElementById('pollForm');
+        this.pollQuestion = document.getElementById('pollQuestion');
+        this.pollOptionsContainer = document.querySelector('.poll-options');
+        this.savePollBtn = document.getElementById('savePollBtn');
+        this.clearPollBtn = document.getElementById('clearPollBtn');
+        this.addPollBtn = document.getElementById('addPollBtn');
     }
 
     // Set up event listeners
@@ -748,7 +779,9 @@ class DiaryApp {
         document.getElementById('imageEntryModalBtn').addEventListener('click', () => this.handleEntryAction('image'));
         document.getElementById('editEntryModalBtn').addEventListener('click', () => this.handleEntryAction('edit'));
         document.getElementById('deleteEntryModalBtn').addEventListener('click', () => this.handleEntryAction('delete'));
+        document.getElementById('deletePollModalBtn').addEventListener('click', () => this.handleEntryAction('delete'));
         document.getElementById('cancelEntryActionsBtn').addEventListener('click', () => this.hideEntryActionsModal());
+        document.getElementById('cancelPollActionsBtn').addEventListener('click', () => this.hidePollActionsModal());
         document.getElementById('languageBtn').addEventListener('click', () => this.showLanguageModal());
         document.getElementById('cancelLanguageBtn').addEventListener('click', () => this.hideLanguageModal());
         document.querySelectorAll('#languageModal [data-lang]').forEach(btn => {
@@ -775,6 +808,22 @@ class DiaryApp {
         document.getElementById('shareAppBtn').addEventListener('click', () => this.shareApp());
         document.getElementById('howItWorksBtn').addEventListener('click', () => this.showHowItWorksModal());
         document.getElementById('closeHowItWorksBtn').addEventListener('click', () => this.hideHowItWorksModal());
+        
+        // Poll event listeners
+        this.addPollBtn.addEventListener('click', () => {
+            if (!this.user) return alert(this.t('signInToAddEntries'));
+            this.showPollForm();
+        });
+        
+        this.savePollBtn.addEventListener('click', () => this.savePoll());
+        this.clearPollBtn.addEventListener('click', () => this.hidePollForm());
+        
+        // Add event listener for dynamically adding option fields
+        this.pollOptionsContainer.addEventListener('input', (e) => {
+            if (e.target.classList.contains('poll-option-input')) {
+                this.handleOptionInput(e.target);
+            }
+        });
     }
 
     // Load entries for specific month from Supabase
@@ -782,7 +831,8 @@ class DiaryApp {
         const monthKey = `${year}-${String(month + 1).padStart(2, '0')}`;
         const lastDay = new Date(year, month + 1, 0).getDate();
         
-        const { data } = await this.supabase
+        // Load diary entries
+        const { data: entriesData } = await this.supabase
             .from('diary_entries')
             .select('*')
             .gte('date', `${monthKey}-01`)
@@ -790,7 +840,7 @@ class DiaryApp {
             .order('date', { ascending: true });
 
         this.entries = {};
-        data?.forEach(entry => {
+        entriesData?.forEach(entry => {
             if (!this.entries[entry.date]) this.entries[entry.date] = [];
             this.entries[entry.date].push({
                 id: entry.id,
@@ -799,9 +849,104 @@ class DiaryApp {
                 text: entry.text,
                 images: entry.images || [],
                 createdAt: entry.created_at,
-                updatedAt: entry.updated_at
+                updatedAt: entry.updated_at,
+                type: 'entry' // Add type to distinguish from polls
             });
         });
+        
+        // Load polls for the month
+        const { data: pollsData } = await this.supabase
+            .from('polls')
+            .select(`
+                id,
+                user_id,
+                question,
+                date,
+                created_at,
+                username,
+                poll_options (
+                    id,
+                    option_text,
+                    position
+                )
+            `)
+            .gte('date', `${monthKey}-01`)
+            .lte('date', `${monthKey}-${String(lastDay).padStart(2, '0')}`)
+            .order('date', { ascending: true });
+
+        // Add polls to entries
+        pollsData?.forEach(poll => {
+            const pollDate = poll.date;
+            if (!this.entries[pollDate]) this.entries[pollDate] = [];
+            
+            // Format options with vote counts (will be updated when votes are loaded)
+            const options = poll.poll_options.map(option => ({
+                id: option.id,
+                text: option.option_text,
+                position: option.position,
+                votes: 0 // Will be updated when votes are loaded
+            })).sort((a, b) => a.position - b.position);
+            
+            this.entries[pollDate].push({
+                id: poll.id,
+                user_id: poll.user_id,
+                question: poll.question,
+                options: options,
+                createdAt: poll.created_at,
+                username: poll.username || null,
+                type: 'poll'
+            });
+        });
+        
+        // Load vote counts for all polls
+        const pollIds = pollsData?.map(poll => poll.id) || [];
+        if (pollIds.length > 0) {
+           // Get vote counts for all options in these polls
+           const { data: voteCounts, error } = await this.supabase
+                .rpc('get_poll_vote_counts', { poll_ids: pollIds });
+               
+           // Update vote counts in the entries
+           voteCounts?.forEach(voteCount => {
+               // Find the poll and option to update
+               for (const date in this.entries) {
+                   const poll = this.entries[date].find(entry =>
+                       entry.type === 'poll' &&
+                       entry.options.some(option => option.id === voteCount.option_id)
+                   );
+                   
+                   if (poll) {
+                       const option = poll.options.find(opt => opt.id === voteCount.option_id);
+                       if (option) {
+                           option.votes = voteCount.vote_count || 0;
+                           break;
+                       }
+                   }
+               }
+           });
+           
+           // Load user votes for these polls
+           const { data: userVotes, error: userVotesError } = await this.supabase
+                .from('poll_votes')
+                .select('poll_id, option_id')
+                .in('poll_id', pollIds)
+                .eq('user_id', this.user.id);
+                
+           // Add user votes to poll entries
+           if (userVotes) {
+               userVotes.forEach(userVote => {
+                   for (const date in this.entries) {
+                       const poll = this.entries[date].find(entry =>
+                           entry.type === 'poll' && entry.id === userVote.poll_id
+                       );
+                       
+                       if (poll) {
+                           poll.userVote = userVote;
+                           break;
+                       }
+                   }
+               });
+           }
+       }
     }
 
     // Save entries to Supabase
@@ -1075,6 +1220,34 @@ class DiaryApp {
         const monthName = this.t('months')[month - 1];
         return `${weekday}, ${monthName} ${day}, ${year}`;
     }
+    
+    // Format time remaining until poll expiration
+    formatTimeRemaining(milliseconds) {
+        const seconds = Math.floor(milliseconds / 1000);
+        if (seconds <= 0) return this.t('pollExpired');
+        
+        const days = Math.floor(seconds / (24 * 60 * 60));
+        const hours = Math.floor((seconds % (24 * 60 * 60)) / (60 * 60));
+        const minutes = Math.floor((seconds % (60 * 60)) / 60);
+        const secs = seconds % 60;
+        
+        const parts = [];
+        if (days > 0) parts.push(`${days}d`);
+        if (hours > 0) parts.push(`${hours}h`);
+        if (minutes > 0) parts.push(`${minutes}m`);
+        if (secs > 0) parts.push(`${secs}s`);
+        
+        return parts.join(' ') || '0s';
+    }
+    
+    // Check if poll has expired
+    isPollExpired(poll) {
+        if (!poll.createdAt) return false;
+        const pollCreationTime = new Date(poll.createdAt).getTime();
+        const currentTime = new Date().getTime();
+        const timeElapsed = (currentTime - pollCreationTime) / 1000; // Convert to seconds
+        return timeElapsed > POLL_LIFETIME_SECONDS;
+    }
 
     // Display entries section
     showEntries(date) {
@@ -1105,38 +1278,286 @@ class DiaryApp {
         }
 
         this.entryList.innerHTML = entries.map(entry => {
-            const entryText = this.searchQuery ? this.highlightText(entry.text, this.searchQuery) : this.escapeHtml(entry.text);
-            const entryTime = entry.createdAt ? new Date(entry.createdAt).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }) : '';
-            return `
-                <li class="entry-item">
-                    <div class="entry-content">
-                        ${entry.username ? `<div class="entry-author">— ${this.escapeHtml(entry.username)} &bull; ${entryTime}</div>` : ''}
-                        <div class="entry-text">${entryText}</div>
-                        <div class="entry-images" id="images-${entry.id}"></div>
-                    </div>
-                    <div class="entry-actions">
-                        <button class="menu-btn" data-entry-id="${entry.id}" data-date="${date}" title="` + this.t('entryOptions') + `">
-                            <i class="bi bi-three-dots-vertical"></i>
-                        </button>
-                    </div>
-                </li>
-            `;
+            if (entry.type === 'poll') {
+                return this.renderPoll(entry, date);
+            } else {
+                return this.renderEntry(entry, date);
+            }
         }).join('');
         
         this.searchQuery = '';
+        
+        // Initialize poll countdown timers
+        this.pollCountdowns = new Map();
+        // this.updatePollCountdowns(entries);
 
+        // Add event listeners for entry actions
         this.entryList.querySelectorAll('.menu-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 e.stopPropagation();
-                this.showEntryActionsModal(btn.dataset.entryId, btn.dataset.date);
+                
+                // Find the entry object to check its type
+                const entryId = btn.dataset.entryId;
+                const date = btn.dataset.date;
+                const entries = this.entries[date] || [];
+                const entry = entries.find(e => e.id === entryId);
+
+                if (entry && entry.type === 'poll') {
+                    if (btn.dataset.userId !== this.user?.id) {
+                        btn.classList.add('hidden');
+                    } else {
+                        this.showPollActionsModal(entryId, date);
+                    }
+                } else {
+                    this.showEntryActionsModal(entryId, date);
+                }
             });
         });
 
+        // Add event listeners for poll voting
+        this.entryList.querySelectorAll('.poll-options input[type="radio"]').forEach(input => {
+            input.addEventListener('change', (e) => {
+                const pollId = e.target.name.replace('poll-', '');
+                const optionId = e.target.value;
+                this.voteOnPoll(pollId, optionId);
+            });
+        });
+
+        // Load images for diary entries
         entries.forEach(entry => {
-            if (entry.images && entry.images.length > 0) {
+            if (entry.type !== 'poll' && entry.images && entry.images.length > 0) {
                 this.loadEntryImages(entry.id, entry.images);
             }
         });
+    }
+
+    // Update poll countdowns in real-time
+    updatePollCountdowns(entries) {
+        // Clear any existing intervals for polls that are no longer displayed
+        // First, get all currently displayed poll IDs
+        const currentPollIds = new Set();
+        entries.forEach(entry => {
+            if (entry.type === 'poll' && entry.createdAt) {
+                currentPollIds.add(entry.id);
+            }
+        });
+        
+        // Clear intervals for polls that are no longer displayed
+        for (const [pollId, intervalId] of this.pollCountdowns.entries()) {
+            if (!currentPollIds.has(pollId)) {
+                clearInterval(intervalId);
+                this.pollCountdowns.delete(pollId);
+            }
+        }
+        
+        // Set up intervals for polls that are currently displayed
+        entries.forEach(entry => {
+            if (entry.type === 'poll' && entry.createdAt) {
+                const pollElement = document.querySelector(`.entry-item[data-poll-id="${entry.id}"]`);
+                if (pollElement) {
+                    // Clear any existing interval for this poll if it's already expired
+                    const isExpired = this.isPollExpired(entry);
+                    if (this.pollCountdowns.has(entry.id) && isExpired) {
+                        clearInterval(this.pollCountdowns.get(entry.id));
+                        this.pollCountdowns.delete(entry.id);
+                    }
+                    
+                    // Set up new interval to update the countdown if not already expired
+                    if (!isExpired && !this.pollCountdowns.has(entry.id)) {
+                        const intervalId = setInterval(() => {
+                            const isExpired = this.isPollExpired(entry);
+                            const authorElement = pollElement.querySelector('.entry-author');
+                            
+                            if (!authorElement) return;
+                            
+                            if (isExpired) {
+                                // Poll has expired, update the display
+                                const timeElements = authorElement.textContent.split(' &bull; ');
+                                if (timeElements.length >= 3) {
+                                    timeElements[2] = `${this.t('pollExpired')}`;
+                                    authorElement.innerHTML = timeElements.join(' &bull; ') + ` <span class="poll-expired">(${this.t('pollExpired')})</span>`;
+                                }
+                                // Clear the interval since the poll is expired
+                                clearInterval(intervalId);
+                                this.pollCountdowns.delete(entry.id);
+                            } else {
+                                // Update the time remaining
+                                const pollCreationTime = new Date(entry.createdAt).getTime();
+                                const expirationTime = pollCreationTime + (POLL_LIFETIME_SECONDS * 1000);
+                                const currentTime = new Date().getTime();
+                                const timeLeft = expirationTime - currentTime;
+                                const timeRemaining = this.formatTimeRemaining(timeLeft);
+                                
+                                const timeElements = authorElement.textContent.split(' &bull; ');
+                                if (timeElements.length >= 3) {
+                                    timeElements[2] = timeRemaining;
+                                    authorElement.innerHTML = timeElements.join(' &bull; ');
+                                }
+                            }
+                        }, 1000); // Update every second
+                        
+                        // Store the interval ID
+                        this.pollCountdowns.set(entry.id, intervalId);
+                    } else if (isExpired) {
+                        // Update the display immediately for expired polls
+                        const authorElement = pollElement.querySelector('.entry-author');
+                        if (authorElement) {
+                            const timeElements = authorElement.textContent.split(' &bull; ');
+                            if (timeElements.length >= 3) {
+                                timeElements[2] = `${this.t('pollExpired')}`;
+                                authorElement.innerHTML = timeElements.join(' &bull; ') + ` <span class="poll-expired">(${this.t('pollExpired')})</span>`;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    // Render a diary entry
+    renderEntry(entry, date) {
+        const entryText = this.searchQuery ? this.highlightText(entry.text, this.searchQuery) : this.escapeHtml(entry.text);
+        const entryTime = entry.createdAt ? new Date(entry.createdAt).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }) : '';
+        return `
+            <li class="entry-item">
+                <div class="entry-content">
+                    ${entry.username ? `<div class="entry-author">— ${this.escapeHtml(entry.username)} &bull; ${entryTime}</div>` : ''}
+                    <div class="entry-text">${entryText}</div>
+                    <div class="entry-images" id="images-${entry.id}"></div>
+                </div>
+                <div class="entry-actions">
+                    <button class="menu-btn" data-entry-id="${entry.id}" data-date="${date}" title="` + this.t('entryOptions') + `">
+                        <i class="bi bi-three-dots-vertical"></i>
+                    </button>
+                </div>
+            </li>
+        `;
+    }
+
+    // Render a poll
+    renderPoll(poll, date) {
+        const pollTime = poll.createdAt ? new Date(poll.createdAt).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }) : '';
+        
+        // Check if poll has expired
+        const isExpired = this.isPollExpired(poll);
+        
+        // Calculate expiration date if poll has creation time
+        let expirationDate = '';
+        if (poll.createdAt) {
+            const pollCreationTime = new Date(poll.createdAt).getTime();
+            const expirationTime = pollCreationTime + (POLL_LIFETIME_SECONDS * 1000);
+            const expirationDateObj = new Date(expirationTime);
+            // Format as DD-MM-YYYY HH:MM
+            const day = String(expirationDateObj.getDate()).padStart(2, '0');
+            const month = String(expirationDateObj.getMonth() + 1).padStart(2, '0');
+            const year = expirationDateObj.getFullYear();
+            const hours = String(expirationDateObj.getHours()).padStart(2, '0');
+            const minutes = String(expirationDateObj.getMinutes()).padStart(2, '0');
+            expirationDate = `${day}-${month}-${year} ${hours}:${minutes}`;
+        }
+        
+        const optionsHtml = poll.options.map(option => {
+            // Check if user has voted for this option
+            let checkedAttr = '';
+            if (this.user && poll.userVote && poll.userVote.option_id === option.id) {
+                checkedAttr = 'checked="true"';
+            }
+            
+            // Add disabled attribute if poll is expired
+            const disabledAttr = isExpired ? 'disabled' : '';
+            
+            return `
+            <div class="poll-option">
+                <label class="poll-option-label">
+                    <input type="radio" name="poll-${poll.id}" value="${option.id}" ${checkedAttr} ${disabledAttr}>
+                    <span class="poll-option-text">${this.escapeHtml(option.text)}</span>
+                    <span class="poll-vote-count">${option.votes}</span>
+                </label>
+            </div>
+        `}).join('');
+        
+        return `
+            <li class="entry-item poll-item" data-poll-id="${poll.id}">
+                <div class="entry-content">
+                    ${poll.username ? `<div class="entry-author">— ${this.escapeHtml(poll.username)} &bull; ${pollTime} &bull; ${expirationDate && !isExpired ? `${this.t('pollExpDate')}${expirationDate}` : ''} ${isExpired ? `<span class="poll-expired">${this.t('pollExpired')}</span>` : ''}</div>` : ''}
+                    <div class="poll-question">${this.escapeHtml(poll.question)}</div>
+                    <div class="poll-options">
+                        ${optionsHtml}
+                    </div>
+                </div>
+                <div class="entry-actions">
+                    <button class="menu-btn" data-entry-id="${poll.id}" data-date="${date}" data-user-id="${poll.user_id}" title="` + this.t('entryOptions') + `">
+                        <i class="bi bi-three-dots-vertical"></i>
+                    </button>
+                </div>
+            </li>
+        `;
+    }
+
+    // Vote on a poll
+    async voteOnPoll(pollId, optionId) {
+        if (!this.user) {
+            alert(this.t('alertSignInToVote'));
+            return;
+        }
+
+        try {
+            // Check if user has already voted
+            const { data: existingVote } = await this.supabase
+                .from('poll_votes')
+                .select('id')
+                .eq('poll_id', pollId)
+                .eq('user_id', this.user.id)
+                .maybeSingle();
+
+            if (existingVote) {
+                alert(this.t('alertAlreadyVoted'));
+                // Re-render to show the current state
+                this.renderEntries(this.selectedDate);
+                return;
+            }
+
+            if (!confirm(this.t('confirmVote'))) {
+                // Re-render to reset the selected radio button
+                this.renderEntries(this.selectedDate);
+                return;
+            }
+
+            // Insert the vote
+            const { error } = await this.supabase
+                .from('poll_votes')
+                .insert({
+                    poll_id: pollId,
+                    option_id: optionId,
+                    user_id: this.user.id
+                });
+
+            if (error) throw error;
+
+            // Update local entries data with the user's vote
+            const entries = this.entries[this.selectedDate] || [];
+            const poll = entries.find(entry => entry.type === 'poll' && entry.id === pollId);
+            
+            if (poll) {
+                // Add user vote to the poll object
+                poll.userVote = {
+                    poll_id: pollId,
+                    option_id: optionId
+                };
+                
+                // Update vote count for the selected option
+                const option = poll.options.find(opt => opt.id === optionId);
+                if (option) {
+                    option.votes = (option.votes || 0) + 1;
+                }
+            }
+
+            // Update the poll display with new vote count
+            this.renderEntries(this.selectedDate);
+        } catch (error) {
+            console.error('Error voting on poll:', error);
+            alert(this.t('alertFailedToVote'));
+        }
     }
 
     // Show entry form
@@ -1145,6 +1566,7 @@ class DiaryApp {
         this.autoSaveEntryId = null;
         this.entryForm.classList.remove('hidden');
         this.entryTextarea.focus();
+        this.pollForm.classList.add('hidden');
     }
 
     // Hide entry form
@@ -1156,7 +1578,160 @@ class DiaryApp {
         this.autoSaveEntryId = null;
     }
 
+    // Show poll form
+    showPollForm() {
+        this.pollForm.classList.remove('hidden');
+        this.pollQuestion.focus();
+        this.entryForm.classList.add('hidden');
+    }
 
+    // Handle option input for poll
+    handleOptionInput(target) {
+        const optionsContainer = target.closest('.poll-options');
+        const optionInputs = optionsContainer.querySelectorAll('.poll-option-input');
+        const lastInput = optionInputs[optionInputs.length - 1];
+        
+        // If the last input has text and it's the one being typed in, add a new input
+        if (lastInput.value.trim() !== '' && target === lastInput) {
+            const newOption = document.createElement('div');
+            newOption.className = 'poll-option';
+            newOption.innerHTML = '<input type="text" class="poll-option-input" placeholder="' + (optionInputs.length + 1) + '" maxlength="100">';
+            optionsContainer.appendChild(newOption);
+        }
+        
+        // If the target is empty and not the last input, remove the last empty input
+        if (target.value.trim() === '' && target !== lastInput && optionInputs.length > 2) {
+            const emptyInputs = Array.from(optionInputs).filter(input => input.value.trim() === '');
+            if (emptyInputs.length > 1) {
+                const lastEmpty = emptyInputs[emptyInputs.length - 1];
+                if (lastEmpty !== optionInputs[0] && lastEmpty !== optionInputs[1]) {
+                    lastEmpty.parentElement.remove();
+                }
+            }
+        }
+    }
+
+    // Hide poll form
+    hidePollForm() {
+        this.pollForm.classList.add('hidden');
+        this.pollQuestion.value = '';
+        
+        // Clear all option inputs except the first two
+        const optionInputs = this.pollOptionsContainer.querySelectorAll('.poll-option-input');
+        for (let i = 0; i < optionInputs.length; i++) {
+            if (i < 2) {
+                optionInputs[i].value = '';
+            } else {
+                optionInputs[i].closest('.poll-option').remove();
+            }
+        }
+    }
+
+
+    // Save poll to Supabase
+    async savePoll() {
+        const question = this.pollQuestion.value.trim();
+        const optionInputs = this.pollOptionsContainer.querySelectorAll('.poll-option-input');
+        
+        // Validate question (max 200 characters)
+        if (!question) {
+            alert(this.t('alertNoQuestion'));
+            return;
+        }
+        
+        if (question.length > 200) {
+            alert(this.t('alertTooLongQuestion'));
+            return;
+        }
+        
+        // Collect and validate options (max 100 characters each, at least 2 non-empty options)
+        const options = [];
+        for (const input of optionInputs) {
+            const value = input.value.trim();
+            if (value) {
+                if (value.length > 100) {
+                    alert(this.t('alertTooLongOption'));
+                    return;
+                }
+                options.push(value);
+            }
+        }
+        
+        if (options.length < 2) {
+            alert(this.t('alertMinOptions'));
+            return;
+        }
+        
+        // Disable save button and show loading state
+        this.savePollBtn.disabled = true;
+        this.savePollBtn.classList.add('spinning');
+        
+        try {
+            // Insert poll into polls table
+            const { data: pollData, error: pollError } = await this.supabase
+                .from('polls')
+                .insert({
+                    question: question,
+                    user_id: this.user.id,
+                    date: this.selectedDate,
+                    username: this.user.user_metadata?.username || null,
+                })
+                .select()
+                .single();
+            
+            if (pollError) throw pollError;
+            
+            // Insert options into poll_options table
+            const optionsData = options.map((option, index) => ({
+                poll_id: pollData.id,
+                option_text: option,
+                position: index + 1
+            }));
+            
+            const { data: optionsInsertData, error: optionsError } = await this.supabase
+                .from('poll_options')
+                .insert(optionsData)
+                .select();
+            
+            if (optionsError) throw optionsError;
+            
+            // Add the new poll to the entries object so it appears immediately
+            const newPoll = {
+                id: pollData.id,
+                user_id: this.user.id,
+                question: question,
+                options: optionsInsertData.map(optionData => ({
+                    id: optionData.id, // Use actual database ID
+                    text: optionData.option_text,
+                    position: optionData.position,
+                    votes: 0
+                })),
+                createdAt: new Date().toISOString(),
+                username: this.user.user_metadata?.username || null,
+                type: 'poll'
+            };
+            
+            // Initialize the date array if it doesn't exist
+            if (!this.entries[this.selectedDate]) {
+                this.entries[this.selectedDate] = [];
+            }
+            
+            // Add the new poll to the entries
+            this.entries[this.selectedDate].push(newPoll);
+            
+            // Reset form and hide it
+            this.hidePollForm();
+            this.showToast(this.t('pollCreated'));
+            this.renderEntries(this.selectedDate);
+        } catch (error) {
+            console.error('Error saving poll:', error);
+            alert(this.t('alertFailedToCreatePoll'));
+        } finally {
+            // Re-enable save button and remove loading state
+            this.savePollBtn.disabled = false;
+            this.savePollBtn.classList.remove('spinning');
+        }
+    }
 
     // Finish editing entry
     doneEntry() {
@@ -1296,14 +1871,32 @@ class DiaryApp {
         document.getElementById('entryActionsModal').classList.add('show');
     }
 
+    showPollActionsModal(pollId, date) {
+        const entries = this.entries[date] || [];
+        const poll = entries.find(e => e.id === pollId);
+        
+        // Only show delete for own polls
+        const isOwnPoll = this.user && poll && poll.user_id === this.user.id;
+        document.getElementById('deletePollModalBtn').style.display = isOwnPoll ? '' : 'none';
+        
+        this.currentEntryId = pollId;
+        this.currentEntryDate = date;
+        document.getElementById('pollActionsModal').classList.add('show');
+    }
+
     // Hide entry actions modal
     hideEntryActionsModal() {
         document.getElementById('entryActionsModal').classList.remove('show');
     }
 
+    hidePollActionsModal() {
+        document.getElementById('pollActionsModal').classList.remove('show');
+    }
+
     // Handle entry action
     handleEntryAction(action) {
         this.hideEntryActionsModal();
+        this.hidePollActionsModal();
         
         const entries = this.entries[this.currentEntryDate] || [];
         const entry = entries.find(e => e.id === this.currentEntryId);
@@ -1367,16 +1960,26 @@ class DiaryApp {
         if (!confirm(this.t('deleteEntryConfirm'))) return;
 
         const entry = this.entries[this.selectedDate].find(e => e.id === id);
-        if (entry && entry.images) {
-            for (const imageUrl of entry.images) {
-                await this.deleteImageFromStorage(imageUrl);
+        
+        if (entry.type === 'poll') {
+            // Delete poll and related data
+            await this.supabase
+                .from('polls')
+                .delete()
+                .eq('id', id);
+        } else {
+            // Handle diary entry deletion (existing behavior)
+            if (entry && entry.images) {
+                for (const imageUrl of entry.images) {
+                    await this.deleteImageFromStorage(imageUrl);
+                }
             }
-        }
 
-        await this.supabase
-            .from('diary_entries')
-            .delete()
-            .eq('id', id);
+            await this.supabase
+                .from('diary_entries')
+                .delete()
+                .eq('id', id);
+        }
 
         await this.loadEntriesForMonth(this.currentDate.getFullYear(), this.currentDate.getMonth());
         this.renderEntries(this.selectedDate);
@@ -1951,7 +2554,7 @@ class DiaryApp {
             
             this.user.user_metadata.username = newUsername;
             this.updateAuthUI();
-            alert('Username updated successfully!');
+            alert(this.t('alertUsernameChanged'));
             this.hideChangeUsernameModal();
             
             if (this.selectedDate) {
@@ -1959,7 +2562,7 @@ class DiaryApp {
             }
         } catch (error) {
             console.error('Error updating username:', error);
-            alert('Error updating username: ' + error.message);
+            alert(this.t('alertUsernameChangeFailed') + error.message);
         }
     }
 
@@ -2211,17 +2814,40 @@ class DiaryApp {
         }, { passive: true });
     }
 
-    // Navigate to previous/next entry
-    async navigateEntry(direction) {
-        // Get all dates with entries from database
-        const { data } = await this.supabase
+    // Get all dates with entries from database
+    async getAllEntryDates() {
+        // Get dates from diary entries
+        const { data: entryData } = await this.supabase
             .from('diary_entries')
             .select('date')
             .order('date', { ascending: true });
         
-        if (!data || data.length === 0) return;
+        // Get dates from polls
+        const { data: pollData } = await this.supabase
+            .from('polls')
+            .select('date')
+            .order('date', { ascending: true });
         
-        const allDates = [...new Set(data.map(entry => entry.date))].sort();
+        // Combine dates from both sources
+        const allDates = [];
+        
+        if (entryData && entryData.length > 0) {
+            allDates.push(...entryData.map(entry => entry.date));
+        }
+        
+        if (pollData && pollData.length > 0) {
+            allDates.push(...pollData.map(poll => poll.date));
+        }
+        
+        // Remove duplicates and sort
+        return [...new Set(allDates)].sort();
+    }
+
+    // Navigate to previous/next entry
+    async navigateEntry(direction) {
+        const allDates = await this.getAllEntryDates();
+        
+        if (allDates.length === 0) return;
         
         // Check if allDates is empty/null/undefined
         if (!allDates || allDates.length === 0) return;
@@ -2296,18 +2922,12 @@ class DiaryApp {
 
     // Update entry navigation buttons state
     async updateEntryNavigation() {
-        // Get all dates with entries from database
-        const { data } = await this.supabase
-            .from('diary_entries')
-            .select('date')
-            .order('date', { ascending: true });
+        const allDates = await this.getAllEntryDates();
         
-        if (!data || data.length === 0) {
+        if (allDates.length === 0) {
             this.entryNavigation.classList.add('hidden');
             return;
         }
-        
-        const allDates = [...new Set(data.map(entry => entry.date))].sort();
         
         if (allDates.length <= 1) {
             this.entryNavigation.classList.add('hidden');

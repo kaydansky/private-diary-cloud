@@ -113,19 +113,43 @@
 
             <div class="entries-section hidden" id="entriesSection">
                 <div class="entries-header">
-                    <h3 id="selectedDateTitle"></h3>
+                    <h3>
+                        <div class="selected-date-title">
+                            <span id="selectedDateTitle"></span>
+                            <button class="share-day-btn" id="shareDayBtn" title="Переслать все сообщения за этот день"><i class="bi bi-share-fill"></i></button>
+                        </div>
+                    </h3>
                     <div class="entries-buttons">
-                        <button class="add-entry-btn" id="addEntryBtn"><i class="bi bi-calendar-plus"></i> <span data-i18n="addEntry">Entry</span></button>
-                        <button class="add-image-btn" id="addImageBtn"><i class="bi bi-image"></i> <span data-i18n="addImage">Image</span></button>
-                        <button class="share-day-btn" id="shareDayBtn" title="Переслать все сообщения за этот день"><i class="bi bi-share-fill"></i></button>
+                        <button class="add-entry-btn" id="addEntryBtn"><i class="bi bi-calendar-plus"></i> <span data-i18n="addEntry">Запись</span></button>
+                        <button class="add-image-btn" id="addImageBtn"><i class="bi bi-image"></i> <span data-i18n="addImage">Фото</span></button>
+                        <button class="add-image-btn" id="addPollBtn"><i class="bi bi-bar-chart-line-fill"></i> <span data-i18n="poll">Опрос</span></button>
                     </div>
                 </div>
 
                 <div class="entry-form hidden" id="entryForm">
                     <textarea class="entry-textarea" id="entryTextarea" placeholder="Write your thoughts..." data-i18n-placeholder="writeThoughts" maxlength="1000"></textarea>
                     <div class="form-actions">
-                        <button class="save-btn" id="saveEntryBtn" data-i18n="done">Done (Ctrl + Enter)</button>
+                        <button class="save-btn" id="saveEntryBtn" data-i18n="done">Done</button>
                         <button class="clear-btn" id="clearEntryBtn" data-i18n="undo">Undo</button>
+                    </div>
+                </div>
+
+                <div class="entry-form hidden" id="pollForm">
+                    <div class="poll-question">
+                        <input type="text" id="pollQuestion" class="poll-input" data-i18n-placeholder="pollQuestion" placeholder="Enter your poll question" maxlength="200">
+                    </div>
+                    <div class="poll-options">
+                        <h4 style="opacity: 0.9;" data-i18n="pollOptionsTitle"></h4>
+                        <div class="poll-option">
+                            <input type="text" class="poll-option-input" placeholder="1" maxlength="100">
+                        </div>
+                        <div class="poll-option">
+                            <input type="text" class="poll-option-input" placeholder="2" maxlength="100">
+                        </div>
+                    </div>
+                    <div class="form-actions">
+                        <button class="save-btn" id="savePollBtn" data-i18n="done">Готово</button>
+                        <button class="clear-btn" id="clearPollBtn" data-i18n="cancel">Отмена</button>
                     </div>
                 </div>
 
@@ -208,6 +232,16 @@
                 <i class="bi bi-trash"></i> <span data-i18n="delete">Delete</span>
             </button>
             <button class="image-action-btn cancel" id="cancelEntryActionsBtn" data-i18n="cancel">Cancel</button>
+        </div>
+    </div>
+
+    <div class="image-actions-modal" id="pollActionsModal">
+        <div class="image-actions-content">
+            <h3 data-i18n="pollOptions">Poll Options</h3>
+            <button class="image-action-btn delete" id="deletePollModalBtn">
+                <i class="bi bi-trash"></i> <span data-i18n="delete">Delete</span>
+            </button>
+            <button class="image-action-btn cancel" id="cancelPollActionsBtn" data-i18n="cancel">Cancel</button>
         </div>
     </div>
 

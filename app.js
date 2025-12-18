@@ -127,6 +127,7 @@ class DiaryApp {
         const accountBtn = document.getElementById('accountBtn');
         const notificationsBtn = document.getElementById('notificationsBtn');
         const addEntryBtn = document.getElementById('addEntryBtn');
+        const addPollBtn = document.getElementById('addPollBtn');
         const addImageBtn = document.getElementById('addImageBtn');
         
         if (this.user) {
@@ -136,6 +137,7 @@ class DiaryApp {
             if (accountBtn) accountBtn.style.display = 'block';
             if (notificationsBtn) notificationsBtn.style.display = 'block';
             if (addEntryBtn) addEntryBtn.style.display = 'flex';
+            if (addPollBtn) addPollBtn.style.display = 'flex';
             if (addImageBtn) addImageBtn.style.display = 'flex';
             
             if (notificationsBtn) await this.updateNotificationButtonState();
@@ -1264,8 +1266,8 @@ class DiaryApp {
         // Hide add poll button for past dates
         if (this.isDateEarlierThanToday(date)) {
             this.addPollBtn.style.display = 'none';
-        } else {
-            this.addPollBtn.style.display = 'block';
+        } else if (this.user) {
+            this.addPollBtn.style.display = 'flex';
         }
         
         // Sort entries by timestamp ascending (oldest first, newest last)

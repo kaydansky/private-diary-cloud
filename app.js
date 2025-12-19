@@ -1488,8 +1488,8 @@ class DiaryApp {
         const optionsHtml = poll.options.map(option => {
             // Check if user has voted for this option
             let checkedAttr = '';
-            
-            if (this.user && poll.userVote && poll.userVote.option_id === option.id) {
+
+            if (this.user && this.user.id === poll.user_id && poll.userVote && poll.userVote.option_id === option.id) {
                 checkedAttr = 'checked="true"';
             }
             

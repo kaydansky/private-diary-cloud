@@ -410,7 +410,7 @@ const translations = {
     },
     ru: {
         appTitle: 'СНТ Тишинка',
-        appSubtitle: 'Летопись жизни СНТ',
+        appSubtitle: 'Летопись СНТ',
         searchPlaceholder: 'Поиск среди записей...',
         noResults: 'Ничего не найдено',
         prevMonth: '← Назад',

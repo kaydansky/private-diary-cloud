@@ -133,7 +133,9 @@ const translations = {
         alertFailedToEnableNotifications: 'Failed to enable notifications. Please try again.',
         alertFailedToDisableNotifications: 'Failed to disable notifications. Please try again.',
         pollExpired: 'Expired',
-        pollExpDate: 'Expires on '
+        pollExpDate: 'Expires on ',
+        usernameInvalid: 'Username must contain only letters and numbers and be 3 to 20 characters long',
+        usernameTooLong: 'Username must be 20 characters or less',
     },
     fr: {
         appTitle: 'Journal Privé Cloud',
@@ -269,7 +271,9 @@ const translations = {
         alertFailedToEnableNotifications: 'Échec de l\'activation des notifications. Veuillez réessayer.',
         alertFailedToDisableNotifications: 'Échec de la désactivation des notifications. Veuillez réessayer.',
         pollExpired: 'Expiré',
-        pollExpDate: 'Expire le '
+        pollExpDate: 'Expire le ',
+        usernameInvalid: "Le nom d'utilisateur ne doit contenir que des lettres et des chiffres de 3 à 20 caractères",
+        usernameTooLong: "Le nom d'utilisateur doit contenir 20 caractères ou moins"
     },
     de: {
         appTitle: 'Tagebuch Cloud',
@@ -406,7 +410,9 @@ const translations = {
         alertFailedToGetNotifications: 'Fehler beim Abrufen der Benachrichtigungen. Bitte versuchen Sie es erneut.',
         alertFailedToSendNotification: 'Fehler beim Senden der Benachrichtigung. Bitte versuchen Sie es erneut.',
         pollExpired: 'Abgelaufen',
-        pollExpDate: 'Läuft ab am '
+        pollExpDate: 'Läuft ab am ',
+        usernameInvalid: 'Benutzername darf nur Buchstaben und Zahlen enthalten und 3 bis 20 Zeichen lang sein',
+        usernameTooLong: 'Benutzername darf maximal 20 Zeichen lang sein'
     },
     ru: {
         appTitle: 'СНТ Тишинка',
@@ -540,6 +546,8 @@ const translations = {
         alertFailedToEnableNotifications: 'Не удалось включить уведомления. Пожалуйста, попробуйте снова.',
         alertFailedToDisableNotifications: 'Не удалось отключить уведомления. Пожалуйста, попробуйте снова.',
         pollExpired: 'Истёк',
-        pollExpDate: 'Истекает '
+        pollExpDate: 'Истекает ',
+        usernameInvalid: 'Имя пользователя может содержать только буквы и цифры от 3 до 20 символов',
+        usernameTooLong: 'Имя пользователя должно быть не более 20 символов'
     }
 };

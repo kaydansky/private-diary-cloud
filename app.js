@@ -251,7 +251,7 @@ class DiaryApp {
             e.preventDefault();
             const email = document.getElementById('authEmail').value;
             const password = document.getElementById('authPassword').value;
-            const username = usernameInput.value;
+            const username = usernameInput.value.trim();
             const isLogin = loginTab.classList.contains('active');
 
             if (!isLogin) {
@@ -260,7 +260,7 @@ class DiaryApp {
                     this.showAuthError(this.t('passwordsDoNotMatch'));
                     return;
                 }
-                if (!/^[a-zA-Zа-яА-Я0-9]+$/.test(username)) {
+                if (!/^[a-zA-Zа-яА-Я0-9]+$/.test(username) || username.length < 3) {
                     this.showAuthError(this.t('usernameInvalid'));
                     return;
                 }

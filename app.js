@@ -125,6 +125,51 @@ class DiaryApp {
         await this.init();
     }
 
+    async broadcast() {
+        if (!this.user) return;
+
+        const channel = this.supabase.channel('diary:entries', {config: { private: true }});
+
+        // handle incoming broadcasts
+        channel.on('broadcast', { event: 'INSERT' }, (payload) => {
+            // payload.payload contains the NEW row (the broadcast_changes wrapper)
+            const data = payload?.payload;
+            // console.log('New diary entry received', data);
+            if (this.user.id === data.record.user_id) return;
+            
+            // Update UI: prepend or append new entry
+            const newEntry = {
+                id: data.record.id,
+                user_id: data.record.user_id,
+                username: data.record.username,
+                text: data.record.text,
+                type: 'entry',
+                createdAt: data.record.created_at
+            };
+            this.entries[this.selectedDate].push(newEntry);
+            this.showEntries(this.selectedDate);
+        });
+
+        channel.on('broadcast', { event: 'DELETE' }, (payload) => {
+            const data = payload?.payload;
+            // console.log('Diary entry deleted', data);
+            const deletedId = data.old_record.id;
+            
+            // Remove from entries array for that date
+            this.entries[this.selectedDate] = this.entries[this.selectedDate].filter(e => e.id !== deletedId);
+            this.showEntries(this.selectedDate);
+        });
+        
+        // subscribe
+        channel.subscribe((status) => {
+            if (status === 'SUBSCRIBED') {
+                console.log('Subscribed to diary realtime channel');
+            } else {
+                console.log('Channel status:', status);
+            }
+        });
+    }
+
     // Update auth UI
     async updateAuthUI() {
         const signInBtn = document.getElementById('signInBtn');
@@ -406,6 +451,7 @@ class DiaryApp {
         
         this.handleNotificationClick();
         this.showEntries(this.selectedDate);
+        this.broadcast();
     }
 
     // Handle notification click from service worker

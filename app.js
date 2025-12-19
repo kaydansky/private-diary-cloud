@@ -860,6 +860,7 @@ class DiaryApp {
                 images: entry.images || [],
                 createdAt: entry.created_at,
                 updatedAt: entry.updated_at,
+                originalText: entry.text, // Store original text for comparison
                 type: 'entry' // Add type to distinguish from polls
             });
         });
@@ -960,30 +961,48 @@ class DiaryApp {
 
     // Save entries to Supabase
     async saveEntries() {
-        for (const [date, entries] of Object.entries(this.entries)) {
-            for (const entry of entries) {
-                const payload = {
-                    user_id: this.user.id,
-                    username: this.user.user_metadata?.username || null,
-                    date: date,
-                    text: entry.text,
-                    images: entry.images,
-                    updated_at: new Date().toISOString()
-                };
+        // Only save entries for the current selected date
+        const entries = this.entries[this.selectedDate];
+        if (!entries || entries.length === 0) return;
+
+        // Save only entries that have been modified (new or edited)
+        for (const entry of entries) {
+            if (entry.type !== 'entry') continue; // Skip polls
+
+            const payload = {
+                user_id: this.user.id,
+                username: this.user.user_metadata?.username || null,
+                date: this.selectedDate,
+                text: entry.text,
+                images: entry.images || [],
+                updated_at: new Date().toISOString()
+            };
+
+            // If entry has a UUID (contains hyphens), it's an existing entry from database
+            if (entry.id && entry.id.includes('-')) {
+                payload.id = entry.id;
                 
-                if (entry.id && entry.id.includes('-')) {
-                    payload.id = entry.id;
-                }
-                
-                const { data } = await this.supabase
-                    .from('diary_entries')
-                    .upsert(payload)
-                    .select();
-                
-                if (data && data[0] && !entry.id.includes('-')) {
-                    entry.id = data[0].id;
+                // For existing entries, check if they've been modified
+                // Compare the current text with what was originally loaded
+                // If there's no original text stored or text is the same, skip saving
+                if (entry.originalText !== undefined && entry.text === entry.originalText) {
+                    // Entry hasn't been modified, skip saving
+                    continue;
                 }
             }
+            
+            const { data } = await this.supabase
+                .from('diary_entries')
+                .upsert(payload)
+                .select();
+            
+            // Update the entry ID if it was a new entry
+            if (data && data[0] && (!entry.id || !entry.id.includes('-'))) {
+                entry.id = data[0].id;
+            }
+            
+            // Update originalText after successful save
+            entry.originalText = entry.text;
         }
     }
 
@@ -1805,6 +1824,8 @@ class DiaryApp {
                 user_id: this.user.id,
                 username: this.user.user_metadata?.username || null,
                 text: text,
+                type: 'entry',
+                originalText: text, // Store original text for new entries
                 createdAt: new Date().toISOString()
             };
             this.entries[this.selectedDate].push(newEntry);
@@ -1861,8 +1882,8 @@ class DiaryApp {
         if (this.editingEntryId) {
             const entry = this.entries[this.selectedDate].find(e => e.id === this.editingEntryId);
             if (entry) {
-                entry.text = this.originalText;
-                if (this.originalText.trim() === '') {
+                entry.text = entry.originalText || ''; // Restore to original text
+                if (entry.text.trim() === '') {
                     this.entries[this.selectedDate] = this.entries[this.selectedDate].filter(e => e.id !== this.editingEntryId);
                     if (this.entries[this.selectedDate].length === 0) {
                         delete this.entries[this.selectedDate];

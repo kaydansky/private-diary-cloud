@@ -416,7 +416,7 @@ const translations = {
     },
     ru: {
         appTitle: 'СНТ Тишинка',
-        appSubtitle: 'Летопись СНТ',
+        appSubtitle: 'Блог. Стенгазета. Летопись. Чат.',
         searchPlaceholder: 'Поиск среди записей...',
         noResults: 'Ничего не найдено',
         prevMonth: '← Назад',

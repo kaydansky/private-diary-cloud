@@ -699,6 +699,7 @@ class DiaryApp {
 
     // Send push notification to all users except author
     async sendPushNotification(type, entryId = null) {
+        // return;
         if (!this.user) return;
 
         try {
@@ -1666,8 +1667,11 @@ class DiaryApp {
     }
 
     // Hide entry form
-    hideEntryForm() {
-        this.entryForm.classList.add('hidden');
+    clearEntryForm(hideForm = true) {
+        if (hideForm) {
+            this.entryForm.classList.add('hidden');
+        }
+        
         this.entryTextarea.value = '';
         this.editingEntryId = null;
         this.originalText = '';
@@ -1833,14 +1837,14 @@ class DiaryApp {
     doneEntry() {
         const text = this.entryTextarea.value.trim();
         if (text) {
-            this.saveEntry(true);
+            this.saveEntry();
         } else {
             this.hideEntryForm();
         }
     }
 
     // Save entry
-    async saveEntry(hideForm = true) {
+    async saveEntry() {
         const text = this.entryTextarea.value.trim();
         if (!text) return;
         if (text.length > 1000) {
@@ -1901,11 +1905,8 @@ class DiaryApp {
         this.saveEntryBtn.classList.remove('spinning');
         this.saveEntryBtn.disabled = false;
         this.clearEntryBtn.disabled = false;
-
-        if (hideForm) {
-            this.hideEntryForm();
-        }
-
+        this.clearEntryForm(false);
+        
         // Focus on newly added entry
         setTimeout(() => {
             const entryEl = document.querySelector(`[data-entry-id="${entryRef.id}"]`);

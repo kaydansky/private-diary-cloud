@@ -12,6 +12,7 @@ class DiaryApp {
         this.isAuthMode = true;
         this.searchQuery = '';
         this.isNotificationsEnabled = false;
+        this.broadcastChannel = null; // Track the broadcast channel
         //this.pollCountdowns = new Map(); // Initialize poll countdowns map
         
         this.initElements();
@@ -111,63 +112,84 @@ class DiaryApp {
                 document.getElementById('authContainer').classList.add('hidden');
                 document.getElementById('mainContainer').classList.remove('hidden');
                 this.updateAuthUI();
+                
                 // Re-render entries when user signs in to update UI
                 if (this.selectedDate) {
                     this.renderEntries(this.selectedDate);
                 }
             } else if (event === 'SIGNED_OUT') {
                 this.user = null;
+                // Clean up broadcast channel when user signs out
+                if (this.broadcastChannel) {
+                    this.supabase.removeChannel(this.broadcastChannel);
+                    this.broadcastChannel = null;
+                }
                 this.updateAuthUI();
             }
         });
         
         this.showMainApp();
+        await this.broadcast();
         await this.init();
     }
 
     async broadcast() {
         if (!this.user) return;
 
-        const channel = this.supabase.channel('diary:entries', {config: { private: true }});
+        // Clean up any existing channel
+        if (this.broadcastChannel) {
+            await this.supabase.removeChannel(this.broadcastChannel);
+        }
 
-        // handle incoming broadcasts
-        channel.on('broadcast', { event: 'INSERT' }, (payload) => {
-            // payload.payload contains the NEW row (the broadcast_changes wrapper)
-            const data = payload?.payload;
-            // console.log('New diary entry received', data);
-            if (this.user.id === data.record.user_id) return;
-            
-            // Update UI: prepend or append new entry
-            const newEntry = {
-                id: data.record.id,
-                user_id: data.record.user_id,
-                username: data.record.username,
-                text: data.record.text,
-                type: 'entry',
-                createdAt: data.record.created_at
-            };
-            this.entries[this.selectedDate].push(newEntry);
-            this.showEntries(this.selectedDate);
-        });
-
-        channel.on('broadcast', { event: 'DELETE' }, (payload) => {
-            const data = payload?.payload;
-            // console.log('Diary entry deleted', data);
-            const deletedId = data.old_record.id;
-            
-            // Remove from entries array for that date
-            this.entries[this.selectedDate] = this.entries[this.selectedDate].filter(e => e.id !== deletedId);
-            this.showEntries(this.selectedDate);
-        });
-        
-        // subscribe
-        channel.subscribe((status) => {
-            if (status === 'SUBSCRIBED') {
-                console.log('Subscribed to diary realtime channel');
-            } else {
-                console.log('Channel status:', status);
-            }
-        });
+        // Create a new channel with proper configuration for database changes
+        this.broadcastChannel = this.supabase.channel('diary:entries', {config: { private: true }})
+            .on('postgres_changes', {
+                event: 'INSERT',
+                schema: 'public',
+                table: 'diary_entries'
+            }, (payload) => {
+                const data = payload.new;
+                // console.log('New diary entry received', payload);
+                if (this.user.id === data.user_id) return;
+                
+                // Update UI: prepend or append new entry
+                const newEntry = {
+                    id: data.id,
+                    user_id: data.user_id,
+                    username: data.username,
+                    text: data.text,
+                    type: 'entry',
+                    createdAt: data.created_at
+                };
+                
+                // Ensure entries array exists for the date
+                if (!this.entries[data.date]) {
+                    this.entries[data.date] = [];
+                }
+                
+                this.entries[data.date].push(newEntry);
+                this.showEntries(this.selectedDate);
+            })
+            .on('postgres_changes', {
+                event: 'DELETE',
+                schema: 'public',
+                table: 'diary_entries'
+            }, (payload) => {
+                const data = payload.old;
+                // console.log('Diary entry deleted', payload);
+                const deletedId = data.id;
+                
+                // Remove from entries array for that date
+                this.entries[this.selectedDate] = this.entries[this.selectedDate].filter(e => e.id !== deletedId);
+                this.showEntries(this.selectedDate);
+            })
+            .subscribe((status) => {
+                if (status === 'SUBSCRIBED') {
+                    console.log('Subscribed to diary realtime channel');
+                } else {
+                    console.log('Channel status:', status);
+                }
+            });
     }
 
     // Update auth UI
@@ -451,7 +473,6 @@ class DiaryApp {
         
         this.handleNotificationClick();
         this.showEntries(this.selectedDate);
-        this.broadcast();
     }
 
     // Handle notification click from service worker
@@ -699,7 +720,7 @@ class DiaryApp {
 
     // Send push notification to all users except author
     async sendPushNotification(type, entryId = null) {
-        // return;
+        return;
         if (!this.user) return;
 
         try {

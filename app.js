@@ -856,7 +856,7 @@ class DiaryApp {
         document.getElementById('deleteImageModalBtn').addEventListener('click', () => this.confirmImageDelete());
         document.getElementById('cancelImageActionsBtn').addEventListener('click', () => this.hideImageActionsModal());
         this.saveEntryBtn.addEventListener('click', () => this.doneEntry());
-        this.clearEntryBtn.addEventListener('click', () => this.clearEntry());
+        this.clearEntryBtn.addEventListener('click', () => this.hideEntryForm());
         this.entryTextarea.addEventListener('keyup', (e) => {
             if (e.key === 'Enter' && e.ctrlKey) {
                 this.doneEntry();
@@ -1761,6 +1761,14 @@ class DiaryApp {
                 }
             }
         }
+    }
+
+    hideEntryForm() {
+        this.entryForm.classList.add('hidden');
+        this.entryTextarea.value = '';
+        this.editingEntryId = null;
+        this.originalText = '';
+        this.autoSaveEntryId = null;
     }
 
     // Hide poll form

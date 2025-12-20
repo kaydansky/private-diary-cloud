@@ -699,7 +699,7 @@ class DiaryApp {
 
     // Send push notification to all users except author
     async sendPushNotification(type, entryId = null) {
-        // return;
+        return;
         if (!this.user) return;
 
         try {
@@ -800,12 +800,32 @@ class DiaryApp {
         });
         this.addImageBtn.addEventListener('click', () => {
             if (!this.user) return alert(this.t('signInToAddImages'));
+            // Reset currentEntryId to ensure a new entry is created
+            this.currentEntryId = null;
             this.handleImageUpload();
         });
         this.shareDayBtn.addEventListener('click', () => this.shareDay());
         this.imageModalClose.addEventListener('click', () => this.closeImageModal());
-        this.fileInput.addEventListener('change', (e) => this.processImageFile(e.target.files[0]));
-        this.cameraInput.addEventListener('change', (e) => this.processImageFile(e.target.files[0]));
+        this.fileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                // Only create a new entry if we're not attaching to an existing entry
+                if (!this.currentEntryId) {
+                    this.createEntryForImageUpload();
+                }
+                this.processImageFile(file);
+            }
+        });
+        this.cameraInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                // Only create a new entry if we're not attaching to an existing entry
+                if (!this.currentEntryId) {
+                    this.createEntryForImageUpload();
+                }
+                this.processImageFile(file);
+            }
+        });
         document.getElementById('selectImageBtn').addEventListener('click', () => this.fileInput.click());
         document.getElementById('cameraBtn').addEventListener('click', () => this.cameraInput.click());
         document.getElementById('cancelImageBtn').addEventListener('click', () => this.hideMobileOptions());
@@ -908,6 +928,7 @@ class DiaryApp {
                 createdAt: entry.created_at,
                 updatedAt: entry.updated_at,
                 originalText: entry.text, // Store original text for comparison
+                originalImages: [...(entry.images || [])], 
                 type: 'entry' // Add type to distinguish from polls
             });
         });
@@ -1025,17 +1046,27 @@ class DiaryApp {
                 updated_at: new Date().toISOString()
             };
 
+            let needsSave = false;
+
             // If entry has a UUID (contains hyphens), it's an existing entry from database
             if (entry.id && entry.id.includes('-')) {
                 payload.id = entry.id;
+
+                // Check if text changed
+                const textChanged = entry.originalText !== undefined && entry.text !== entry.originalText;
                 
-                // For existing entries, check if they've been modified
-                // Compare the current text with what was originally loaded
-                // If there's no original text stored or text is the same, skip saving
-                if (entry.originalText !== undefined && entry.text === entry.originalText) {
-                    // Entry hasn't been modified, skip saving
-                    continue;
+                // Check if images array changed (simple but effective: compare JSON strings)
+                const originalImages = entry.originalImages || [];
+                const imagesChanged = JSON.stringify(originalImages) !== JSON.stringify(entry.images || []);
+
+                needsSave = textChanged || imagesChanged;
+
+                if (!needsSave) {
+                    continue; // No changes → skip
                 }
+            } else {
+                // New entry → always save
+                needsSave = true;
             }
             
             const { data } = await this.supabase
@@ -1048,8 +1079,9 @@ class DiaryApp {
                 entry.id = data[0].id;
             }
             
-            // Update originalText after successful save
+            // Update originalText and originalImages after successful save
             entry.originalText = entry.text;
+            entry.originalImages = [...(entry.images || [])]; // deep copy
         }
     }
 
@@ -1104,7 +1136,7 @@ class DiaryApp {
     }
 
     // Save image to Supabase Storage
-    async saveImageToIndexedDB(blob) {
+    async saveImage(blob) {
         const fileName = `${this.user.id}/${Date.now()}.jpg`;
         
         const { data } = await this.supabase.storage
@@ -1119,7 +1151,7 @@ class DiaryApp {
     }
 
     // Get image from Supabase Storage
-    async getImageFromIndexedDB(imageUrl) {
+    async getImage(imageUrl) {
         return fetch(imageUrl).then(r => r.blob());
     }
 
@@ -1360,6 +1392,12 @@ class DiaryApp {
                 return this.renderEntry(entry, date);
             }
         }).join('');
+
+        entries.forEach(entry => {
+            if (entry.type === 'entry' && entry.images && entry.images.length > 0) {
+                this.loadEntryImages(entry.id, entry.images);
+            }
+        });
         
         this.searchQuery = '';
         
@@ -1397,13 +1435,6 @@ class DiaryApp {
                 const optionId = e.target.value;
                 this.voteOnPoll(pollId, optionId);
             });
-        });
-
-        // Load images for diary entries
-        entries.forEach(entry => {
-            if (entry.type !== 'poll' && entry.images && entry.images.length > 0) {
-                this.loadEntryImages(entry.id, entry.images);
-            }
         });
     }
 
@@ -2094,7 +2125,7 @@ class DiaryApp {
                 try {
                     const files = [];
                     for (const imageUrl of entry.images) {
-                        const blob = await this.getImageFromIndexedDB(imageUrl);
+                        const blob = await this.getImage(imageUrl);
                         if (blob) {
                             const file = new File([blob], `diary-image.jpg`, { type: 'image/jpeg' });
                             files.push(file);
@@ -2201,7 +2232,7 @@ class DiaryApp {
             ctx.drawImage(img, 0, 0, width, height);
             
             canvas.toBlob(async (blob) => {
-                const imageUrl = await this.saveImageToIndexedDB(blob);
+                const imageUrl = await this.saveImage(blob);
                 await this.attachImageToEntry(imageUrl);
             }, 'image/jpeg', 0.8);
         };
@@ -2226,14 +2257,32 @@ class DiaryApp {
                 this.entries[this.selectedDate] = [];
             }
             
-            const newEntry = {
-                id: Date.now().toString(),
-                text: '',
-                images: [imageUrl],
-                createdAt: new Date().toISOString()
-            };
-            this.entries[this.selectedDate].push(newEntry);
-            entryRef = newEntry;
+            // Check if there's already an entry for today without text
+            let existingEmptyEntry = this.entries[this.selectedDate].find(e =>
+                e.type === 'entry' && (!e.text || e.text.trim() === '') &&
+                (!e.images || e.images.length === 0)
+            );
+            
+            if (existingEmptyEntry) {
+                // Use the existing empty entry
+                if (!existingEmptyEntry.images) existingEmptyEntry.images = [];
+                existingEmptyEntry.images.push(imageUrl);
+                entryRef = existingEmptyEntry;
+            } else {
+                // Create a new entry
+                const newEntry = {
+                    id: Date.now().toString(),
+                    user_id: this.user.id,
+                    username: this.user.user_metadata?.username || null,
+                    text: '',
+                    images: [imageUrl],
+                    type: 'entry',
+                    createdAt: new Date().toISOString(),
+                    updatedAt: new Date().toISOString()
+                };
+                this.entries[this.selectedDate].push(newEntry);
+                entryRef = newEntry;
+            }
         }
         
         await this.saveEntries();
@@ -2246,6 +2295,43 @@ class DiaryApp {
         }
     }
 
+    // Create entry for image upload
+    createEntryForImageUpload() {
+        // Only create a new entry if currentEntryId is not already set
+        // (which happens when uploading from entry actions)
+        if (this.currentEntryId) {
+            return;
+        }
+        
+        if (!this.entries[this.selectedDate]) {
+            this.entries[this.selectedDate] = [];
+        }
+        
+        // Check if there's already an entry for today without text or images
+        let existingEmptyEntry = this.entries[this.selectedDate].find(e =>
+            e.type === 'entry' && (!e.text || e.text.trim() === '') &&
+            (!e.images || e.images.length === 0)
+        );
+        
+        if (!existingEmptyEntry) {
+            // Create a new empty entry for the image
+            const newEntry = {
+                id: Date.now().toString(),
+                user_id: this.user.id,
+                username: this.user.user_metadata?.username || null,
+                text: '',
+                images: [],
+                type: 'entry',
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString()
+            };
+            this.entries[this.selectedDate].push(newEntry);
+            this.currentEntryId = newEntry.id;
+        } else {
+            this.currentEntryId = existingEmptyEntry.id;
+        }
+    }
+    
     // Show image modal
     async showImageModal(imageUrl) {
         this.modalImage.src = imageUrl;
@@ -2379,7 +2465,7 @@ class DiaryApp {
         
         this.hideImageContextMenu();
         this.hideImageActionsModal();
-        const blob = await this.getImageFromIndexedDB(this.currentImageUrl);
+        const blob = await this.getImage(this.currentImageUrl);
         
         if (blob && navigator.share) {
             const file = new File([blob], 'diary-image.jpg', { type: 'image/jpeg' });

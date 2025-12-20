@@ -15,8 +15,32 @@ class DiaryApp {
         this.broadcastChannel = null; // Track the broadcast channel
         //this.pollCountdowns = new Map(); // Initialize poll countdowns map
         
+        this.initServiceWorker();
         this.initElements();
         this.initAuth();
+    }
+
+    initServiceWorker() {
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('service-worker.js')
+                .then(registration => {
+                    registration.addEventListener('updatefound', () => {
+                        const newWorker = registration.installing;
+                        newWorker.addEventListener('statechange', () => {
+                            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                                newWorker.postMessage({ type: 'SKIP_WAITING' });
+                            }
+                        });
+                    });
+                })
+                .then(console.log('Service worker registered'))
+                .catch(err => console.error('Service worker registration failed:', err));
+
+            navigator.serviceWorker.addEventListener('controllerchange', () => {
+                // New SW is controlling the page; reload once to use fresh files
+                window.location.reload();
+            });
+        }
     }
 
     // Initialize language from localStorage or browser
@@ -112,6 +136,7 @@ class DiaryApp {
                 document.getElementById('authContainer').classList.add('hidden');
                 document.getElementById('mainContainer').classList.remove('hidden');
                 this.updateAuthUI();
+                await this.broadcast();
                 
                 // Re-render entries when user signs in to update UI
                 if (this.selectedDate) {
@@ -137,9 +162,9 @@ class DiaryApp {
         if (!this.user) return;
 
         // Clean up any existing channel
-        if (this.broadcastChannel) {
-            await this.supabase.removeChannel(this.broadcastChannel);
-        }
+        // if (this.broadcastChannel) {
+        //     await this.supabase.removeChannel(this.broadcastChannel);
+        // }
 
         // Create a new channel with proper configuration for database changes
         this.broadcastChannel = this.supabase.channel('diary:entries', {config: { private: true }})
@@ -2874,7 +2899,7 @@ class DiaryApp {
             const cacheNames = await caches.keys();
             await Promise.all(cacheNames.map(name => caches.delete(name)));
         }
-        window.location.reload(true);
+        window.location.reload();
     }
 
     // Escape HTML

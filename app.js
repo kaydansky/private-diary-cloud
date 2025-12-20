@@ -1899,7 +1899,7 @@ class DiaryApp {
         if (text) {
             this.saveEntry();
         } else {
-            this.hideEntryForm();
+            this.clearEntryForm(false);
         }
     }
 

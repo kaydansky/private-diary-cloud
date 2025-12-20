@@ -305,7 +305,7 @@ class DiaryApp {
                     this.showAuthError(this.t('passwordsDoNotMatch'));
                     return;
                 }
-                if (!/^[a-zA-Zа-яА-Я0-9]+$/.test(username) || username.length < 3) {
+                if (!/^[a-zA-Zа-яА-Я0-9 ]+$/.test(username) || username.length < 3) {
                     this.showAuthError(this.t('usernameInvalid'));
                     return;
                 }
@@ -2709,7 +2709,7 @@ class DiaryApp {
             return;
         }
         
-        if (!/^[a-zA-Zа-яА-Я0-9]+$/.test(newUsername)) {
+        if (!/^[a-zA-Zа-яА-Я0-9 ]+$/.test(newUsername)) {
             alert(this.t('usernameLettersNumbers'));
             return;
         }

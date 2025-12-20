@@ -428,7 +428,7 @@ const translations = {
         addEntry: 'Запись',
         addImage: 'Фото',
         noEntries: 'Нет записей на этот день',
-        writeThoughts: 'Пишите свои мысли...',
+        writeThoughts: 'Напишите сообщение...',
         done: 'Готово',
         undo: 'Очистить',
         undoConfirm: 'Вы уверены, что хотите отменить? Весь введенный текст будет потерян.',

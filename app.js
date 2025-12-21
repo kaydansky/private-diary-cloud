@@ -161,10 +161,8 @@ class DiaryApp {
     async broadcast() {
         if (!this.user) return;
 
-        // Clean up any existing channel
-        // if (this.broadcastChannel) {
-        //     await this.supabase.removeChannel(this.broadcastChannel);
-        // }
+        // Skip if channel already exists
+        if (this.broadcastChannel) return;
 
         // Create a new channel with proper configuration for database changes
         this.broadcastChannel = this.supabase.channel('diary:entries', {config: { private: true }})
@@ -1735,7 +1733,8 @@ class DiaryApp {
     }
 
     // Show entry form
-    showEntryForm() {
+    async showEntryForm() {
+        await this.broadcast();
         this.originalText = this.entryTextarea.value;
         this.autoSaveEntryId = null;
         this.entryForm.classList.remove('hidden');

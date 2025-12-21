@@ -949,6 +949,24 @@ class DiaryApp {
 
     // Load entries for specific month from Supabase
     async loadEntriesForMonth(year, month) {
+        // If we already have entries loaded and those entries are for the
+        // same year/month the function was asked to load, skip re-loading.
+        // Note: `month` param is 0-based (0-11), keys in `this.entries` are YYYY-MM-DD.
+        if (Object.keys(this.entries || {}).length > 0) {
+            const firstKey = Object.keys(this.entries)[0];
+            if (firstKey) {
+                const [eYearStr, eMonthStr] = String(firstKey).split('-');
+                const eYear = Number(eYearStr);
+                const eMonth = Number(eMonthStr); // 1-12
+                if (eYear === Number(year) && eMonth === Number(month) + 1) {
+                    console.log('Entries already loaded for year/month:', year, month);
+                    return;
+                }
+            }
+        }
+
+        console.log('Selected date: ' + this.selectedDate);
+        console.log(this.entries);
         this.showLoadingOverlay();
         try {
             const monthKey = `${year}-${String(month + 1).padStart(2, '0')}`;
@@ -3210,7 +3228,7 @@ class DiaryApp {
             
             // Update navigation button states
             this.updateEntryNavigation();
-        }, 150);
+        }, 100);
     }
 
     // Update entry navigation buttons state

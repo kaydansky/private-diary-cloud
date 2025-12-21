@@ -442,7 +442,7 @@ const translations = {
         copyText: 'Копировать текст',
         edit: 'Редактировать',
         delete: 'Удалить',
-        imageOptions: 'Опции изображений',
+        imageOptions: 'Опции изображения',
         shareImage: 'Поделиться изображением',
         deleteImage: 'Удалить изображение',
         selectFromGallery: 'Выбрать из галереи',

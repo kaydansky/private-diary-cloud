@@ -2505,7 +2505,7 @@ class DiaryApp {
         const entry = this.entries[this.selectedDate]?.find(e => e.id === entryId);
         const isOwnEntry = this.user && entry && entry.user_id === this.user.id;
         
-        // Only add delete handlers if user owns the entry
+        // Only add custom handlers if user owns the entry
         if (!isOwnEntry) return;
         
         let longPressTimer;
@@ -2527,7 +2527,8 @@ class DiaryApp {
         
         img.addEventListener('contextmenu', (e) => {
             e.preventDefault();
-            this.showImageContextMenu(e, imageUrl, entryId);
+            // this.showImageContextMenu(e, imageUrl, entryId);
+            this.showImageActionsModal(imageUrl, entryId);
         });
     }
 

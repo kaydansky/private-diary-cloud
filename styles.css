@@ -397,6 +397,41 @@ body {
     gap: 10px;
 }
 
+/* Loading overlay and spinner */
+.loading-overlay {
+    position: fixed;
+    inset: 0; /* top:0; right:0; bottom:0; left:0 */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0,0,0,0.35);
+    z-index: 9999;
+}
+.loading-overlay.hidden {
+    display: none;
+}
+.loading-spinner {
+    width: 56px;
+    height: 56px;
+    border: 6px solid rgba(255,255,255,0.25);
+    border-top-color: #ffffff;
+    border-radius: 50%;
+    animation: loading-spin 0.9s linear infinite;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+}
+@keyframes loading-spin { to { transform: rotate(360deg); } }
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0,0,0,0);
+    white-space: nowrap;
+    border: 0;
+}
+
 .nav-btn {
     background: var(--nav-btn-bg);
     color: var(--text-color);

@@ -949,126 +949,131 @@ class DiaryApp {
 
     // Load entries for specific month from Supabase
     async loadEntriesForMonth(year, month) {
-        const monthKey = `${year}-${String(month + 1).padStart(2, '0')}`;
-        const lastDay = new Date(year, month + 1, 0).getDate();
-        
-        // Load diary entries
-        const { data: entriesData } = await this.supabase
-            .from('diary_entries')
-            .select('*')
-            .gte('date', `${monthKey}-01`)
-            .lte('date', `${monthKey}-${String(lastDay).padStart(2, '0')}`)
-            .order('date', { ascending: true });
+        this.showLoadingOverlay();
+        try {
+            const monthKey = `${year}-${String(month + 1).padStart(2, '0')}`;
+            const lastDay = new Date(year, month + 1, 0).getDate();
+            
+            // Load diary entries
+            const { data: entriesData } = await this.supabase
+                .from('diary_entries')
+                .select('*')
+                .gte('date', `${monthKey}-01`)
+                .lte('date', `${monthKey}-${String(lastDay).padStart(2, '0')}`)
+                .order('date', { ascending: true });
 
-        this.entries = {};
-        entriesData?.forEach(entry => {
-            if (!this.entries[entry.date]) this.entries[entry.date] = [];
-            this.entries[entry.date].push({
-                id: entry.id,
-                user_id: entry.user_id,
-                username: entry.username || null,
-                text: entry.text,
-                images: entry.images || [],
-                createdAt: entry.created_at,
-                updatedAt: entry.updated_at,
-                originalText: entry.text, // Store original text for comparison
-                originalImages: [...(entry.images || [])], 
-                type: 'entry' // Add type to distinguish from polls
+            this.entries = {};
+            entriesData?.forEach(entry => {
+                if (!this.entries[entry.date]) this.entries[entry.date] = [];
+                this.entries[entry.date].push({
+                    id: entry.id,
+                    user_id: entry.user_id,
+                    username: entry.username || null,
+                    text: entry.text,
+                    images: entry.images || [],
+                    createdAt: entry.created_at,
+                    updatedAt: entry.updated_at,
+                    originalText: entry.text, // Store original text for comparison
+                    originalImages: [...(entry.images || [])], 
+                    type: 'entry' // Add type to distinguish from polls
+                });
             });
-        });
-        
-        // Load polls for the month
-        const { data: pollsData } = await this.supabase
-            .from('polls')
-            .select(`
-                id,
-                user_id,
-                question,
-                date,
-                created_at,
-                username,
-                poll_options (
+            
+            // Load polls for the month
+            const { data: pollsData } = await this.supabase
+                .from('polls')
+                .select(`
                     id,
-                    option_text,
-                    position
-                )
-            `)
-            .gte('date', `${monthKey}-01`)
-            .lte('date', `${monthKey}-${String(lastDay).padStart(2, '0')}`)
-            .order('date', { ascending: true });
+                    user_id,
+                    question,
+                    date,
+                    created_at,
+                    username,
+                    poll_options (
+                        id,
+                        option_text,
+                        position
+                    )
+                `)
+                .gte('date', `${monthKey}-01`)
+                .lte('date', `${monthKey}-${String(lastDay).padStart(2, '0')}`)
+                .order('date', { ascending: true });
 
-        // Add polls to entries
-        pollsData?.forEach(poll => {
-            const pollDate = poll.date;
-            if (!this.entries[pollDate]) this.entries[pollDate] = [];
-            
-            // Format options with vote counts (will be updated when votes are loaded)
-            const options = poll.poll_options.map(option => ({
-                id: option.id,
-                text: option.option_text,
-                position: option.position,
-                votes: 0 // Will be updated when votes are loaded
-            })).sort((a, b) => a.position - b.position);
-            
-            this.entries[pollDate].push({
-                id: poll.id,
-                user_id: poll.user_id,
-                question: poll.question,
-                options: options,
-                createdAt: poll.created_at,
-                username: poll.username || null,
-                type: 'poll'
-            });
-        });
-        
-        // Load vote counts for all polls
-        const pollIds = pollsData?.map(poll => poll.id) || [];
-        if (pollIds.length > 0) {
-           // Get vote counts for all options in these polls
-           const { data: voteCounts, error } = await this.supabase
-                .rpc('get_poll_vote_counts', { poll_ids: pollIds });
-               
-           // Update vote counts in the entries
-           voteCounts?.forEach(voteCount => {
-               // Find the poll and option to update
-               for (const date in this.entries) {
-                   const poll = this.entries[date].find(entry =>
-                       entry.type === 'poll' &&
-                       entry.options.some(option => option.id === voteCount.option_id)
-                   );
-                   
-                   if (poll) {
-                       const option = poll.options.find(opt => opt.id === voteCount.option_id);
-                       if (option) {
-                           option.votes = voteCount.vote_count || 0;
-                           break;
-                       }
-                   }
-               }
-           });
-           
-           // Load user votes for these polls
-           const { data: userVotes, error: userVotesError } = await this.supabase
-                .from('poll_votes')
-                .select('poll_id, option_id')
-                .in('poll_id', pollIds);
+            // Add polls to entries
+            pollsData?.forEach(poll => {
+                const pollDate = poll.date;
+                if (!this.entries[pollDate]) this.entries[pollDate] = [];
                 
-           // Add user votes to poll entries
-           if (userVotes) {
-               userVotes.forEach(userVote => {
-                   for (const date in this.entries) {
-                       const poll = this.entries[date].find(entry =>
-                           entry.type === 'poll' && entry.id === userVote.poll_id
-                       );
-                       
-                       if (poll) {
-                           poll.userVote = userVote;
-                           break;
-                       }
-                   }
-               });
-           }
-       }
+                // Format options with vote counts (will be updated when votes are loaded)
+                const options = poll.poll_options.map(option => ({
+                    id: option.id,
+                    text: option.option_text,
+                    position: option.position,
+                    votes: 0 // Will be updated when votes are loaded
+                })).sort((a, b) => a.position - b.position);
+                
+                this.entries[pollDate].push({
+                    id: poll.id,
+                    user_id: poll.user_id,
+                    question: poll.question,
+                    options: options,
+                    createdAt: poll.created_at,
+                    username: poll.username || null,
+                    type: 'poll'
+                });
+            });
+            
+            // Load vote counts for all polls
+            const pollIds = pollsData?.map(poll => poll.id) || [];
+            if (pollIds.length > 0) {
+                // Get vote counts for all options in these polls
+                const { data: voteCounts, error } = await this.supabase
+                    .rpc('get_poll_vote_counts', { poll_ids: pollIds });
+                
+                // Update vote counts in the entries
+                voteCounts?.forEach(voteCount => {
+                    // Find the poll and option to update
+                    for (const date in this.entries) {
+                        const poll = this.entries[date].find(entry =>
+                            entry.type === 'poll' &&
+                            entry.options.some(option => option.id === voteCount.option_id)
+                        );
+                        
+                        if (poll) {
+                            const option = poll.options.find(opt => opt.id === voteCount.option_id);
+                            if (option) {
+                                option.votes = voteCount.vote_count || 0;
+                                break;
+                            }
+                        }
+                    }
+                });
+                
+                // Load user votes for these polls
+                const { data: userVotes, error: userVotesError } = await this.supabase
+                    .from('poll_votes')
+                    .select('poll_id, option_id')
+                    .in('poll_id', pollIds);
+                
+                // Add user votes to poll entries
+                if (userVotes) {
+                    userVotes.forEach(userVote => {
+                        for (const date in this.entries) {
+                            const poll = this.entries[date].find(entry =>
+                                entry.type === 'poll' && entry.id === userVote.poll_id
+                            );
+                            
+                            if (poll) {
+                                poll.userVote = userVote;
+                                break;
+                            }
+                        }
+                    });
+                }
+            }
+        } finally {
+            this.hideLoadingOverlay();
+        }
     }
 
     // Save entries to Supabase
@@ -1206,6 +1211,41 @@ class DiaryApp {
         const nextMonth = new Date(this.currentDate);
         nextMonth.setMonth(nextMonth.getMonth() + direction);
         return nextMonth <= today;
+    }
+
+    // Show a full-screen loading overlay with spinner and disable UI
+    showLoadingOverlay() {
+        if (this._loadingOverlay) return;
+        const overlay = document.createElement('div');
+        overlay.className = 'loading-overlay';
+        overlay.id = 'loadingOverlay';
+
+        const spinner = document.createElement('div');
+        spinner.className = 'loading-spinner';
+
+        const sr = document.createElement('span');
+        sr.className = 'sr-only';
+        sr.textContent = (this.t && this.t('loading')) || 'Loading...';
+
+        spinner.appendChild(sr);
+        overlay.appendChild(spinner);
+        document.body.appendChild(overlay);
+
+        this._loadingOverlay = overlay;
+        document.body.setAttribute('aria-busy', 'true');
+        const main = document.getElementById('mainContainer');
+        if (main) main.setAttribute('aria-hidden', 'true');
+        if (document.activeElement) document.activeElement.blur();
+    }
+
+    // Hide loading overlay and re-enable UI
+    hideLoadingOverlay() {
+        if (!this._loadingOverlay) return;
+        this._loadingOverlay.remove();
+        this._loadingOverlay = null;
+        document.body.removeAttribute('aria-busy');
+        const main = document.getElementById('mainContainer');
+        if (main) main.removeAttribute('aria-hidden');
     }
 
     // Navigate to previous or next month

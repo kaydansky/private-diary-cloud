@@ -959,14 +959,12 @@ class DiaryApp {
                 const eYear = Number(eYearStr);
                 const eMonth = Number(eMonthStr); // 1-12
                 if (eYear === Number(year) && eMonth === Number(month) + 1) {
-                    console.log('Entries already loaded for year/month:', year, month);
+                    // console.log('Entries already loaded for year/month:', year, month);
                     return;
                 }
             }
         }
 
-        console.log('Selected date: ' + this.selectedDate);
-        console.log(this.entries);
         this.showLoadingOverlay();
         try {
             const monthKey = `${year}-${String(month + 1).padStart(2, '0')}`;

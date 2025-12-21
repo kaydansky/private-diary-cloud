@@ -2903,9 +2903,24 @@ class DiaryApp {
 
     // Escape HTML
     escapeHtml(text) {
+        if (text === null || text === undefined) return '';
+
         const div = document.createElement('div');
         div.textContent = text;
-        return div.innerHTML;
+        let escaped = div.innerHTML;
+
+        // Convert email addresses to mailto: links
+        escaped = escaped.replace(/\b([A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,})\b/g, '<a href="mailto:$1">$1</a>');
+
+        // Convert http/https URLs to anchors
+        escaped = escaped.replace(/(https?:\/\/[^\s<]+)/gi, '<a href="$1" target="_blank" rel="noopener noreferrer">$1</a>');
+
+        // Convert www. links (add http:// for href)
+        escaped = escaped.replace(/(^|[^:\/\w])(www\.[^\s<]+)/gi, (match, prefix, url) => {
+            return prefix + `<a href="http://${url}" target="_blank" rel="noopener noreferrer">${url}</a>`;
+        });
+
+        return escaped;
     }
 
     // Highlight search query in text

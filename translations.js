@@ -133,10 +133,14 @@ const translations = {
         alertFailedToEnableNotifications: 'Failed to enable notifications. Please try again.',
         alertFailedToDisableNotifications: 'Failed to disable notifications. Please try again.',
         pollExpired: 'Expired',
-        pollExpDate: 'Expires on ',
+        pollExpDate: 'Expires in ',
         usernameInvalid: 'Username must contain only letters and numbers and be 3 to 20 characters long',
         usernameTooLong: 'Username must be 20 characters or less',
-        replyBtn: 'Reply'
+        replyBtn: 'Reply',
+        shortD: 'd',
+        shortH: 'h',
+        shortM: 'm',
+        shortS: 's' 
     },
     fr: {
         appTitle: 'Journal Privé Cloud',
@@ -272,10 +276,14 @@ const translations = {
         alertFailedToEnableNotifications: 'Échec de l\'activation des notifications. Veuillez réessayer.',
         alertFailedToDisableNotifications: 'Échec de la désactivation des notifications. Veuillez réessayer.',
         pollExpired: 'Expiré',
-        pollExpDate: 'Expire le ',
+        pollExpDate: 'Expire ',
         usernameInvalid: "Le nom d'utilisateur ne doit contenir que des lettres et des chiffres de 3 à 20 caractères",
         usernameTooLong: "Le nom d'utilisateur doit contenir 20 caractères ou moins",
-        replyBtn: 'Répondre'
+        replyBtn: 'Répondre',
+        shortD: 'j',
+        shortH: 'h',
+        shortM: 'min',
+        shortS: 'sec'
     },
     de: {
         appTitle: 'Tagebuch Cloud',
@@ -415,7 +423,11 @@ const translations = {
         pollExpDate: 'Läuft ab am ',
         usernameInvalid: 'Benutzername darf nur Buchstaben und Zahlen enthalten und 3 bis 20 Zeichen lang sein',
         usernameTooLong: 'Benutzername darf maximal 20 Zeichen lang sein',
-        replyBtn: 'Antworten'
+        replyBtn: 'Antworten',
+        shortD: 'T',
+        shortH: 'std',
+        shortM: 'min',
+        shortS: 'sek'
     },
     ru: {
         appTitle: 'СНТ Тишинка',
@@ -549,9 +561,13 @@ const translations = {
         alertFailedToEnableNotifications: 'Не удалось включить уведомления. Пожалуйста, попробуйте снова.',
         alertFailedToDisableNotifications: 'Не удалось отключить уведомления. Пожалуйста, попробуйте снова.',
         pollExpired: 'Истёк',
-        pollExpDate: 'Истекает ',
+        pollExpDate: 'Осталось ',
         usernameInvalid: 'Имя пользователя может содержать только буквы и цифры от 3 до 20 символов',
         usernameTooLong: 'Имя пользователя должно быть не более 20 символов',
-        replyBtn: 'Ответить'
+        replyBtn: 'Ответить',
+        shortD: 'д',
+        shortH: 'ч',
+        shortM: 'м',
+        shortS: 'с'
     }
 };

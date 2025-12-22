@@ -952,6 +952,14 @@ body {
     margin-bottom: 8px;
 }
 
+.entry-time {
+    color: var(--text-color);
+    opacity: 0.7;
+    font-size: 1.1rem;
+    font-style: normal;
+    margin-bottom: 12px;
+}
+
 .entry-text {
     color: var(--text-color);
     font-size: 1.3rem;

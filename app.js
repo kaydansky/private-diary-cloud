@@ -1434,23 +1434,17 @@ class DiaryApp {
         return `${weekday}, ${monthName} ${day}, ${year}`;
     }
     
-    // Format time remaining until poll expiration
+    // Format time remaining until poll expiration as "days hours minutes seconds"
     formatTimeRemaining(milliseconds) {
         const seconds = Math.floor(milliseconds / 1000);
         if (seconds <= 0) return this.t('pollExpired');
-        
+
         const days = Math.floor(seconds / (24 * 60 * 60));
         const hours = Math.floor((seconds % (24 * 60 * 60)) / (60 * 60));
         const minutes = Math.floor((seconds % (60 * 60)) / 60);
         const secs = seconds % 60;
-        
-        const parts = [];
-        if (days > 0) parts.push(`${days}d`);
-        if (hours > 0) parts.push(`${hours}h`);
-        if (minutes > 0) parts.push(`${minutes}m`);
-        if (secs > 0) parts.push(`${secs}s`);
-        
-        return parts.join(' ') || '0s';
+
+        return `${this.t('pollExpDate')} ${days} ${this.t('shortD')} ${hours} ${this.t('shortH')} ${minutes} ${this.t('shortM')} ${secs} ${this.t('shortS')}`;
     }
     
     // Check if poll has expired
@@ -1507,10 +1501,10 @@ class DiaryApp {
         });
         
         this.searchQuery = '';
-        
-        // Initialize poll countdown timers
-        // this.pollCountdowns = new Map();
-        // this.updatePollCountdowns(entries);
+
+        // Initialize poll countdown timers and start updates
+        if (!this.pollCountdowns) this.pollCountdowns = new Map();
+        this.updatePollCountdowns(entries);
 
         // Add event listeners for entry actions
         this.entryList.querySelectorAll('.menu-btn').forEach(btn => {
@@ -1585,96 +1579,82 @@ class DiaryApp {
 
     // Update poll countdowns in real-time
     updatePollCountdowns(entries) {
-        // Clear any existing intervals for polls that are no longer displayed
-        // First, get all currently displayed poll IDs
         const currentPollIds = new Set();
         entries.forEach(entry => {
             if (entry.type === 'poll' && entry.createdAt) {
-                currentPollIds.add(entry.id);
+            currentPollIds.add(entry.id);
             }
         });
-        
-        // Clear intervals for polls that are no longer displayed
+
+        // Clear intervals for polls no longer displayed
         for (const [pollId, intervalId] of this.pollCountdowns.entries()) {
             if (!currentPollIds.has(pollId)) {
-                clearInterval(intervalId);
-                this.pollCountdowns.delete(pollId);
+            clearInterval(intervalId);
+            this.pollCountdowns.delete(pollId);
             }
         }
-        
-        // Set up intervals for polls that are currently displayed
+
+        // Set up intervals for visible polls
         entries.forEach(entry => {
-            if (entry.type === 'poll' && entry.createdAt) {
-                const pollElement = document.querySelector(`.entry-item[data-poll-id="${entry.id}"]`);
-                if (pollElement) {
-                    // Clear any existing interval for this poll if it's already expired
-                    const isExpired = this.isPollExpired(entry);
-                    if (this.pollCountdowns.has(entry.id) && isExpired) {
-                        clearInterval(this.pollCountdowns.get(entry.id));
-                        this.pollCountdowns.delete(entry.id);
-                    }
-                    
-                    // Set up new interval to update the countdown if not already expired
-                    if (!isExpired && !this.pollCountdowns.has(entry.id)) {
-                        const intervalId = setInterval(() => {
-                            const isExpired = this.isPollExpired(entry);
-                            const authorElement = pollElement.querySelector('.entry-author');
-                            
-                            if (!authorElement) return;
-                            
-                            if (isExpired) {
-                                // Poll has expired, update the display
-                                const timeElements = authorElement.textContent.split(' &bull; ');
-                                if (timeElements.length >= 3) {
-                                    timeElements[2] = `${this.t('pollExpired')}`;
-                                    authorElement.innerHTML = timeElements.join(' &bull; ') + ` <span class="poll-expired">(${this.t('pollExpired')})</span>`;
-                                }
-                                // Clear the interval since the poll is expired
-                                clearInterval(intervalId);
-                                this.pollCountdowns.delete(entry.id);
-                            } else {
-                                // Update the time remaining
-                                const pollCreationTime = new Date(entry.createdAt).getTime();
-                                const expirationTime = pollCreationTime + (POLL_LIFETIME_SECONDS * 1000);
-                                const currentTime = new Date().getTime();
-                                const timeLeft = expirationTime - currentTime;
-                                const timeRemaining = this.formatTimeRemaining(timeLeft);
-                                
-                                const timeElements = authorElement.textContent.split(' &bull; ');
-                                if (timeElements.length >= 3) {
-                                    timeElements[2] = timeRemaining;
-                                    authorElement.innerHTML = timeElements.join(' &bull; ');
-                                }
-                            }
-                        }, 1000); // Update every second
-                        
-                        // Store the interval ID
-                        this.pollCountdowns.set(entry.id, intervalId);
-                    } else if (isExpired) {
-                        // Update the display immediately for expired polls
-                        const authorElement = pollElement.querySelector('.entry-author');
-                        if (authorElement) {
-                            const timeElements = authorElement.textContent.split(' &bull; ');
-                            if (timeElements.length >= 3) {
-                                timeElements[2] = `${this.t('pollExpired')}`;
-                                authorElement.innerHTML = timeElements.join(' &bull; ') + ` <span class="poll-expired">(${this.t('pollExpired')})</span>`;
-                            }
-                        }
-                    }
+            if (entry.type !== 'poll' || !entry.createdAt) return;
+
+            const pollElement = document.querySelector(
+            `.entry-item[data-poll-id="${entry.id}"]`
+            );
+
+            if (!pollElement) return;
+
+            const countdownEl = pollElement.querySelector(
+            `.poll-countdown[data-poll-id="${entry.id}"]`
+            );
+
+            if (!countdownEl) return;
+
+            const isExpired = this.isPollExpired(entry);
+
+            // Clear an old interval for already expired polls
+            if (this.pollCountdowns.has(entry.id) && isExpired) {
+            clearInterval(this.pollCountdowns.get(entry.id));
+            this.pollCountdowns.delete(entry.id);
+            }
+
+            if (!isExpired && !this.pollCountdowns.has(entry.id)) {
+            const intervalId = setInterval(() => {
+                const nowExpired = this.isPollExpired(entry);
+                if (nowExpired) {
+                countdownEl.textContent = this.t('pollExpired');
+                countdownEl.classList.add('poll-expired');
+                clearInterval(intervalId);
+                this.pollCountdowns.delete(entry.id);
+                return;
                 }
+
+                const pollCreationTime = new Date(entry.createdAt).getTime();
+                const expirationTime = pollCreationTime + POLL_LIFETIME_SECONDS * 1000;
+                const currentTime = Date.now();
+                const timeLeft = expirationTime - currentTime;
+                const timeRemaining = this.formatTimeRemaining(timeLeft);
+                countdownEl.textContent = timeRemaining;
+            }, 1000);
+
+            this.pollCountdowns.set(entry.id, intervalId);
+            } else if (isExpired) {
+            countdownEl.textContent = this.t('pollExpired');
+            countdownEl.classList.add('poll-expired');
             }
         });
     }
 
+
     // Render a diary entry
     renderEntry(entry, date) {
         const entryText = this.searchQuery ? this.highlightText(entry.text, this.searchQuery) : this.escapeHtml(entry.text);
-        const entryDate = entry.createdAt ? new Date(entry.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '';
-        const entryTime = entryDate ? entryDate.replace(/\//g, '-') + ' ' + new Date(entry.createdAt).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }) : '';
+        const entryTime = entry.createdAt ? new Date(entry.createdAt).toLocaleDateString('ru-Ru', { day: '2-digit', month: '2-digit', year: 'numeric' }) + ' ' + new Date(entry.createdAt).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }) : '';
+        
         return `
             <li class="entry-item">
                 <div class="entry-content">
-                    ${entry.username ? `<div class="entry-author">— ${this.escapeHtml(entry.username)} <br> ${entryTime}</div>` : ''}
+                    ${entry.username ? `<div class="entry-author">— ${this.escapeHtml(entry.username)} <br> <span class="entry-time">${entryTime}</span></div>` : ''}
                     <div class="entry-text">${entryText}</div>
                     <div class="entry-images" id="images-${entry.id}"></div>
                 </div>
@@ -1694,20 +1674,10 @@ class DiaryApp {
         // Check if poll has expired
         const isExpired = this.isPollExpired(poll);
         
-        // Calculate expiration date if poll has creation time
-        let expirationDate = '';
-        if (poll.createdAt) {
-            const pollCreationTime = new Date(poll.createdAt).getTime();
-            const expirationTime = pollCreationTime + (POLL_LIFETIME_SECONDS * 1000);
-            const expirationDateObj = new Date(expirationTime);
-            // Format as DD-MM-YYYY HH:MM
-            const day = String(expirationDateObj.getDate()).padStart(2, '0');
-            const month = String(expirationDateObj.getMonth() + 1).padStart(2, '0');
-            const year = expirationDateObj.getFullYear();
-            const hours = String(expirationDateObj.getHours()).padStart(2, '0');
-            const minutes = String(expirationDateObj.getMinutes()).padStart(2, '0');
-            expirationDate = `${day}-${month}-${year} ${hours}:${minutes}`;
-        }
+        // Calculate expiration countdown if poll has creation time
+        const pollCreationTime = new Date(poll.createdAt).getTime();
+        const expirationTime = pollCreationTime + (POLL_LIFETIME_SECONDS * 1000);
+        const timeLeft = expirationTime - Date.now();
         
         const optionsHtml = poll.options.map(option => {
             // Check if user has voted for this option
@@ -1733,7 +1703,12 @@ class DiaryApp {
         return `
             <li class="entry-item poll-item" data-poll-id="${poll.id}">
                 <div class="entry-content">
-                    ${poll.username ? `<div class="entry-author">— ${this.escapeHtml(poll.username)} &bull; ${pollTime} <br> ${expirationDate && !isExpired ? `${this.t('pollExpDate')}${expirationDate}` : ''} ${isExpired ? `<span class="poll-expired">${this.t('pollExpired')}</span>` : ''}</div>` : ''}
+                    ${poll.username ? `
+                        <div class="entry-author">— ${this.escapeHtml(poll.username)} &bull; ${pollTime} <br> 
+                            <span class="poll-countdown" data-poll-id="${poll.id}">
+                                ${!isExpired ? this.formatTimeRemaining(timeLeft) : `<span class="poll-expired">${this.t('pollExpired')}</span>`}
+                            </span>
+                        </div>` : ''}
                     <div class="poll-question">${this.escapeHtml(poll.question)}</div>
                     <div class="poll-options">
                         ${optionsHtml}

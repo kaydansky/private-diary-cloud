@@ -140,7 +140,6 @@ class DiaryApp {
                 
                 // Re-render entries when user signs in to update UI
                 this.selectedDate = this.formatDateKey(new Date());
-                console.log('User signed in, selectedDate:', this.selectedDate);
                 if (this.selectedDate) {
                     this.renderEntries(this.selectedDate);
                 }
@@ -497,7 +496,7 @@ class DiaryApp {
         if (this.user) {
             this.initPushNotifications();
         }
-        console.log('Selected date on init:', this.selectedDate);
+
         this.handleNotificationClick();
         this.showEntries(this.selectedDate);
     }
@@ -821,6 +820,7 @@ class DiaryApp {
         this.themeIcon = document.getElementById('themeIcon');
         this.signOutBtn = document.getElementById('signOutBtn');
         this.resetEmail = document.getElementById('resetEmail');
+        this.replyButton = document.getElementById('replyButton');
         
         // Poll elements
         this.pollForm = document.getElementById('pollForm');
@@ -933,6 +933,7 @@ class DiaryApp {
         document.getElementById('shareAppBtn').addEventListener('click', () => this.shareApp());
         document.getElementById('howItWorksBtn').addEventListener('click', () => this.showHowItWorksModal());
         document.getElementById('closeHowItWorksBtn').addEventListener('click', () => this.hideHowItWorksModal());
+        document.getElementById('replyButton').addEventListener('click', () => this.showEntryForm());
         
         // Poll event listeners
         this.addPollBtn.addEventListener('click', () => {
@@ -1486,6 +1487,7 @@ class DiaryApp {
         if (entries.length === 0) {
             const message = this.t('noEntries');
             this.entryList.innerHTML = `<li class="no-entries">${message}</li>`;
+            this.toggleReplyButton();
             return;
         }
 
@@ -1540,6 +1542,8 @@ class DiaryApp {
                 this.voteOnPoll(pollId, optionId);
             });
         });
+
+        this.toggleReplyButton();
     }
 
     // Check if a date is earlier than today
@@ -1551,6 +1555,14 @@ class DiaryApp {
             String(today.getDate()).padStart(2, '0');
 
         return dateString < todayStr;
+    }
+
+    toggleReplyButton() {
+        if (this.entries && this.entries[this.selectedDate] && this.entries[this.selectedDate].length > 0) {
+            this.replyButton.classList.remove('hidden');
+        } else {
+            this.replyButton.classList.add('hidden');
+        }
     }
 
     toggleAddPollBtn() {
@@ -1800,6 +1812,7 @@ class DiaryApp {
         this.entryForm.classList.remove('hidden');
         this.entryTextarea.focus();
         this.pollForm.classList.add('hidden');
+        this.replyButton.classList.add('hidden');
     }
 
     // Hide entry form
@@ -1853,6 +1866,7 @@ class DiaryApp {
         this.editingEntryId = null;
         this.originalText = '';
         this.autoSaveEntryId = null;
+        this.toggleReplyButton();
     }
 
     // Hide poll form

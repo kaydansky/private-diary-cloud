@@ -790,7 +790,7 @@ class DiaryApp {
         this.selectedDateTitle = document.getElementById('selectedDateTitle');
         this.addEntryBtn = document.getElementById('addEntryBtn');
         this.addImageBtn = document.getElementById('addImageBtn');
-        this.shareDayBtn = document.getElementById('shareDayBtn');
+        // this.shareDayBtn = document.getElementById('shareDayBtn');
         this.yearSelect = document.getElementById('yearSelect');
         this.monthSelect = document.getElementById('monthSelect');
         this.imageModal = document.getElementById('imageModal');
@@ -853,7 +853,7 @@ class DiaryApp {
             this.currentEntryId = null;
             this.handleImageUpload();
         });
-        this.shareDayBtn.addEventListener('click', () => this.shareDay());
+        // this.shareDayBtn.addEventListener('click', () => this.shareDay());
         this.imageModalClose.addEventListener('click', () => this.closeImageModal());
         this.fileInput.addEventListener('change', (e) => {
             const file = e.target.files[0];
@@ -1482,7 +1482,7 @@ class DiaryApp {
             return timeA - timeB;
         });
         
-        this.shareDayBtn.style.display = entries.length === 0 ? 'none' : 'flex';
+        // this.shareDayBtn.style.display = entries.length === 0 ? 'none' : 'flex';
         this.updateEntryNavigation();
 
         if (entries.length === 0) {

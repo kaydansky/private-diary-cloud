@@ -609,6 +609,7 @@ class DiaryApp {
     // Toggle notifications
     async toggleNotifications() {
         this.hideHeaderMenu();
+        if (!this.user) return;
         
         if (this.isNotificationsEnabled) {
             await this.unsubscribeFromNotifications();
@@ -1558,6 +1559,8 @@ class DiaryApp {
     }
 
     toggleReplyButton() {
+        if (!this.user) return;
+
         if (this.entries && this.entries[this.selectedDate] && this.entries[this.selectedDate].length > 0) {
             this.replyButton.classList.remove('hidden');
         } else {
@@ -1566,6 +1569,8 @@ class DiaryApp {
     }
 
     toggleAddPollBtn() {
+        if (!this.user) return;
+
         if (this.isDateEarlierThanToday(this.selectedDate)) {
             this.addPollBtn.style.display = 'none';
         } else if (this.user) {

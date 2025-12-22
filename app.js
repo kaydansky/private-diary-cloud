@@ -450,41 +450,43 @@ class DiaryApp {
         this.initEventListeners();
         
         // Find most recent entry date from both diary entries and polls
-        const [recentEntry, recentPoll] = await Promise.all([
-            this.supabase
-                .from('diary_entries')
-                .select('date')
-                .order('date', { ascending: false })
-                .limit(1)
-                .single(),
-            this.supabase
-                .from('polls')
-                .select('date')
-                .order('date', { ascending: false })
-                .limit(1)
-                .single()
-        ]);
-        
-        // Determine the most recent date between entries and polls
-        let mostRecentDate = null;
-        
-        if (recentEntry?.data?.date && recentPoll?.data?.date) {
-            // Both exist, choose the more recent one
-            mostRecentDate = recentEntry.data.date > recentPoll.data.date ? recentEntry.data.date : recentPoll.data.date;
-        } else if (recentEntry?.data?.date) {
-            // Only entry exists
-            mostRecentDate = recentEntry.data.date;
-        } else if (recentPoll?.data?.date) {
-            // Only poll exists
-            mostRecentDate = recentPoll.data.date;
-        }
-        
-        if (mostRecentDate) {
-            const [year, month] = mostRecentDate.split('-').map(Number);
-            this.currentDate = new Date(year, month - 1, 1);
-            this.selectedDate = mostRecentDate;
-        } else {
-            this.selectedDate = this.formatDateKey(new Date());
+        if (!this.user) {
+            const [recentEntry, recentPoll] = await Promise.all([
+                this.supabase
+                    .from('diary_entries')
+                    .select('date')
+                    .order('date', { ascending: false })
+                    .limit(1)
+                    .single(),
+                this.supabase
+                    .from('polls')
+                    .select('date')
+                    .order('date', { ascending: false })
+                    .limit(1)
+                    .single()
+            ]);
+            
+            // Determine the most recent date between entries and polls
+            let mostRecentDate = null;
+            
+            if (recentEntry?.data?.date && recentPoll?.data?.date) {
+                // Both exist, choose the more recent one
+                mostRecentDate = recentEntry.data.date > recentPoll.data.date ? recentEntry.data.date : recentPoll.data.date;
+            } else if (recentEntry?.data?.date) {
+                // Only entry exists
+                mostRecentDate = recentEntry.data.date;
+            } else if (recentPoll?.data?.date) {
+                // Only poll exists
+                mostRecentDate = recentPoll.data.date;
+            }
+            
+            if (mostRecentDate) {
+                const [year, month] = mostRecentDate.split('-').map(Number);
+                this.currentDate = new Date(year, month - 1, 1);
+                this.selectedDate = mostRecentDate;
+            } else {
+                this.selectedDate = this.formatDateKey(new Date());
+            }
         }
         
         await this.loadEntriesForMonth(this.currentDate.getFullYear(), this.currentDate.getMonth());

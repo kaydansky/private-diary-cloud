@@ -2,7 +2,7 @@ class DiaryApp {
     constructor() {
         this.supabase = null;
         this.currentDate = new Date();
-        this.selectedDate = null;
+        this.selectedDate = this.formatDateKey(new Date());
         this.entries = {};
         this.editingEntryId = null;
         this.originalText = '';
@@ -136,9 +136,11 @@ class DiaryApp {
                 document.getElementById('authContainer').classList.add('hidden');
                 document.getElementById('mainContainer').classList.remove('hidden');
                 this.updateAuthUI();
-                await this.broadcast();
+                // await this.broadcast();
                 
                 // Re-render entries when user signs in to update UI
+                this.selectedDate = this.formatDateKey(new Date());
+                console.log('User signed in, selectedDate:', this.selectedDate);
                 if (this.selectedDate) {
                     this.renderEntries(this.selectedDate);
                 }
@@ -154,7 +156,7 @@ class DiaryApp {
         });
         
         this.showMainApp();
-        await this.broadcast();
+        // await this.broadcast();
         await this.init();
     }
 
@@ -495,7 +497,7 @@ class DiaryApp {
         if (this.user) {
             this.initPushNotifications();
         }
-        
+        console.log('Selected date on init:', this.selectedDate);
         this.handleNotificationClick();
         this.showEntries(this.selectedDate);
     }

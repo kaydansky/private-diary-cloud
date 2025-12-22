@@ -1561,6 +1561,11 @@ class DiaryApp {
     toggleReplyButton() {
         if (!this.user) return;
 
+        if (document.activeElement === this.entryTextarea) {
+            this.replyButton.classList.add('hidden');
+            return;
+        }
+
         if (this.entries && this.entries[this.selectedDate] && this.entries[this.selectedDate].length > 0) {
             this.replyButton.classList.remove('hidden');
         } else {

@@ -77,6 +77,9 @@
                     <button class="header-menu-item" id="notificationsBtn" style="display: none;">
                         <i class="bi bi-bell"></i> <span data-i18n="turnOnNotifications">Turn On Notifications</span>
                     </button>
+                    <button class="header-menu-item" id="peopleBtn" style="display: none;">
+                        <i class="bi bi-people-fill"></i> <span data-i18n="peopleTitle">Пользователи</span>
+                    </button>
                     <button class="header-menu-item" id="accountBtn" style="display: none;">
                         <i class="bi bi-person-circle"></i> <span data-i18n="account">Account | {user name}</span>
                     </button>
@@ -327,6 +330,16 @@
                 <li data-i18n="howItWorksPoint8">The app works on both mobile devices and desktop computers. To share the app, simply send the link https://snt-tishinka.ru to your friends and acquaintances.</li>
             </ul>
             <button class="image-action-btn cancel" id="closeHowItWorksBtn" data-i18n="close">Close</button>
+        </div>
+    </div>
+
+    <div class="image-actions-modal" id="peopleModal">
+        <div class="image-actions-content">
+            <h3 data-i18n="peopleTitle">Пользователи</h3>
+            <ul class="how-it-works-list" id="peopleList">
+                <!-- User list will be populated here -->
+            </ul>
+            <button class="image-action-btn cancel" id="cancelPeopleBtn" data-i18n="close">Close</button>
         </div>
     </div>
 

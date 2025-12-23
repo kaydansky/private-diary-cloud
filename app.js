@@ -225,12 +225,14 @@ class DiaryApp {
         const addEntryBtn = document.getElementById('addEntryBtn');
         const addPollBtn = document.getElementById('addPollBtn');
         const addImageBtn = document.getElementById('addImageBtn');
+        const peopleBtn = document.getElementById('peopleBtn');
         
         if (this.user) {
             if (signInBtn) signInBtn.style.display = 'none';
             if (footerText) footerText.style.display = 'none';
             if (signOutBtn) signOutBtn.style.display = 'block';
             if (accountBtn) accountBtn.style.display = 'block';
+            if (peopleBtn) peopleBtn.style.display = 'block';
             if (notificationsBtn) notificationsBtn.style.display = 'block';
             if (addEntryBtn) addEntryBtn.style.display = 'flex';
             if (addPollBtn) addPollBtn.style.display = 'flex';
@@ -258,6 +260,7 @@ class DiaryApp {
             if (footerText) footerText.style.display = 'block';
             if (signOutBtn) signOutBtn.style.display = 'none';
             if (accountBtn) accountBtn.style.display = 'none';
+            if (peopleBtn) peopleBtn.style.display = 'none';
             if (notificationsBtn) notificationsBtn.style.display = 'none';
             if (addEntryBtn) addEntryBtn.style.display = 'none';
             if (addImageBtn) addImageBtn.style.display = 'none';
@@ -899,6 +902,7 @@ class DiaryApp {
         document.getElementById('signInBtn').addEventListener('click', () => this.showSignIn());
         document.getElementById('footerSignInLink').addEventListener('click', () => this.showSignIn());
         document.getElementById('accountBtn').addEventListener('click', () => this.showAccountModal());
+        document.getElementById('peopleBtn').addEventListener('click', () => this.showPeopleModal());
         this.signOutBtn.addEventListener('click', () => this.signOut());
         document.getElementById('shareEntryModalBtn').addEventListener('click', () => this.handleEntryAction('share'));
         document.getElementById('copyEntryModalBtn').addEventListener('click', () => this.handleEntryAction('copy'));
@@ -917,6 +921,7 @@ class DiaryApp {
         document.getElementById('deleteAllImagesBtn').addEventListener('click', () => this.deleteAllImages());
         document.getElementById('deleteAccountBtn').addEventListener('click', () => this.deleteAccountConfirm());
         document.getElementById('cancelAccountBtn').addEventListener('click', () => this.hideAccountModal());
+        document.getElementById('cancelPeopleBtn').addEventListener('click', () => this.hidePeopleModal());
         // document.getElementById('clearCacheBtn').addEventListener('click', () => this.clearCache());
         document.addEventListener('click', () => this.hideHeaderMenu());
         this.yearSelect.addEventListener('change', () => this.resetMonthSelect());
@@ -2787,6 +2792,76 @@ class DiaryApp {
     // Hide how it works modal
     hideHowItWorksModal() {
         document.getElementById('howItWorksModal').classList.remove('show');
+    }
+
+    // Show people modal
+    async showPeopleModal() {
+        // Try to fetch users from a dedicated users table first (sorted by registration date desc)
+        let users = [];
+        try {
+            const { data, error } = await this.supabase
+                .from('users')
+                .select('id, email, username, created_at')
+                .order('created_at', { ascending: false });
+
+            if (!error && data && data.length > 0) {
+                users = data.map(u => ({
+                    username: u?.username || u.email || 'Unknown',
+                    created_at: u.created_at
+                }));
+            }
+        } catch (err) {
+            // ignore and fallback
+        }
+
+        // Fallback: derive users from diary_entries if `users` table isn't available
+        if (!users || users.length === 0) {
+            try {
+                const { data: entries } = await this.supabase
+                    .from('diary_entries')
+                    .select('user_id, username, created_at');
+
+                const map = new Map();
+                if (entries && entries.length) {
+                    entries.forEach(e => {
+                        const key = e.user_id || e.username || Date.now().toString();
+                        const seen = map.get(key);
+                        const created = e.created_at ? new Date(e.created_at) : null;
+                        if (!seen) {
+                            map.set(key, { username: e.username || 'Unknown', created_at: e.created_at });
+                        } else if (created && new Date(seen.created_at) > created) {
+                            // keep earliest seen date as registration proxy
+                            map.set(key, { username: e.username || 'Unknown', created_at: e.created_at });
+                        }
+                    });
+                }
+
+                users = Array.from(map.values()).sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+            } catch (err) {
+                console.error('Failed to load users for people modal:', err);
+            }
+        }
+
+        // Render to people list in the modal as plain list items with shortened date
+        const peopleList = document.getElementById('peopleList');
+        if (peopleList) {
+            peopleList.innerHTML = '';
+            const dateOpts = { year: 'numeric', month: 'short', day: 'numeric' };
+            users.forEach(u => {
+                const li = document.createElement('li');
+                const dateStr = u.created_at ? new Date(u.created_at).toLocaleDateString('ru-Ru', dateOpts) : '';
+                li.textContent = dateStr ? `${u.username} — ${dateStr}` : u.username;
+                peopleList.appendChild(li);
+            });
+        }
+
+        document.getElementById('peopleModal').classList.add('show');
+        this.hideHeaderMenu();
+    }
+
+    // Hide people modal
+    hidePeopleModal() {
+        document.getElementById('peopleModal').classList.remove('show');
     }
 
     // Share app

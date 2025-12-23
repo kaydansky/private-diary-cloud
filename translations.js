@@ -140,7 +140,8 @@ const translations = {
         shortD: 'd',
         shortH: 'h',
         shortM: 'm',
-        shortS: 's' 
+        shortS: 's',
+        peopleTitle: 'People'
     },
     fr: {
         appTitle: 'Journal Privé Cloud',
@@ -283,7 +284,8 @@ const translations = {
         shortD: 'j',
         shortH: 'h',
         shortM: 'min',
-        shortS: 'sec'
+        shortS: 'sec',
+        peopleTitle: 'Personnes'
     },
     de: {
         appTitle: 'Tagebuch Cloud',
@@ -427,7 +429,8 @@ const translations = {
         shortD: 'T',
         shortH: 'std',
         shortM: 'min',
-        shortS: 'sek'
+        shortS: 'sek',
+        peopleTitle: 'Personen'
     },
     ru: {
         appTitle: 'СНТ Тишинка',
@@ -568,6 +571,7 @@ const translations = {
         shortD: 'д',
         shortH: 'ч',
         shortM: 'м',
-        shortS: 'с'
+        shortS: 'с',
+        peopleTitle: 'Пользователи'
     }
 };

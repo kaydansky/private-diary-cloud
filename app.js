@@ -1100,6 +1100,7 @@ class DiaryApp {
             }
         } finally {
             this.hideLoadingOverlay();
+            await this.broadcast();
         }
     }
 

@@ -1,8 +1,72 @@
+// Modal manager to handle show/hide for all modals consistently
+class ModalManager {
+    constructor() {
+        this.modals = new Map();
+    }
+
+    // Register a modal with optional setup and cleanup callbacks
+    register(name, elementId, setupFn = null, cleanupFn = null) {
+        this.modals.set(name, { elementId, setupFn, cleanupFn });
+    }
+
+    // Show a modal, optionally executing setup callback
+    show(name) {
+        const modal = this.modals.get(name);
+        if (!modal) {
+            console.warn(`Modal "${name}" not registered`);
+            return;
+        }
+        const element = document.getElementById(modal.elementId);
+        if (element) {
+            element.classList.add('show');
+            if (modal.setupFn) modal.setupFn();
+        }
+    }
+
+    // Hide a modal, optionally executing cleanup callback
+    hide(name) {
+        const modal = this.modals.get(name);
+        if (!modal) {
+            console.warn(`Modal "${name}" not registered`);
+            return;
+        }
+        const element = document.getElementById(modal.elementId);
+        if (element) {
+            element.classList.remove('show');
+            if (modal.cleanupFn) modal.cleanupFn();
+        }
+    }
+
+    // Toggle modal visibility
+    toggle(name) {
+        const modal = this.modals.get(name);
+        if (!modal) return;
+        const element = document.getElementById(modal.elementId);
+        if (element) {
+            element.classList.toggle('show');
+            if (element.classList.contains('show') && modal.setupFn) {
+                modal.setupFn();
+            } else if (!element.classList.contains('show') && modal.cleanupFn) {
+                modal.cleanupFn();
+            }
+        }
+    }
+
+    // Check if modal is visible
+    isVisible(name) {
+        const modal = this.modals.get(name);
+        if (!modal) return false;
+        const element = document.getElementById(modal.elementId);
+        return element ? element.classList.contains('show') : false;
+    }
+}
+
 class DiaryApp {
     constructor() {
         this.supabase = null;
         this.currentDate = new Date();
         this.selectedDate = this.formatDateKey(new Date());
+        this.modalManager = new ModalManager();
         this.entries = {};
         this.editingEntryId = null;
         this.originalText = '';
@@ -1017,6 +1081,44 @@ class DiaryApp {
                 this.handleOptionInput(e.target);
             }
         });
+
+        // Register all modals with the modal manager
+        this.registerModals();
+    }
+
+    // Register all modals for centralized management
+    registerModals() {
+        // Entry/Poll actions modals (no special callbacks needed)
+        this.modalManager.register('entryActions', 'entryActionsModal');
+        this.modalManager.register('pollActions', 'pollActionsModal');
+        this.modalManager.register('imageActions', 'imageActionsModal');
+        this.modalManager.register('image', 'imageModal', null, () => {
+            URL.revokeObjectURL(this.modalImage.src);
+            this.removeModalCloseHandlers();
+        });
+
+        // Account & Auth modals
+        this.modalManager.register('language', 'languageModal', () => this.hideHeaderMenu());
+        this.modalManager.register('account', 'accountModal', () => this.hideHeaderMenu());
+        this.modalManager.register('resetPassword', 'resetPasswordModal', null, () => {
+            this.resetEmail.value = '';
+        });
+        this.modalManager.register('updatePassword', 'updatePasswordModal', null, () => {
+            document.getElementById('newPassword').value = '';
+            document.getElementById('confirmNewPassword').value = '';
+            document.getElementById('newUsername').value = '';
+        });
+        this.modalManager.register('changeUsername', 'changeUsernameModal', () => {
+            this.hideAccountModal();
+            document.getElementById('newUsername').value = this.user?.user_metadata?.username || '';
+            document.getElementById('newUsername').focus();
+        }, () => {
+            document.getElementById('newUsername').value = '';
+        });
+
+        // Info modals
+        this.modalManager.register('howItWorks', 'howItWorksModal', () => this.hideHeaderMenu());
+        this.modalManager.register('people', 'peopleModal', null, () => this.hideHeaderMenu());
     }
 
     // Load entries for specific month from Supabase
@@ -1280,6 +1382,57 @@ class DiaryApp {
         this.searchResults.addEventListener('click', this._searchResultsClick);
 
         this.searchResults.classList.remove('hidden');
+    }
+
+    // Compress image with adaptive quality based on original size
+    async compressImage(blob, maxWidth = 1920, maxHeight = 1920) {
+        return new Promise((resolve, reject) => {
+            const img = new Image();
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            
+            img.onload = () => {
+                try {
+                    let { width, height } = img;
+                    
+                    // Resize if dimensions exceed max
+                    if (width > maxWidth || height > maxHeight) {
+                        const ratio = Math.min(maxWidth / width, maxHeight / height);
+                        width *= ratio;
+                        height *= ratio;
+                    }
+                    
+                    canvas.width = width;
+                    canvas.height = height;
+                    ctx.drawImage(img, 0, 0, width, height);
+                    
+                    // Adaptive quality: larger images get lower quality to reduce final size
+                    const originalSize = blob.size;
+                    let quality = 0.8; // Default quality
+                    
+                    if (originalSize > 5 * 1024 * 1024) {
+                        // > 5MB: compress harder
+                        quality = 0.6;
+                    } else if (originalSize > 2 * 1024 * 1024) {
+                        // > 2MB: compress moderately
+                        quality = 0.7;
+                    }
+                    
+                    canvas.toBlob((compressedBlob) => {
+                        if (!compressedBlob) {
+                            reject(new Error('Canvas compression failed'));
+                            return;
+                        }
+                        resolve(compressedBlob);
+                    }, 'image/jpeg', quality);
+                } catch (err) {
+                    reject(err);
+                }
+            };
+            
+            img.onerror = () => reject(new Error('Failed to load image'));
+            img.src = URL.createObjectURL(blob);
+        });
     }
 
     // Save image to Supabase Storage
@@ -1739,7 +1892,7 @@ class DiaryApp {
         if (this.searchQuery) {
             textDiv.innerHTML = this.highlightText(entry.text, this.searchQuery);
         } else {
-            textDiv.textContent = entry.text;
+            textDiv.innerHTML = this.escapeHtml(entry.text);
         }
         contentDiv.appendChild(textDiv);
 
@@ -2365,7 +2518,7 @@ class DiaryApp {
         this.entryTextarea.focus();
     }
 
-    // Show entry actions modal
+    // Show entry actions modal (delegated to modalManager)
     showEntryActionsModal(entryId, date) {
         const entries = this.entries[date] || [];
         const entry = entries.find(e => e.id === entryId);
@@ -2378,9 +2531,10 @@ class DiaryApp {
         
         this.currentEntryId = entryId;
         this.currentEntryDate = date;
-        document.getElementById('entryActionsModal').classList.add('show');
+        this.modalManager.show('entryActions');
     }
 
+    // Show poll actions modal (delegated to modalManager)
     showPollActionsModal(pollId, date) {
         const entries = this.entries[date] || [];
         const poll = entries.find(e => e.id === pollId);
@@ -2391,16 +2545,17 @@ class DiaryApp {
         
         this.currentEntryId = pollId;
         this.currentEntryDate = date;
-        document.getElementById('pollActionsModal').classList.add('show');
+        this.modalManager.show('pollActions');
     }
 
-    // Hide entry actions modal
+    // Hide entry actions modal (delegated to modalManager)
     hideEntryActionsModal() {
-        document.getElementById('entryActionsModal').classList.remove('show');
+        this.modalManager.hide('entryActions');
     }
 
+    // Hide poll actions modal (delegated to modalManager)
     hidePollActionsModal() {
-        document.getElementById('pollActionsModal').classList.remove('show');
+        this.modalManager.hide('pollActions');
     }
 
     // Handle entry action
@@ -2593,31 +2748,20 @@ class DiaryApp {
             return;
         }
         
-        const img = new Image();
-        const canvas = document.createElement('canvas');
-        const ctx = canvas.getContext('2d');
-        
-        img.onload = async () => {
-            let { width, height } = img;
-            const maxSize = 1920;
+        try {
+            // Compress image before upload (main thread compression)
+            const compressedBlob = await this.compressImage(file, 1920, 1920);
             
-            if (width > maxSize || height > maxSize) {
-                const ratio = Math.min(maxSize / width, maxSize / height);
-                width *= ratio;
-                height *= ratio;
-            }
+            // Log compression ratio for diagnostics
+            const ratio = ((1 - compressedBlob.size / file.size) * 100).toFixed(1);
+            console.log(`Image compressed: ${(file.size / 1024).toFixed(0)}KB → ${(compressedBlob.size / 1024).toFixed(0)}KB (${ratio}% reduction)`);
             
-            canvas.width = width;
-            canvas.height = height;
-            ctx.drawImage(img, 0, 0, width, height);
-            
-            canvas.toBlob(async (blob) => {
-                const imageUrl = await this.saveImage(blob);
-                await this.attachImageToEntry(imageUrl);
-            }, 'image/jpeg', 0.8);
-        };
-        
-        img.src = URL.createObjectURL(file);
+            const imageUrl = await this.saveImage(compressedBlob);
+            await this.attachImageToEntry(imageUrl);
+        } catch (error) {
+            console.error('Error processing image:', error);
+            alert(this.t('alertImageProcessingFailed'));
+        }
     }
 
     // Attach image to entry
@@ -2715,15 +2859,13 @@ class DiaryApp {
     // Show image modal
     async showImageModal(imageUrl) {
         this.modalImage.src = imageUrl;
-        this.imageModal.classList.add('show');
         this.addModalCloseHandlers();
+        this.modalManager.show('image');
     }
 
     // Close image modal
     closeImageModal() {
-        this.imageModal.classList.remove('show');
-        URL.revokeObjectURL(this.modalImage.src);
-        this.removeModalCloseHandlers();
+        this.modalManager.hide('image');
     }
 
     // Add modal close handlers
@@ -2858,12 +3000,12 @@ class DiaryApp {
         // Hide delete button if not owner or not authenticated
         document.getElementById('deleteImageModalBtn').style.display = isOwnEntry ? 'block' : 'none';
         
-        document.getElementById('imageActionsModal').classList.add('show');
+        this.modalManager.show('imageActions');
     }
 
     // Hide image actions modal
     hideImageActionsModal() {
-        document.getElementById('imageActionsModal').classList.remove('show');
+        this.modalManager.hide('imageActions');
     }
 
     // Share image
@@ -2973,35 +3115,32 @@ class DiaryApp {
 
     // Show language modal
     showLanguageModal() {
-        document.getElementById('languageModal').classList.add('show');
-        this.hideHeaderMenu();
+        this.modalManager.show('language');
     }
 
     // Hide language modal
     hideLanguageModal() {
-        document.getElementById('languageModal').classList.remove('show');
+        this.modalManager.hide('language');
     }
 
     // Show account modal
     showAccountModal() {
-        document.getElementById('accountModal').classList.add('show');
-        this.hideHeaderMenu();
+        this.modalManager.show('account');
     }
 
     // Hide account modal
     hideAccountModal() {
-        document.getElementById('accountModal').classList.remove('show');
+        this.modalManager.hide('account');
     }
 
     // Show reset password modal
     showResetPasswordModal() {
-        document.getElementById('resetPasswordModal').classList.add('show');
+        this.modalManager.show('resetPassword');
     }
 
     // Hide reset password modal
     hideResetPasswordModal() {
-        document.getElementById('resetPasswordModal').classList.remove('show');
-        this.resetEmail.value = '';
+        this.modalManager.hide('resetPassword');
     }
 
     // Send password reset email
@@ -3023,15 +3162,12 @@ class DiaryApp {
 
     // Show update password modal
     showUpdatePasswordModal() {
-        document.getElementById('updatePasswordModal').classList.add('show');
+        this.modalManager.show('updatePassword');
     }
 
     // Hide update password modal
     hideUpdatePasswordModal() {
-        document.getElementById('updatePasswordModal').classList.remove('show');
-        document.getElementById('newPassword').value = '';
-        document.getElementById('confirmNewPassword').value = '';
-        document.getElementById('newUsername').value = '';
+        this.modalManager.hide('updatePassword');
     }
 
     // Update password
@@ -3059,27 +3195,22 @@ class DiaryApp {
 
     // Show change username modal
     showChangeUsernameModal() {
-        this.hideAccountModal();
-        document.getElementById('newUsername').value = this.user.user_metadata?.username || '';
-        document.getElementById('changeUsernameModal').classList.add('show');
-        document.getElementById('newUsername').focus();
+        this.modalManager.show('changeUsername');
     }
 
     // Hide change username modal
     hideChangeUsernameModal() {
-        document.getElementById('changeUsernameModal').classList.remove('show');
-        document.getElementById('newUsername').value = '';
+        this.modalManager.hide('changeUsername');
     }
 
     // Show how it works modal
     showHowItWorksModal() {
-        document.getElementById('howItWorksModal').classList.add('show');
-        this.hideHeaderMenu();
+        this.modalManager.show('howItWorks');
     }
 
     // Hide how it works modal
     hideHowItWorksModal() {
-        document.getElementById('howItWorksModal').classList.remove('show');
+        this.modalManager.hide('howItWorks');
     }
 
     // Show people modal
@@ -3143,13 +3274,12 @@ class DiaryApp {
             });
         }
 
-        document.getElementById('peopleModal').classList.add('show');
-        this.hideHeaderMenu();
+        this.modalManager.show('people');
     }
 
     // Hide people modal
     hidePeopleModal() {
-        document.getElementById('peopleModal').classList.remove('show');
+        this.modalManager.hide('people');
     }
 
     // Share app

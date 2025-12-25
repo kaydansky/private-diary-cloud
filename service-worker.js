@@ -1,13 +1,20 @@
-const CACHE_NAME = 'diary-cloud-v1.0.5';
+const CACHE_NAME = 'diary-cloud-v1.0.6';
+const CDN_CACHE_NAME = 'diary-cloud-cdn-v1';
+const IMAGE_CACHE_NAME = 'diary-cloud-images-v1';
 
-const urlsToCache = [
+// Only critical app files — fail gracefully if unavailable
+const CRITICAL_ASSETS = [
     '/',
     '/index.html',
     '/styles.css',
     '/app.js',
     '/config.js',
     '/translations.js',
-    '/manifest.json',
+    '/manifest.json'
+];
+
+// 3rd-party assets to cache at runtime (stale-while-revalidate)
+const CDN_URLS = [
     'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2',
     'https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css'
 ];
@@ -15,8 +22,13 @@ const urlsToCache = [
 self.addEventListener('install', event => {
     event.waitUntil(
         caches.open(CACHE_NAME)
-            .then(cache => cache.addAll(urlsToCache))
-        );
+            .then(cache => {
+                // Cache only critical assets; don't block install if CDN fails
+                return cache.addAll(CRITICAL_ASSETS)
+                    .catch(err => console.warn('Install: failed to cache some critical assets', err));
+            })
+            .then(() => self.skipWaiting())
+    );
 });
 
 // Remove all old caches when this SW activates
@@ -25,17 +37,84 @@ self.addEventListener('activate', event => {
         caches.keys().then(cacheNames => {
             return Promise.all(
                 cacheNames
-                    .filter(name => name !== CACHE_NAME)
-                    .map(name => caches.delete(name))
+                    .filter(name => name !== CACHE_NAME && name !== CDN_CACHE_NAME && name !== IMAGE_CACHE_NAME)
+                    .map(name => {
+                        console.log('Deleting old cache:', name);
+                        return caches.delete(name);
+                    })
             );
         }).then(() => self.clients.claim())
     );
 });
 
 self.addEventListener('fetch', event => {
+    const url = new URL(event.request.url);
+    
+    // 1. Skip cross-origin requests (CORS issues)
+    if (!url.origin.includes(self.location.origin) && !CDN_URLS.some(cdn => url.href.startsWith(cdn))) {
+        return;
+    }
+
+    // 2. API calls to Supabase: network-first with fallback to cache
+    if (url.origin.includes('supabase') || url.pathname.includes('/rest/v1/')) {
+        return event.respondWith(
+            fetch(event.request)
+                .then(response => {
+                    // Cache successful API responses
+                    if (response && response.status === 200 && event.request.method === 'GET') {
+                        const clone = response.clone();
+                        caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
+                    }
+                    return response;
+                })
+                .catch(err => {
+                    // Network failed; try cache as fallback
+                    return caches.match(event.request)
+                        .then(cached => cached || new Response('Offline', { status: 503 }));
+                })
+        );
+    }
+
+    // 3. CDN assets: stale-while-revalidate (serve cached, update in background)
+    if (CDN_URLS.some(cdn => url.href.startsWith(cdn))) {
+        return event.respondWith(
+            caches.match(event.request)
+                .then(cached => {
+                    const fetched = fetch(event.request).then(response => {
+                        if (response && response.status === 200) {
+                            const clone = response.clone();
+                            caches.open(CDN_CACHE_NAME).then(cache => cache.put(event.request, clone));
+                        }
+                        return response;
+                    }).catch(() => cached || new Response('Not cached', { status: 503 }));
+
+                    return cached || fetched;
+                })
+        );
+    }
+
+    // 4. Images: stale-while-revalidate (Supabase Storage)
+    if (url.href.includes('supabase') && (url.pathname.endsWith('.jpg') || url.pathname.endsWith('.png') || url.pathname.endsWith('.webp'))) {
+        return event.respondWith(
+            caches.match(event.request)
+                .then(cached => {
+                    const fetched = fetch(event.request).then(response => {
+                        if (response && response.status === 200) {
+                            const clone = response.clone();
+                            caches.open(IMAGE_CACHE_NAME).then(cache => cache.put(event.request, clone));
+                        }
+                        return response;
+                    }).catch(() => cached || new Response('Image not cached', { status: 503 }));
+
+                    return cached || fetched;
+                })
+        );
+    }
+
+    // 5. Default: cache-first for static assets (app.js, styles.css, etc.)
     event.respondWith(
         caches.match(event.request)
-        .then(response => response || fetch(event.request))
+            .then(cached => cached || fetch(event.request).catch(err => new Response('Offline', { status: 503 })))
     );
 });
 

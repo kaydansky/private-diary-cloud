@@ -7,6 +7,8 @@ class DiaryApp {
         this.editingEntryId = null;
         this.originalText = '';
         this.autoSaveEntryId = null;
+        this._monthCache = new Map();
+        this._imgObserver = null;
         this.currentLanguage = this.initLanguage();
         this.user = null;
         this.isAuthMode = true;
@@ -55,6 +57,17 @@ class DiaryApp {
     // Get translation
     t(key) {
         return translations[this.currentLanguage][key] || key;
+    }
+
+    // Simple debounce helper bound to the instance
+    debounce(fn, wait = 300) {
+        let timer = null;
+        return (...args) => {
+            if (timer) clearTimeout(timer);
+            timer = setTimeout(() => {
+                try { fn.apply(this, args); } catch (e) { console.error(e); }
+            }, wait);
+        };
     }
 
     // Change language
@@ -893,7 +906,55 @@ class DiaryApp {
                 this.doneEntry();
             }
         });
-        this.searchInput.addEventListener('input', (e) => this.handleSearch(e.target.value));
+        // Debounced search input to reduce DB queries
+        this._debouncedSearch = this.debounce((e) => this.handleSearch(e.target.value), 300);
+        this.searchInput.addEventListener('input', this._debouncedSearch);
+
+        // Autosave drafts (debounced) while typing in the entry textarea
+        this._debouncedAutoSave = this.debounce(() => this.autoSaveDraft(), 2000);
+        this.entryTextarea.addEventListener('input', this._debouncedAutoSave);
+        // Event delegation for entry actions and image clicks
+        if (this.entryList) {
+            this.entryList.addEventListener('click', (e) => {
+                const menuBtn = e.target.closest('.menu-btn');
+                if (menuBtn) {
+                    e.stopPropagation();
+                    const entryId = menuBtn.dataset.entryId;
+                    const date = menuBtn.dataset.date;
+                    const entries = this.entries[date] || [];
+                    const entry = entries.find(en => en.id === entryId);
+                    if (entry && entry.type === 'poll') {
+                        if (menuBtn.dataset.userId !== this.user?.id) {
+                            menuBtn.classList.add('hidden');
+                        } else {
+                            this.showPollActionsModal(entryId, date);
+                        }
+                    } else {
+                        this.showEntryActionsModal(entryId, date);
+                    }
+                    return;
+                }
+
+                const img = e.target.closest('.image-thumbnail');
+                if (img) {
+                    const src = img.dataset?.src || img.src;
+                    if (src) this.showImageModal(src);
+                    return;
+                }
+            });
+
+            // Delegate poll radio changes
+            this.entryList.addEventListener('change', (e) => {
+                const input = e.target.closest('input[type="radio"]');
+                if (!input) return;
+                const name = input.name || '';
+                if (name.startsWith('poll-')) {
+                    const pollId = name.replace('poll-', '');
+                    const optionId = input.value;
+                    this.voteOnPoll(pollId, optionId);
+                }
+            });
+        }
         this.headerMenuToggle.addEventListener('click', (e) => {
             e.stopPropagation();
             this.toggleHeaderMenu();
@@ -960,25 +1021,20 @@ class DiaryApp {
 
     // Load entries for specific month from Supabase
     async loadEntriesForMonth(year, month) {
-        // If we already have entries loaded and those entries are for the
-        // same year/month the function was asked to load, skip re-loading.
-        // Note: `month` param is 0-based (0-11), keys in `this.entries` are YYYY-MM-DD.
-        if (Object.keys(this.entries || {}).length > 0) {
-            const firstKey = Object.keys(this.entries)[0];
-            if (firstKey) {
-                const [eYearStr, eMonthStr] = String(firstKey).split('-');
-                const eYear = Number(eYearStr);
-                const eMonth = Number(eMonthStr); // 1-12
-                if (eYear === Number(year) && eMonth === Number(month) + 1) {
-                    // console.log('Entries already loaded for year/month:', year, month);
-                    return;
-                }
+        const monthKey = `${year}-${String(month + 1).padStart(2, '0')}`;
+
+        // Return cached month if available (deep clone to avoid accidental mutations)
+        if (this._monthCache && this._monthCache.has(monthKey)) {
+            try {
+                this.entries = JSON.parse(JSON.stringify(this._monthCache.get(monthKey)));
+            } catch (e) {
+                this.entries = Object.assign({}, this._monthCache.get(monthKey));
             }
+            return;
         }
 
         this.showLoadingOverlay();
         try {
-            const monthKey = `${year}-${String(month + 1).padStart(2, '0')}`;
             const lastDay = new Date(year, month + 1, 0).getDate();
             
             // Load diary entries
@@ -1098,6 +1154,13 @@ class DiaryApp {
                     });
                 }
             }
+
+            // Cache loaded month data (deep copy)
+            try {
+                this._monthCache.set(monthKey, JSON.parse(JSON.stringify(this.entries)));
+            } catch (e) {
+                this._monthCache.set(monthKey, Object.assign({}, this.entries));
+            }
         } finally {
             this.hideLoadingOverlay();
             await this.broadcast();
@@ -1160,56 +1223,63 @@ class DiaryApp {
             entry.originalText = entry.text;
             entry.originalImages = [...(entry.images || [])]; // deep copy
         }
+        // Invalidate cached month for the selected date so next fetch reads fresh data
+        try {
+            const monthKey = this.selectedDate.slice(0,7); // YYYY-MM
+            if (this._monthCache && this._monthCache.has(monthKey)) this._monthCache.delete(monthKey);
+        } catch (e) {
+            // ignore
+        }
     }
 
     // Handle search input
     async handleSearch(query) {
-        if (!query.trim()) {
+        if (!query || !query.trim()) {
             this.searchResults.classList.add('hidden');
             return;
         }
 
-        if (this.searchTimeout) clearTimeout(this.searchTimeout);
-        
-        this.searchTimeout = setTimeout(async () => {
-            const { data } = await this.supabase
-                .from('diary_entries')
-                .select('*')
-                .ilike('text', `%${query.trim()}%`)
-                .limit(10);
+        const q = query.trim();
+        const { data } = await this.supabase
+            .from('diary_entries')
+            .select('*')
+            .ilike('text', `%${q}%`)
+            .limit(10);
 
-            if (!data || data.length === 0) {
-                this.searchResults.innerHTML = '<div class="no-entries">' + this.t('noResults') + '</div>';
-                this.searchResults.classList.remove('hidden');
-                return;
-            }
-
-            this.searchResults.innerHTML = data.map(result => {
-                const preview = result.text.substring(0, 100) + (result.text.length > 100 ? '...' : '');
-                return `
-                    <div class="search-result-item" data-date="${result.date}">
-                        <div class="search-result-date">${this.formatDate(result.date)}</div>
-                        <div class="search-result-text">${this.escapeHtml(preview)}</div>
-                    </div>
-                `;
-            }).join('');
-
-            this.searchResults.querySelectorAll('.search-result-item').forEach(item => {
-                item.addEventListener('click', async () => {
-                    const date = item.dataset.date;
-                    const [year, month, day] = date.split('-').map(Number);
-                    this.currentDate = new Date(year, month - 1, day);
-                    this.selectedDate = date;
-                    this.searchQuery = query;
-                    await this.loadEntriesForMonth(year, month - 1);
-                    this.showEntries(date);
-                    this.searchInput.value = '';
-                    this.searchResults.classList.add('hidden');
-                });
-            });
-
+        if (!data || data.length === 0) {
+            this.searchResults.innerHTML = '<div class="no-entries">' + this.t('noResults') + '</div>';
             this.searchResults.classList.remove('hidden');
-        }, 300);
+            return;
+        }
+
+        this.searchResults.innerHTML = data.map(result => {
+            const preview = result.text.substring(0, 100) + (result.text.length > 100 ? '...' : '');
+            return `
+                <div class="search-result-item" data-date="${result.date}">
+                    <div class="search-result-date">${this.formatDate(result.date)}</div>
+                    <div class="search-result-text">${this.escapeHtml(preview)}</div>
+                </div>
+            `;
+        }).join('');
+
+        // Use event delegation on searchResults container
+        this.searchResults.removeEventListener('click', this._searchResultsClick);
+        this._searchResultsClick = async (e) => {
+            const item = e.target.closest('.search-result-item');
+            if (!item) return;
+            const date = item.dataset.date;
+            const [year, month, day] = date.split('-').map(Number);
+            this.currentDate = new Date(year, month - 1, day);
+            this.selectedDate = date;
+            this.searchQuery = q;
+            await this.loadEntriesForMonth(year, month - 1);
+            this.showEntries(date);
+            this.searchInput.value = '';
+            this.searchResults.classList.add('hidden');
+        };
+        this.searchResults.addEventListener('click', this._searchResultsClick);
+
+        this.searchResults.classList.remove('hidden');
     }
 
     // Save image to Supabase Storage
@@ -1379,12 +1449,15 @@ class DiaryApp {
         const daysInMonth = new Date(year, month + 1, 0).getDate();
         const daysInPrevMonth = new Date(year, month, 0).getDate();
 
-        let html = '';
+        const frag = document.createDocumentFragment();
+        const temp = document.createElement('div');
         const today = new Date();
         const todayStr = this.formatDateKey(today);
 
         for (let i = firstDay - 1; i >= 0; i--) {
-            html += `<div class="day other-month">${daysInPrevMonth - i}</div>`;
+            temp.innerHTML = `<div class="day other-month">${daysInPrevMonth - i}</div>`;
+            frag.appendChild(temp.firstElementChild);
+            temp.innerHTML = '';
         }
 
         for (let day = 1; day <= daysInMonth; day++) {
@@ -1403,24 +1476,33 @@ class DiaryApp {
                 if (hasEntries) classes += ' has-entries';
             }
 
-            html += `<div class="${classes}" data-date="${dateKey}">${day}</div>`;
+            temp.innerHTML = `<div class="${classes}" data-date="${dateKey}">${day}</div>`;
+            frag.appendChild(temp.firstElementChild);
+            temp.innerHTML = '';
         }
 
         const remainingCells = 42 - (firstDay + daysInMonth);
         for (let day = 1; day <= remainingCells; day++) {
-            html += `<div class="day other-month">${day}</div>`;
+            temp.innerHTML = `<div class="day other-month">${day}</div>`;
+            frag.appendChild(temp.firstElementChild);
+            temp.innerHTML = '';
         }
 
-        this.calendarDays.innerHTML = html;
+        this.calendarDays.innerHTML = '';
+        this.calendarDays.appendChild(frag);
 
-        this.calendarDays.querySelectorAll('.day:not(.other-month):not(.future)').forEach(day => {
-            day.addEventListener('click', () => {
+        // Use delegated click handler on calendarDays to avoid re-adding listeners
+        if (!this._calendarClickHandler) {
+            this._calendarClickHandler = (e) => {
+                const day = e.target.closest('.day:not(.other-month):not(.future)');
+                if (!day) return;
                 const date = day.dataset.date;
                 this.selectedDate = date;
                 this.renderCalendar();
                 this.showEntries(date);
-            });
-        });
+            };
+            this.calendarDays.addEventListener('click', this._calendarClickHandler);
+        }
     }
 
     // Convert Date object to YYYY-MM-DD string
@@ -1492,57 +1574,30 @@ class DiaryApp {
             return;
         }
 
-        this.entryList.innerHTML = entries.map(entry => {
-            if (entry.type === 'poll') {
-                return this.renderPoll(entry, date);
-            } else {
-                return this.renderEntry(entry, date);
-            }
-        }).join('');
+        // Build entries using DocumentFragment with DOM factories (no HTML templates)
+        const frag = document.createDocumentFragment();
 
+        for (const entry of entries) {
+            const el = entry.type === 'poll' ? this.createPollElement(entry, date) : this.createEntryElement(entry, date);
+            frag.appendChild(el);
+        }
+
+        // Clear and append fragment in one reflow
+        this.entryList.innerHTML = '';
+        this.entryList.appendChild(frag);
+
+        // Load images lazily for entries
         entries.forEach(entry => {
             if (entry.type === 'entry' && entry.images && entry.images.length > 0) {
                 this.loadEntryImages(entry.id, entry.images);
             }
         });
-        
+
         this.searchQuery = '';
 
-        // Initialize poll countdown timers and start updates
+        // Initialize poll countdown timers and start updates (single update manager)
         if (!this.pollCountdowns) this.pollCountdowns = new Map();
         this.updatePollCountdowns(entries);
-
-        // Add event listeners for entry actions
-        this.entryList.querySelectorAll('.menu-btn').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                
-                // Find the entry object to check its type
-                const entryId = btn.dataset.entryId;
-                const date = btn.dataset.date;
-                const entries = this.entries[date] || [];
-                const entry = entries.find(e => e.id === entryId);
-
-                if (entry && entry.type === 'poll') {
-                    if (btn.dataset.userId !== this.user?.id) {
-                        btn.classList.add('hidden');
-                    } else {
-                        this.showPollActionsModal(entryId, date);
-                    }
-                } else {
-                    this.showEntryActionsModal(entryId, date);
-                }
-            });
-        });
-
-        // Add event listeners for poll voting
-        this.entryList.querySelectorAll('.poll-options input[type="radio"]').forEach(input => {
-            input.addEventListener('change', (e) => {
-                const pollId = e.target.name.replace('poll-', '');
-                const optionId = e.target.value;
-                this.voteOnPoll(pollId, optionId);
-            });
-        });
 
         this.toggleReplyButton();
     }
@@ -1652,7 +1707,68 @@ class DiaryApp {
     }
 
 
-    // Render a diary entry
+    // DOM factory for creating entry element (avoids innerHTML per entry)
+    createEntryElement(entry, date) {
+        const li = document.createElement('li');
+        li.className = 'entry-item';
+        li.setAttribute('data-entry-id', entry.id);
+
+        const contentDiv = document.createElement('div');
+        contentDiv.className = 'entry-content';
+
+        // Add author and time if present
+        if (entry.username) {
+            const authorDiv = document.createElement('div');
+            authorDiv.className = 'entry-author';
+            authorDiv.innerHTML = `— ${this.escapeHtml(entry.username)} <br> `;
+
+            const timeSpan = document.createElement('span');
+            timeSpan.className = 'entry-time';
+            if (entry.createdAt) {
+                const dateStr = new Date(entry.createdAt).toLocaleDateString('ru-Ru', { day: '2-digit', month: '2-digit', year: 'numeric' });
+                const timeStr = new Date(entry.createdAt).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
+                timeSpan.textContent = `${dateStr} ${timeStr}`;
+            }
+            authorDiv.appendChild(timeSpan);
+            contentDiv.appendChild(authorDiv);
+        }
+
+        // Entry text
+        const textDiv = document.createElement('div');
+        textDiv.className = 'entry-text';
+        if (this.searchQuery) {
+            textDiv.innerHTML = this.highlightText(entry.text, this.searchQuery);
+        } else {
+            textDiv.textContent = entry.text;
+        }
+        contentDiv.appendChild(textDiv);
+
+        // Images container
+        const imagesDiv = document.createElement('div');
+        imagesDiv.className = 'entry-images';
+        imagesDiv.id = `images-${entry.id}`;
+        contentDiv.appendChild(imagesDiv);
+
+        li.appendChild(contentDiv);
+
+        // Entry actions
+        const actionsDiv = document.createElement('div');
+        actionsDiv.className = 'entry-actions';
+
+        const menuBtn = document.createElement('button');
+        menuBtn.className = 'menu-btn';
+        menuBtn.setAttribute('data-entry-id', entry.id);
+        menuBtn.setAttribute('data-date', date);
+        menuBtn.title = this.t('entryOptions');
+        menuBtn.innerHTML = '<i class="bi bi-three-dots-vertical"></i>';
+
+        actionsDiv.appendChild(menuBtn);
+        li.appendChild(actionsDiv);
+
+        return li;
+    }
+
+    // Render a diary entry (legacy method, now uses factory)
     renderEntry(entry, date) {
         const entryText = this.searchQuery ? this.highlightText(entry.text, this.searchQuery) : this.escapeHtml(entry.text);
         const entryTime = entry.createdAt ? new Date(entry.createdAt).toLocaleDateString('ru-Ru', { day: '2-digit', month: '2-digit', year: 'numeric' }) + ' ' + new Date(entry.createdAt).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }) : '';
@@ -1673,7 +1789,109 @@ class DiaryApp {
         `;
     }
 
-    // Render a poll
+    // DOM factory for creating poll element (avoids innerHTML per poll)
+    createPollElement(poll, date) {
+        const li = document.createElement('li');
+        li.className = 'entry-item poll-item';
+        li.setAttribute('data-poll-id', poll.id);
+
+        const contentDiv = document.createElement('div');
+        contentDiv.className = 'entry-content';
+
+        // Add author and time if present
+        if (poll.username) {
+            const authorDiv = document.createElement('div');
+            authorDiv.className = 'entry-author';
+
+            const pollTime = poll.createdAt ? new Date(poll.createdAt).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }) : '';
+            authorDiv.innerHTML = `— ${this.escapeHtml(poll.username)} &bull; ${pollTime} <br> `;
+
+            const countdownSpan = document.createElement('span');
+            countdownSpan.className = 'poll-countdown';
+            countdownSpan.setAttribute('data-poll-id', poll.id);
+
+            const isExpired = this.isPollExpired(poll);
+            if (!isExpired && poll.createdAt) {
+                const pollCreationTime = new Date(poll.createdAt).getTime();
+                const expirationTime = pollCreationTime + (POLL_LIFETIME_SECONDS * 1000);
+                const timeLeft = expirationTime - Date.now();
+                countdownSpan.textContent = this.formatTimeRemaining(timeLeft);
+            } else {
+                countdownSpan.innerHTML = `<span class="poll-expired">${this.t('pollExpired')}</span>`;
+            }
+
+            authorDiv.appendChild(countdownSpan);
+            contentDiv.appendChild(authorDiv);
+        }
+
+        // Poll question
+        const questionDiv = document.createElement('div');
+        questionDiv.className = 'poll-question';
+        questionDiv.textContent = poll.question;
+        contentDiv.appendChild(questionDiv);
+
+        // Poll options
+        const optionsDiv = document.createElement('div');
+        optionsDiv.className = 'poll-options';
+
+        const isExpired = this.isPollExpired(poll);
+        poll.options.forEach(option => {
+            const optionDiv = document.createElement('div');
+            optionDiv.className = 'poll-option';
+
+            const labelEl = document.createElement('label');
+            labelEl.className = 'poll-option-label';
+
+            const input = document.createElement('input');
+            input.type = 'radio';
+            input.name = `poll-${poll.id}`;
+            input.value = option.id;
+            if (this.user && this.user.id === poll.user_id && poll.userVote && poll.userVote.option_id === option.id) {
+                input.checked = true;
+            }
+            if (isExpired) {
+                input.disabled = true;
+            }
+
+            const optionText = document.createElement('span');
+            optionText.className = 'poll-option-text';
+            optionText.textContent = option.text;
+
+            const voteCount = document.createElement('span');
+            voteCount.className = 'poll-vote-count';
+            voteCount.textContent = option.votes || 0;
+
+            labelEl.appendChild(input);
+            labelEl.appendChild(optionText);
+            labelEl.appendChild(voteCount);
+
+            optionDiv.appendChild(labelEl);
+            optionsDiv.appendChild(optionDiv);
+        });
+
+        contentDiv.appendChild(optionsDiv);
+        li.appendChild(contentDiv);
+
+        // Poll actions (only show menu for owner)
+        const actionsDiv = document.createElement('div');
+        actionsDiv.className = 'entry-actions';
+
+        if (this.user && poll.user_id === this.user.id) {
+            const menuBtn = document.createElement('button');
+            menuBtn.className = 'menu-btn';
+            menuBtn.setAttribute('data-entry-id', poll.id);
+            menuBtn.setAttribute('data-date', date);
+            menuBtn.setAttribute('data-user-id', poll.user_id);
+            menuBtn.title = this.t('entryOptions');
+            menuBtn.innerHTML = '<i class="bi bi-three-dots-vertical"></i>';
+            actionsDiv.appendChild(menuBtn);
+        }
+
+        li.appendChild(actionsDiv);
+        return li;
+    }
+
+    // Render a poll (legacy method, now uses factory)
     renderPoll(poll, date) {
         const pollTime = poll.createdAt ? new Date(poll.createdAt).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }) : '';
         
@@ -2067,6 +2285,49 @@ class DiaryApp {
                 }
             }
         }, 100);
+    }
+
+    // Autosave draft while typing (debounced caller triggers this)
+    async autoSaveDraft() {
+        const text = this.entryTextarea.value.trim();
+        if (!text) return;
+
+        if (!this.entries[this.selectedDate]) this.entries[this.selectedDate] = [];
+
+        if (this.editingEntryId) {
+            const entry = this.entries[this.selectedDate].find(e => e.id === this.editingEntryId);
+            if (entry) {
+                entry.text = text;
+                entry.updatedAt = new Date().toISOString();
+            }
+        } else if (this.autoSaveEntryId) {
+            const entry = this.entries[this.selectedDate].find(e => e.id === this.autoSaveEntryId);
+            if (entry) {
+                entry.text = text;
+                entry.updatedAt = new Date().toISOString();
+            }
+        } else {
+            const newEntry = {
+                id: Date.now().toString(),
+                user_id: this.user?.id,
+                username: this.user?.user_metadata?.username || null,
+                text: text,
+                type: 'entry',
+                originalText: text,
+                createdAt: new Date().toISOString()
+            };
+            this.entries[this.selectedDate].push(newEntry);
+            this.autoSaveEntryId = newEntry.id;
+        }
+
+        // Debounced save has already been applied by the input listener; perform save now
+        try {
+            await this.saveEntries();
+            this.renderEntries(this.selectedDate);
+            this.renderCalendar();
+        } catch (e) {
+            console.error('Auto-save failed', e);
+        }
     }
 
     // Clear entry
@@ -2501,11 +2762,37 @@ class DiaryApp {
         for (const imageUrl of imageUrls) {
             const img = document.createElement('img');
             img.className = 'image-thumbnail';
-            img.src = imageUrl;
+            img.dataset.src = imageUrl;
+            img.loading = 'lazy';
+            img.decoding = 'async';
+            img.alt = this.t('image') || 'image';
             img.onclick = () => this.showImageModal(imageUrl);
-            
+
             this.addImageDeleteHandlers(img, imageUrl, entryId);
             container.appendChild(img);
+
+            // Create observer lazily
+            if (!this._imgObserver && 'IntersectionObserver' in window) {
+                this._imgObserver = new IntersectionObserver((entries, obs) => {
+                    entries.forEach(en => {
+                        if (en.isIntersecting) {
+                            const i = en.target;
+                            if (i.dataset && i.dataset.src) {
+                                i.src = i.dataset.src;
+                                i.removeAttribute('data-src');
+                                obs.unobserve(i);
+                            }
+                        }
+                    });
+                }, { rootMargin: '200px' });
+            }
+
+            if (this._imgObserver) {
+                this._imgObserver.observe(img);
+            } else {
+                // Fallback: set src immediately
+                img.src = imageUrl;
+            }
         }
     }
 

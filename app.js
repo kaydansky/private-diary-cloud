@@ -974,9 +974,6 @@ class DiaryApp {
         this._debouncedSearch = this.debounce((e) => this.handleSearch(e.target.value), 300);
         this.searchInput.addEventListener('input', this._debouncedSearch);
 
-        // Autosave drafts (debounced) while typing in the entry textarea
-        this._debouncedAutoSave = this.debounce(() => this.autoSaveDraft(), 2000);
-        this.entryTextarea.addEventListener('input', this._debouncedAutoSave);
         // Event delegation for entry actions and image clicks
         if (this.entryList) {
             this.entryList.addEventListener('click', (e) => {
@@ -2440,48 +2437,7 @@ class DiaryApp {
         }, 100);
     }
 
-    // Autosave draft while typing (debounced caller triggers this)
-    async autoSaveDraft() {
-        const text = this.entryTextarea.value.trim();
-        if (!text) return;
 
-        if (!this.entries[this.selectedDate]) this.entries[this.selectedDate] = [];
-
-        if (this.editingEntryId) {
-            const entry = this.entries[this.selectedDate].find(e => e.id === this.editingEntryId);
-            if (entry) {
-                entry.text = text;
-                entry.updatedAt = new Date().toISOString();
-            }
-        } else if (this.autoSaveEntryId) {
-            const entry = this.entries[this.selectedDate].find(e => e.id === this.autoSaveEntryId);
-            if (entry) {
-                entry.text = text;
-                entry.updatedAt = new Date().toISOString();
-            }
-        } else {
-            const newEntry = {
-                id: Date.now().toString(),
-                user_id: this.user?.id,
-                username: this.user?.user_metadata?.username || null,
-                text: text,
-                type: 'entry',
-                originalText: text,
-                createdAt: new Date().toISOString()
-            };
-            this.entries[this.selectedDate].push(newEntry);
-            this.autoSaveEntryId = newEntry.id;
-        }
-
-        // Debounced save has already been applied by the input listener; perform save now
-        try {
-            await this.saveEntries();
-            this.renderEntries(this.selectedDate);
-            this.renderCalendar();
-        } catch (e) {
-            console.error('Auto-save failed', e);
-        }
-    }
 
     // Clear entry
     async clearEntry() {

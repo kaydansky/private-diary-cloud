@@ -1766,6 +1766,12 @@ class DiaryApp {
     toggleReplyButton() {
         if (!this.user) return;
 
+        // Hide reply button if entry form is shown
+        if (!this.entryForm.classList.contains('hidden')) {
+            this.replyButton.classList.add('hidden');
+            return;
+        }
+
         if (document.activeElement === this.entryTextarea) {
             this.replyButton.classList.add('hidden');
             return;

@@ -1629,3 +1629,54 @@ label {
     line-height: 1.6;
     margin-bottom: 12px;
 }
+
+/* Like/Dislike buttons */
+.entry-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 12px;
+    padding-top: 8px;
+    border-top: 1px solid var(--border-color);
+}
+
+.btn-like, .btn-dislike {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 8px;
+    border: none;
+    border-radius: 4px;
+    background: transparent;
+    color: var(--text-secondary, #888);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 20px;
+}
+
+.btn-like:hover {
+    background: rgba(74, 156, 74, 0.15);
+    color: #6f976f;
+}
+
+.btn-dislike:hover {
+    background: rgba(196, 74, 74, 0.15);
+    color: #ac7575;
+}
+
+.btn-like.active {
+    color: #6f976f;
+}
+
+.btn-dislike.active {
+    color: #ac7575;
+}
+
+.btn-like .count, .btn-dislike .count {
+    font-size: 12px;
+    font-weight: 500;
+}
+
+.btn-like.active i, .btn-dislike.active i {
+    transform: scale(1.1);
+}

@@ -141,7 +141,11 @@ const translations = {
         shortH: 'h',
         shortM: 'm',
         shortS: 's',
-        peopleTitle: 'People'
+        peopleTitle: 'People',
+        like: 'Like',
+        dislike: 'Dislike',
+        signInToLike: 'Sign in to like entries',
+        voteError: 'Failed to submit vote. Please try again.'
     },
     fr: {
         appTitle: 'Journal Privé Cloud',
@@ -285,7 +289,11 @@ const translations = {
         shortH: 'h',
         shortM: 'min',
         shortS: 'sec',
-        peopleTitle: 'Personnes'
+        peopleTitle: 'Personnes',
+        like: 'J\'aime',
+        dislike: 'Je n\'aime pas',
+        signInToLike: 'Connectez-vous pour aimer les publications',
+        voteError: 'Échec de l\'enregistrement du vote. Veuillez réessayer.'
     },
     de: {
         appTitle: 'Tagebuch Cloud',
@@ -430,7 +438,11 @@ const translations = {
         shortH: 'std',
         shortM: 'min',
         shortS: 'sek',
-        peopleTitle: 'Personen'
+        peopleTitle: 'Personen',
+        like: 'Gefällt mir',
+        dislike: 'Gefällt mir nicht',
+        signInToLike: 'Melden Sie sich an, um Beiträge zu liken',
+        voteError: 'Abstimmung fehlgeschlagen. Bitte versuchen Sie es erneut.'
     },
     ru: {
         appTitle: 'СНТ Тишинка',
@@ -572,6 +584,10 @@ const translations = {
         shortH: 'ч',
         shortM: 'м',
         shortS: 'с',
-        peopleTitle: 'Пользователи'
+        peopleTitle: 'Пользователи',
+        like: 'Нравится',
+        dislike: 'Не нравится',
+        signInToLike: 'Войдите, чтобы ставить лайки',
+        voteError: 'Не удалось отправить голос. Попробуйте ещё раз.'
     }
 };

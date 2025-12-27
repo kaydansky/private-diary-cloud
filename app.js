@@ -61,12 +61,89 @@ class ModalManager {
     }
 }
 
+class LikeDislikeManager {
+    constructor(supabaseClient) {
+        this.supabase = supabaseClient;
+    }
+
+    async vote(entryId, isLike) {
+        const { data: { session } } = await this.supabase.auth.getSession();
+        if (!session) {
+            throw new Error('Authorization required');
+        }
+
+        const { error } = await this.supabase
+            .from('likes_dislikes')
+            .upsert({
+                entry_id: entryId,
+                user_id: session.user.id,
+                is_like: isLike
+            }, {
+                onConflict: 'entry_id, user_id'
+            });
+
+        if (error) throw error;
+    }
+
+    async removeVote(entryId) {
+        const { data: { session } } = await this.supabase.auth.getSession();
+        if (!session) return;
+
+        const { error } = await this.supabase
+            .from('likes_dislikes')
+            .delete()
+            .match({ entry_id: entryId, user_id: session.user.id });
+
+        if (error) console.error('Error removing vote:', error);
+    }
+
+    async getCounts(entryIds) {
+        if (!entryIds || !entryIds.length) return [];
+
+        const { data, error } = await this.supabase
+            .rpc('get_like_dislike_counts', { entry_ids: entryIds });
+
+        if (error) {
+            console.error('Error fetching counters:', error);
+            return [];
+        }
+
+        return data || [];
+    }
+
+    async getUserStatus(entryIds) {
+        const { data: { session } } = await this.supabase.auth.getSession();
+        if (!session || !entryIds || !entryIds.length) return [];
+
+        const { data, error } = await this.supabase
+            .rpc('get_user_like_dislike_status', { entry_ids: entryIds });
+
+        if (error) {
+            console.error('Error fetching user status:', error);
+            return [];
+        }
+
+        return data || [];
+    }
+
+    async toggleVote(entryId, currentStatus, isLike) {
+        if (currentStatus === isLike) {
+            await this.removeVote(entryId);
+            return null;
+        }
+
+        await this.vote(entryId, isLike);
+        return isLike;
+    }
+}
+
 class DiaryApp {
     constructor() {
         this.supabase = null;
         this.currentDate = new Date();
         this.selectedDate = this.formatDateKey(new Date());
         this.modalManager = new ModalManager();
+        this.likeDislikeManager = null;
         this.entries = {};
         this.editingEntryId = null;
         this.originalText = '';
@@ -200,6 +277,8 @@ class DiaryApp {
             console.error('Supabase failed to initialize');
             return;
         }
+
+        this.likeDislikeManager = new LikeDislikeManager(this.supabase);
 
         const { data: { session } } = await this.supabase.auth.getSession();
         this.user = session?.user || null;
@@ -1002,6 +1081,22 @@ class DiaryApp {
                     if (src) this.showImageModal(src);
                     return;
                 }
+
+                const likeBtn = e.target.closest('.btn-like');
+                if (likeBtn) {
+                    e.stopPropagation();
+                    const entryId = likeBtn.dataset.entryId;
+                    this.handleLikeDislike(entryId, true);
+                    return;
+                }
+
+                const dislikeBtn = e.target.closest('.btn-dislike');
+                if (dislikeBtn) {
+                    e.stopPropagation();
+                    const entryId = dislikeBtn.dataset.entryId;
+                    this.handleLikeDislike(entryId, false);
+                    return;
+                }
             });
 
             // Delegate poll radio changes
@@ -1254,6 +1349,8 @@ class DiaryApp {
                 }
             }
 
+            await this.loadLikeDislikeData();
+
             // Cache loaded month data (deep copy)
             try {
                 this._monthCache.set(monthKey, JSON.parse(JSON.stringify(this.entries)));
@@ -1263,6 +1360,41 @@ class DiaryApp {
         } finally {
             this.hideLoadingOverlay();
             await this.broadcast();
+        }
+    }
+
+    async loadLikeDislikeData() {
+        const entryIds = [];
+        for (const date in this.entries) {
+            for (const entry of this.entries[date]) {
+                if (entry.type === 'entry' && entry.id && entry.id.includes('-')) {
+                    entryIds.push(entry.id);
+                }
+            }
+        }
+
+        if (entryIds.length === 0) return;
+
+        try {
+            const [counts, userStatuses] = await Promise.all([
+                this.likeDislikeManager.getCounts(entryIds),
+                this.likeDislikeManager.getUserStatus(entryIds)
+            ]);
+
+            for (const date in this.entries) {
+                for (const entry of this.entries[date]) {
+                    if (entry.type !== 'entry') continue;
+
+                    const countData = counts.find(c => c.entry_id === entry.id);
+                    const statusData = userStatuses.find(s => s.entry_id === entry.id);
+
+                    entry.likesCount = countData?.likes_count || 0;
+                    entry.dislikesCount = countData?.dislikes_count || 0;
+                    entry.userVote = statusData?.is_like ?? null;
+                }
+            }
+        } catch (error) {
+            console.error('Ошибка загрузки лайков/дизлайков:', error);
         }
     }
 
@@ -1379,6 +1511,111 @@ class DiaryApp {
         this.searchResults.addEventListener('click', this._searchResultsClick);
 
         this.searchResults.classList.remove('hidden');
+    }
+
+    async handleLikeDislike(entryId, isLike) {
+        if (!this.user) {
+            alert(this.t('signInToLike'));
+            return;
+        }
+
+        const entryEl = document.querySelector(`.entry-item[data-entry-id="${entryId}"]`);
+        if (!entryEl) return;
+
+        const currentStatus = entryEl.dataset.userVote === 'true' ? true : 
+                             entryEl.dataset.userVote === 'false' ? false : null;
+
+        try {
+            const newStatus = await this.likeDislikeManager.toggleVote(entryId, currentStatus, isLike);
+            const entry = this.entries[this.selectedDate]?.find(e => e.id === entryId);
+            
+            if (entry) {
+                // Update user's vote status
+                const prevStatus = entry.userVote;
+                entry.userVote = newStatus;
+                
+                // Update counters
+                if (prevStatus === true) entry.likesCount = (entry.likesCount || 0) - 1;
+                if (prevStatus === false) entry.dislikesCount = (entry.dislikesCount || 0) - 1;
+                if (newStatus === true) entry.likesCount = (entry.likesCount || 0) + 1;
+                if (newStatus === false) entry.dislikesCount = (entry.dislikesCount || 0) + 1;
+                
+                // If vote was removed (newStatus === null), counters are already decremented above
+            }
+
+            // Refresh UI
+            entryEl.dataset.userVote = newStatus === null ? '' : newStatus;
+            
+            // Refresh button states
+            const likeBtn = entryEl.querySelector('.btn-like');
+            const dislikeBtn = entryEl.querySelector('.btn-dislike');
+            
+            likeBtn.classList.toggle('active', newStatus === true);
+            dislikeBtn.classList.toggle('active', newStatus === false);
+            
+            // Refresh icons
+            likeBtn.querySelector('i').className = newStatus === true ? 'bi bi-hand-thumbs-up-fill' : 'bi bi-hand-thumbs-up';
+            dislikeBtn.querySelector('i').className = newStatus === false ? 'bi bi-hand-thumbs-down-fill' : 'bi bi-hand-thumbs-down';
+            
+            // Refresh counters
+            await this.refreshLikeDislikeCounts([entryId]);
+            
+        } catch (error) {
+            console.error('Vote error:', error);
+            this.showToast(this.t('voteError'));
+        }
+    }
+
+    async refreshLikeDislikeCounts(entryIds) {
+        if (!entryIds || entryIds.length === 0) return;
+
+        try {
+            const [counts, userStatuses] = await Promise.all([
+                this.likeDislikeManager.getCounts(entryIds),
+                this.likeDislikeManager.getUserStatus(entryIds)
+            ]);
+
+            for (const entryId of entryIds) {
+                const entryEl = document.querySelector(`.entry-item[data-entry-id="${entryId}"]`);
+                if (!entryEl) continue;
+
+                const countData = counts.find(c => c.entry_id === entryId);
+                const userStatus = userStatuses.find(s => s.entry_id === entryId);
+                const entry = this.entries[this.selectedDate]?.find(e => e.id === entryId);
+                
+                if (entry) {
+                    entry.likesCount = countData?.likes_count || 0;
+                    entry.dislikesCount = countData?.dislikes_count || 0;
+                    entry.userVote = userStatus?.is_like ?? null;
+                }
+
+                // Refesh counters in UI
+                const likeBtn = entryEl.querySelector('.btn-like');
+                const dislikeBtn = entryEl.querySelector('.btn-dislike');
+                
+                if (likeBtn) {
+                    likeBtn.querySelector('.count').textContent = countData?.likes_count || 0;
+                }
+                if (dislikeBtn) {
+                    dislikeBtn.querySelector('.count').textContent = countData?.dislikes_count || 0;
+                }
+
+                // Refresh user vote status
+                if (userStatus !== undefined) {
+                    entryEl.dataset.userVote = userStatus.is_like ? 'true' : 'false';
+                    
+                    // Update visual state of buttons
+                    if (likeBtn) likeBtn.classList.toggle('active', userStatus.is_like === true);
+                    if (dislikeBtn) dislikeBtn.classList.toggle('active', userStatus.is_like === false);
+                    
+                    // Refresh icons
+                    if (likeBtn) likeBtn.querySelector('i').className = userStatus.is_like ? 'bi bi-hand-thumbs-up-fill' : 'bi bi-hand-thumbs-up';
+                    if (dislikeBtn) dislikeBtn.querySelector('i').className = userStatus.is_like === false ? 'bi bi-hand-thumbs-down-fill' : 'bi bi-hand-thumbs-down';
+                }
+            }
+        } catch (error) {
+            console.error('Ошибка обновления счётчиков:', error);
+        }
     }
 
     // Compress image with adaptive quality based on original size
@@ -1868,6 +2105,7 @@ class DiaryApp {
         const li = document.createElement('li');
         li.className = 'entry-item';
         li.setAttribute('data-entry-id', entry.id);
+        li.dataset.userVote = entry.userVote === true ? 'true' : entry.userVote === false ? 'false' : '';
 
         const contentDiv = document.createElement('div');
         contentDiv.className = 'entry-content';
@@ -1910,6 +2148,21 @@ class DiaryApp {
         // Entry actions
         const actionsDiv = document.createElement('div');
         actionsDiv.className = 'entry-actions';
+
+        const likeBtn = document.createElement('button');
+        likeBtn.className = `btn-like ${entry.userVote === true ? 'active' : ''}`;
+        likeBtn.setAttribute('data-entry-id', entry.id);
+        likeBtn.setAttribute('title', this.t('like'));
+        likeBtn.innerHTML = `<i class="bi bi-hand-thumbs-up${entry.userVote === true ? '-fill' : ''}"></i> <span class="count">${entry.likesCount || 0}</span>`;
+
+        const dislikeBtn = document.createElement('button');
+        dislikeBtn.className = `btn-dislike ${entry.userVote === false ? 'active' : ''}`;
+        dislikeBtn.setAttribute('data-entry-id', entry.id);
+        dislikeBtn.setAttribute('title', this.t('dislike'));
+        dislikeBtn.innerHTML = `<i class="bi bi-hand-thumbs-down${entry.userVote === false ? '-fill' : ''}"></i> <span class="count">${entry.dislikesCount || 0}</span>`;
+
+        actionsDiv.appendChild(likeBtn);
+        actionsDiv.appendChild(dislikeBtn);
 
         const menuBtn = document.createElement('button');
         menuBtn.className = 'menu-btn';

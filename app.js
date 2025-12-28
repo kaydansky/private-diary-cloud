@@ -610,6 +610,9 @@ class DiaryApp {
         this.initTheme();
         this.initEventListeners();
         
+        // Check for navigation target from localStorage (e.g., from quote click)
+        this.checkNavigationTarget();
+        
         // Find most recent entry date from both diary entries and polls
         if (!this.user) {
             const [recentEntry, recentPoll] = await Promise.all([
@@ -742,6 +745,55 @@ class DiaryApp {
         }
     }
 
+    // Check localStorage for navigation target (e.g., from quote click)
+    checkNavigationTarget() {
+        const navData = localStorage.getItem('navigateTo');
+        if (!navData) return;
+        
+        try {
+            const { date, entryId, timestamp } = JSON.parse(navData);
+            
+            // Navigation target expires after 10 seconds
+            if (Date.now() - timestamp > 10000) {
+                localStorage.removeItem('navigateTo');
+                return;
+            }
+
+            // Clear navigation target so it doesn't repeat
+            localStorage.removeItem('navigateTo');
+            
+            // Navigate to entry
+            if (date) {
+                const [year, month] = date.split('-').map(Number);
+                this.currentDate = new Date(year, month - 1, 1);
+                this.selectedDate = date;
+                
+                this.loadEntriesForMonth(year, month - 1).then(() => {
+                    this.renderCalendar();
+                    this.showEntries(date);
+                    
+                    if (entryId) {
+                        setTimeout(() => {
+                            const entryEl = document.querySelector(`[data-entry-id="${entryId}"]`);
+                            if (entryEl) {
+                                const entryItem = entryEl.closest('.entry-item');
+                                if (entryItem) {
+                                    entryItem.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                                    entryItem.style.backgroundColor = 'var(--hover-color)';
+                                    setTimeout(() => {
+                                        entryItem.style.backgroundColor = '';
+                                    }, 2000);
+                                }
+                            }
+                        }, 500);
+                    }
+                });
+            }
+        } catch (e) {
+            localStorage.removeItem('navigateTo');
+        }
+    }
+            
     // Update notification button state
     async updateNotificationButtonState() {
         const notificationsBtn = document.getElementById('notificationsBtn');

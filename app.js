@@ -2149,7 +2149,24 @@ class DiaryApp {
                     ? new Date(entry.parentEntry.createdAt).toISOString().split('T')[0]
                     : null;
                 if (parentDate && entry.parentEntry.id) {
-                    window.location.href = `/?date=${parentDate}&entryId=${entry.parentEntry.id}`;
+                    // Navigate to parent entry using in-app routing (preserves mobile styles)
+                    const [year, month, day] = parentDate.split('-').map(Number);
+                    this.currentDate = new Date(year, month - 1, day);
+                    this.selectedDate = parentDate;
+                    this.loadEntriesForMonth(year, month - 1).then(() => {
+                        this.renderCalendar();
+                        this.showEntries(parentDate);
+                        this.entriesSection.classList.remove('hidden');
+                        // Scroll to and highlight the parent entry
+                        setTimeout(() => {
+                            const parentEntryEl = document.querySelector(`.entry-item[data-entry-id="${entry.parentEntry.id}"]`);
+                            if (parentEntryEl) {
+                                parentEntryEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                                parentEntryEl.classList.add('highlight');
+                                setTimeout(() => parentEntryEl.classList.remove('highlight'), 2000);
+                            }
+                        }, 100);
+                    });
                 }
             });
         }

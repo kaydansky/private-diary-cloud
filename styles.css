@@ -933,6 +933,21 @@ body {
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
+    transition: background-color 0.3s ease;
+}
+
+.entry-item.highlight {
+    background-color: rgba(102, 126, 234, 0.15);
+    animation: pulse-highlight 2s ease-in-out;
+}
+
+@keyframes pulse-highlight {
+    0%, 100% {
+        background-color: rgba(102, 126, 234, 0.15);
+    }
+    50% {
+        background-color: rgba(102, 126, 234, 0.3);
+    }
 }
 
 .poll-item {

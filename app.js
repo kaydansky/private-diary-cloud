@@ -2693,6 +2693,9 @@ class DiaryApp {
             if (!textChanged) {
                 return; // No changes → skip
             }
+
+            entryRef.text = text;
+            entryRef.originalText = text;
         } else if (this.parentEntry) {
             payload.date = this.selectedDate = this.formatDateKey(new Date()); // Replies are always for today
         }
@@ -2707,18 +2710,20 @@ class DiaryApp {
             if (error) throw error;
 
             // Add new entry to local state immediately
-            if (!this.entries[this.selectedDate]) this.entries[this.selectedDate] = [];
-            this.entries[this.selectedDate].push({
-                id: data.id,
-                type: 'entry',
-                user_id: data.user_id,
-                username: data.username,
-                text: data.text,
-                createdAt: data.created_at,
-                parentEntry: this.parentEntry || null,
-                originalText: data.text,
-                originalImages: [...(data.images || [])] // deep copy
-            });
+            if (!this.editingEntryId) {
+                if (!this.entries[this.selectedDate]) this.entries[this.selectedDate] = [];
+                this.entries[this.selectedDate].push({
+                    id: data.id,
+                    type: 'entry',
+                    user_id: data.user_id,
+                    username: data.username,
+                    text: data.text,
+                    createdAt: data.created_at,
+                    parentEntry: this.parentEntry || null,
+                    originalText: data.text,
+                    originalImages: [...(data.images || [])] // deep copy
+                });
+            }
 
             this.parentEntry = null; // Reset reply state
             this.showEntries(this.selectedDate);

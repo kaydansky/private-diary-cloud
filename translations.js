@@ -146,7 +146,7 @@ const translations = {
         dislike: 'Dislike',
         signInToLike: 'Sign in to like entries',
         voteError: 'Failed to submit vote. Please try again.',
-        replyBtn: 'Reply'
+        writeBtn: 'Write'
     },
     fr: {
         appTitle: 'Journal Privé Cloud',
@@ -295,7 +295,7 @@ const translations = {
         dislike: 'Je n\'aime pas',
         signInToLike: 'Connectez-vous pour aimer les publications',
         voteError: 'Échec de l\'enregistrement du vote. Veuillez réessayer.',
-        replyBtn: 'Répondre'
+        writeBtn: 'Écrire'
     },
     de: {
         appTitle: 'Tagebuch Cloud',
@@ -445,7 +445,7 @@ const translations = {
         dislike: 'Gefällt mir nicht',
         signInToLike: 'Melden Sie sich an, um Beiträge zu liken',
         voteError: 'Abstimmung fehlgeschlagen. Bitte versuchen Sie es erneut.',
-        replyBtn: 'Antworten'
+        writeBtn: 'Schreiben'
     },
     ru: {
         appTitle: 'СНТ Тишинка',
@@ -578,7 +578,7 @@ const translations = {
         alertNotificationsDenied: 'Разрешение на уведомления отклонено. Пожалуйста, включите уведомления в настройках вашего браузера.',
         alertFailedToEnableNotifications: 'Не удалось включить уведомления. Пожалуйста, попробуйте снова.',
         alertFailedToDisableNotifications: 'Не удалось отключить уведомления. Пожалуйста, попробуйте снова.',
-        pollExpired: 'Истёк',
+        pollExpired: 'Опрос завершён',
         pollExpDate: 'Осталось ',
         usernameInvalid: 'Имя пользователя может содержать только буквы и цифры от 3 до 20 символов',
         usernameTooLong: 'Имя пользователя должно быть не более 20 символов',
@@ -592,6 +592,6 @@ const translations = {
         dislike: 'Не нравится',
         signInToLike: 'Войдите, чтобы ставить лайки',
         voteError: 'Не удалось отправить голос. Попробуйте ещё раз.',
-        replyBtn: 'Ответить'
+        writeBtn: 'Написать'
     }
 };

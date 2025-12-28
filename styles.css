@@ -42,7 +42,7 @@
     --header-text: #d1cccc;
     --border-color: #404040;
     --search-bg: #3a3a3a;
-    --day-bg: #3a3a3a;
+    --day-bg: #494949;
     --day-hover: #4a4a4a;
     --entry-bg: #3a3a3a;
     --shadow: rgba(0, 0, 0, 0.3);
@@ -73,7 +73,7 @@
         --header-text: #d1cccc;
         --border-color: #404040;
         --search-bg: #3a3a3a;
-        --day-bg: #3a3a3a;
+        --day-bg: #494949;
         --day-hover: #4a4a4a;
         --entry-bg: #3a3a3a;
         --shadow: rgba(0, 0, 0, 0.3);
@@ -1652,7 +1652,7 @@ label {
     gap: 8px;
     margin-top: 12px;
     padding-top: 8px;
-    border-top: 1px solid var(--border-color);
+    /* border-top: 1px solid var(--border-color); */
 }
 
 .btn-like, .btn-dislike {

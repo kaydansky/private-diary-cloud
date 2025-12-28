@@ -156,7 +156,8 @@ class DiaryApp {
         this.searchQuery = '';
         this.isNotificationsEnabled = false;
         this.broadcastChannel = null; // Track the broadcast channel
-        //this.pollCountdowns = new Map(); // Initialize poll countdowns map
+        this.parentEntry = null; // To hold parent entry data when replying
+        this.quoteMaxLength = 100; // Max length for quoted text
         
         this.initServiceWorker();
         this.initElements();
@@ -295,7 +296,6 @@ class DiaryApp {
                 // await this.broadcast();
                 
                 // Re-render entries when user signs in to update UI
-                this.selectedDate = this.formatDateKey(new Date());
                 if (this.selectedDate) {
                     this.renderEntries(this.selectedDate);
                 }
@@ -906,7 +906,7 @@ class DiaryApp {
 
     // Send push notification to all users except author
     async sendPushNotification(type, entryId = null) {
-        //return;
+        return;
         if (!this.user) return;
 
         try {
@@ -1044,11 +1044,11 @@ class DiaryApp {
         document.getElementById('cancelImageActionsBtn').addEventListener('click', () => this.hideImageActionsModal());
         this.saveEntryBtn.addEventListener('click', () => this.doneEntry());
         this.clearEntryBtn.addEventListener('click', () => this.hideEntryForm());
-        this.entryTextarea.addEventListener('keyup', (e) => {
-            if (e.key === 'Enter' && e.ctrlKey) {
-                this.doneEntry();
-            }
-        });
+        // this.entryTextarea.addEventListener('keyup', (e) => {
+        //     if (e.key === 'Enter' && e.ctrlKey) {
+        //         this.doneEntry();
+        //     }
+        // });
         // Debounced search input to reduce DB queries
         this._debouncedSearch = this.debounce((e) => this.handleSearch(e.target.value), 300);
         this.searchInput.addEventListener('input', this._debouncedSearch);
@@ -1231,10 +1231,10 @@ class DiaryApp {
         try {
             const lastDay = new Date(year, month + 1, 0).getDate();
             
-            // Load diary entries
+            // Load diary entries and include parent entry data (if any)
             const { data: entriesData } = await this.supabase
                 .from('diary_entries')
-                .select('*')
+                .select('*, parent_entry:parent_entry_id (id, username, created_at, text)')
                 .gte('date', `${monthKey}-01`)
                 .lte('date', `${monthKey}-${String(lastDay).padStart(2, '0')}`)
                 .order('date', { ascending: true });
@@ -1250,12 +1250,18 @@ class DiaryApp {
                     images: entry.images || [],
                     createdAt: entry.created_at,
                     updatedAt: entry.updated_at,
-                    originalText: entry.text, // Store original text for comparison
-                    originalImages: [...(entry.images || [])], 
-                    type: 'entry' // Add type to distinguish from polls
+                    originalText: entry.text,
+                    originalImages: [...(entry.images || [])],
+                    type: 'entry',
+                    parentEntry: entry.parent_entry ? {
+                        id: entry.parent_entry.id,
+                        username: entry.parent_entry.username || null,
+                        text: this.truncateQuote(entry.parent_entry.text) || null,
+                        createdAt: entry.parent_entry.created_at
+                    } : null
                 });
             });
-            
+
             // Load polls for the month
             const { data: pollsData } = await this.supabase
                 .from('polls')
@@ -2110,6 +2116,40 @@ class DiaryApp {
         const contentDiv = document.createElement('div');
         contentDiv.className = 'entry-content';
 
+        // Render Parent Entry Quote if exists
+        if (entry.parentEntry) {
+            const quote = document.createElement('div');
+            quote.className = 'reply-quote';
+
+            const date = entry.parentEntry.createdAt 
+            ? new Date(entry.parentEntry.createdAt).toLocaleDateString('ru-Ru', { day: '2-digit', month: '2-digit', year: 'numeric' }) 
+            + ' ' + new Date(entry.parentEntry.createdAt).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit', hour12: false }) 
+            : '';
+            
+            const author = document.createElement('span');
+            author.className = 'reply-quote-author';
+            author.innerHTML = `— ${this.escapeHtml(entry.parentEntry.username)}<br>${date}`;
+            
+            const text = document.createElement('div');
+            text.className = 'reply-quote-text';
+            text.textContent = entry.parentEntry.text;
+            
+            quote.appendChild(author);
+            quote.appendChild(text);
+            contentDiv.appendChild(quote);
+
+            // Make quote clickable to navigate to parent entry
+            quote.style.cursor = 'pointer';
+            quote.addEventListener('click', () => {
+                const parentDate = entry.parentEntry.createdAt 
+                    ? new Date(entry.parentEntry.createdAt).toISOString().split('T')[0]
+                    : null;
+                if (parentDate && entry.parentEntry.id) {
+                    window.location.href = `/?date=${parentDate}&entryId=${entry.parentEntry.id}`;
+                }
+            });
+        }
+
         // Add author and time if present
         if (entry.username) {
             const authorDiv = document.createElement('div');
@@ -2629,74 +2669,91 @@ class DiaryApp {
             return;
         }
 
-        if (!this.entries[this.selectedDate]) {
-            this.entries[this.selectedDate] = [];
-        }
-
-        if (this.editingEntryId) {
-            const entry = this.entries[this.selectedDate].find(e => e.id === this.editingEntryId);
-            if (entry) {
-                entry.text = text;
-                entry.updatedAt = new Date().toISOString();
-            }
-        } else if (this.autoSaveEntryId) {
-            const entry = this.entries[this.selectedDate].find(e => e.id === this.autoSaveEntryId);
-            if (entry) {
-                entry.text = text;
-                entry.updatedAt = new Date().toISOString();
-            }
-        } else {
-            const newEntry = {
-                id: Date.now().toString(),
-                user_id: this.user.id,
-                username: this.user.user_metadata?.username || null,
-                text: text,
-                type: 'entry',
-                originalText: text, // Store original text for new entries
-                createdAt: new Date().toISOString()
-            };
-            this.entries[this.selectedDate].push(newEntry);
-            this.autoSaveEntryId = newEntry.id;
-        }
-
-        // Get reference to entry object before saving (so we can access updated ID after)
-        const tempId = this.editingEntryId || this.autoSaveEntryId;
-        const entryRef = this.entries[this.selectedDate].find(e => e.id === tempId);
-
         // Show spinner and disable buttons
         this.saveEntryBtn.disabled = true;
         this.clearEntryBtn.disabled = true;
         this.saveEntryBtn.classList.add('spinning');
-        
-        await this.saveEntries();
-        
-        this.renderEntries(this.selectedDate);
-        this.renderCalendar();
-        
-        // Send push notification with actual database UUID (entryRef.id is now updated)
-        if (entryRef && entryRef.id) {
-            await this.sendPushNotification('entry', entryRef.id);
+
+        const payload = {
+            user_id: this.user.id,
+            username: this.user.user_metadata?.username || null,
+            date: this.selectedDate,
+            text: text,
+            parent_entry_id: this.parentEntry?.id || null // Include parent ID if replying
+        };
+
+        if (this.editingEntryId) {
+            const entryRef = this.entries[this.selectedDate].find(e => e.id === this.editingEntryId);
+            payload.id = this.editingEntryId;
+            payload.updated_at = new Date().toISOString();
+            
+            // Check if text changed
+            const textChanged = entryRef.originalText !== undefined && text !== entryRef.originalText;
+            
+            if (!textChanged) {
+                return; // No changes → skip
+            }
+        } else if (this.parentEntry) {
+            payload.date = this.selectedDate = this.formatDateKey(new Date()); // Replies are always for today
         }
 
-        // Restore buttons
-        this.saveEntryBtn.classList.remove('spinning');
-        this.saveEntryBtn.disabled = false;
-        this.clearEntryBtn.disabled = false;
-        this.clearEntryForm(false);
-        
-        // Focus on newly added entry
-        setTimeout(() => {
-            const entryEl = document.querySelector(`[data-entry-id="${entryRef.id}"]`);
-            if (entryEl) {
-                const entryItem = entryEl.closest('.entry-item');
-                if (entryItem) {
-                    entryItem.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                }
+        try {
+            const { data, error } = await this.supabase
+                .from('diary_entries')
+                .upsert(payload)
+                .select()
+                .single();
+
+            if (error) throw error;
+
+            // Add new entry to local state immediately
+            if (!this.entries[this.selectedDate]) this.entries[this.selectedDate] = [];
+            this.entries[this.selectedDate].push({
+                id: data.id,
+                type: 'entry',
+                user_id: data.user_id,
+                username: data.username,
+                text: data.text,
+                createdAt: data.created_at,
+                parentEntry: this.parentEntry || null,
+                originalText: data.text,
+                originalImages: [...(data.images || [])] // deep copy
+            });
+
+            this.parentEntry = null; // Reset reply state
+            this.showEntries(this.selectedDate);
+
+            // Restore buttons
+            this.saveEntryBtn.classList.remove('spinning');
+            this.saveEntryBtn.disabled = false;
+            this.clearEntryBtn.disabled = false;
+            this.clearEntryForm(false);
+
+            // Invalidate cached month for the selected date so next fetch reads fresh data
+            try {
+                const monthKey = this.selectedDate.slice(0,7); // YYYY-MM
+                if (this._monthCache && this._monthCache.has(monthKey)) this._monthCache.delete(monthKey);
+            } catch (e) {
+                // ignore
             }
-        }, 100);
+
+            // Focus on newly added entry
+            setTimeout(() => {
+                const entryEl = document.querySelector(`[data-entry-id="${data.id}"]`);
+                if (entryEl) {
+                    const entryItem = entryEl.closest('.entry-item');
+                    if (entryItem) {
+                        entryItem.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }
+                }
+            }, 100);
+
+            await this.sendPushNotification('entry', data.id); // Send notification
+        } catch (error) {
+            console.error('Error saving entry:', error);
+            this.showToast(this.t('errorSavingEntry'));
+        }
     }
-
-
 
     // Clear entry
     async clearEntry() {
@@ -2743,10 +2800,35 @@ class DiaryApp {
         document.getElementById('editEntryModalBtn').style.display = isOwnEntry ? '' : 'none';
         document.getElementById('deleteEntryModalBtn').style.display = isOwnEntry ? '' : 'none';
         document.getElementById('imageEntryModalBtn').style.display = isOwnEntry ? '' : 'none';
+
+        document.getElementById('replyEntryModalBtn').addEventListener('click', () => {
+            if (!this.user) {
+                alert(this.t('signInToAddEntries'));
+                return;
+            }
+
+            this.parentEntry = {
+                id: entry.id,
+                username: entry.username || '',
+                createdAt: entry.createdAt || '',
+                text: this.truncateQuote(entry.text)
+            };
+            this.hideEntryActionsModal();
+            this.showEntryForm();
+        });
         
         this.currentEntryId = entryId;
         this.currentEntryDate = date;
         this.modalManager.show('entryActions');
+    }
+
+    // Truncate quote text for display in reply
+    truncateQuote(text) {
+        if (!text) return '';
+        if (text.length > this.quoteMaxLength) {
+            return text.substring(0, this.quoteMaxLength) + '...';
+        }
+        return text;
     }
 
     // Show poll actions modal (delegated to modalManager)

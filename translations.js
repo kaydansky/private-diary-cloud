@@ -145,7 +145,8 @@ const translations = {
         like: 'Like',
         dislike: 'Dislike',
         signInToLike: 'Sign in to like entries',
-        voteError: 'Failed to submit vote. Please try again.'
+        voteError: 'Failed to submit vote. Please try again.',
+        replyBtn: 'Reply'
     },
     fr: {
         appTitle: 'Journal Privé Cloud',
@@ -293,7 +294,8 @@ const translations = {
         like: 'J\'aime',
         dislike: 'Je n\'aime pas',
         signInToLike: 'Connectez-vous pour aimer les publications',
-        voteError: 'Échec de l\'enregistrement du vote. Veuillez réessayer.'
+        voteError: 'Échec de l\'enregistrement du vote. Veuillez réessayer.',
+        replyBtn: 'Répondre'
     },
     de: {
         appTitle: 'Tagebuch Cloud',
@@ -442,7 +444,8 @@ const translations = {
         like: 'Gefällt mir',
         dislike: 'Gefällt mir nicht',
         signInToLike: 'Melden Sie sich an, um Beiträge zu liken',
-        voteError: 'Abstimmung fehlgeschlagen. Bitte versuchen Sie es erneut.'
+        voteError: 'Abstimmung fehlgeschlagen. Bitte versuchen Sie es erneut.',
+        replyBtn: 'Antworten'
     },
     ru: {
         appTitle: 'СНТ Тишинка',
@@ -588,6 +591,7 @@ const translations = {
         like: 'Нравится',
         dislike: 'Не нравится',
         signInToLike: 'Войдите, чтобы ставить лайки',
-        voteError: 'Не удалось отправить голос. Попробуйте ещё раз.'
+        voteError: 'Не удалось отправить голос. Попробуйте ещё раз.',
+        replyBtn: 'Ответить'
     }
 };

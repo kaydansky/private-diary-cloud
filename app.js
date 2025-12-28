@@ -158,6 +158,7 @@ class DiaryApp {
         this.broadcastChannel = null; // Track the broadcast channel
         this.parentEntry = null; // To hold parent entry data when replying
         this.quoteMaxLength = 100; // Max length for quoted text
+        this.handleUrlParams(); // Handle URL params before init
         
         this.initServiceWorker();
         this.initElements();
@@ -989,6 +990,9 @@ class DiaryApp {
         this.savePollBtn = document.getElementById('savePollBtn');
         this.clearPollBtn = document.getElementById('clearPollBtn');
         this.addPollBtn = document.getElementById('addPollBtn');
+
+        // Apply display mode styles
+        this.applyDisplayModeStyles();
     }
 
     // Set up event listeners
@@ -4059,6 +4063,43 @@ class DiaryApp {
         // Compare this.selectedDate with first and last dates
         this.prevEntryBtn.disabled = this.selectedDate <= firstDate;
         this.nextEntryBtn.disabled = this.selectedDate >= lastDate;
+    }
+
+    // Check if running as standalone PWA (iOS)
+    isRunningAsStandalone() {
+        // iOS Safari
+        if ('standalone' in navigator) {
+            return navigator.standalone === true;
+        }
+        // Android Chrome
+        if (window.matchMedia('(display-mode: standalone)').matches) {
+            return true;
+        }
+        return false;
+    }
+
+    // Apply appropriate body class based on display mode
+    applyDisplayModeStyles() {
+        if (this.isRunningAsStandalone() || 
+            window.innerWidth <= 768 || 
+            'ontouchstart' in window) {
+            document.body.classList.add('mobile-view');
+        } else {
+            document.body.classList.add('desktop-view');
+        }
+    }
+
+    // Handle URL parameters on initial load
+    handleUrlParams() {
+        const params = new URLSearchParams(window.location.search);
+        const date = params.get('date');
+        const entryId = params.get('entryId');
+        
+        if (date) {
+            const [year, month] = date.split('-').map(Number);
+            this.currentDate = new Date(year, month - 1, 1);
+            this.selectedDate = date;
+        }
     }
 }
 

@@ -1336,9 +1336,9 @@ label {
 }
 
 /* Tablet styles */
-@media (max-width: 768px) {
+@media (max-width: 768px), (pointer: coarse), (-webkit-touch-callout: body) {
     body {
-        padding: 10px;
+        padding: 0;
     }
 
     .container {
@@ -1409,7 +1409,7 @@ label {
     }
 
     body {
-        padding: 5px;
+        padding: 0;
     }
 
     .header {

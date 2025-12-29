@@ -1687,8 +1687,16 @@ label {
     color: #ac7575;
 }
 
+.btn-like.filled {
+    color: #7ecf7e;
+}
+
+.btn-dislike.filled {
+    color: #d97c7c;
+}
+
 .btn-like .count, .btn-dislike .count {
-    font-size: 14px;
+    font-size: 16px;
     font-weight: 500;
 }
 

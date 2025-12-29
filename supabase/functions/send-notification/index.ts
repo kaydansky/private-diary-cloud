@@ -48,8 +48,8 @@ serve(async (req) => {
     const payload = JSON.stringify({
       title: notificationTitle,
       body: notificationBody,
-      icon: '/assets/icons/icon.svg',
-      badge: '/assets/icons/icon.svg',
+      icon: '../assets/icons/icon.svg',
+      badge: '../assets/icons/icon.svg',
       data: {
         url: '/',
         date: date,

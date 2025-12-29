@@ -158,7 +158,6 @@ class DiaryApp {
         this.broadcastChannel = null; // Track the broadcast channel
         this.parentEntry = null; // To hold parent entry data when replying
         this.quoteMaxLength = 100; // Max length for quoted text
-        this.handleUrlParams(); // Handle URL params before init
         
         this.initServiceWorker();
         this.initElements();
@@ -1657,9 +1656,11 @@ class DiaryApp {
                 
                 if (likeBtn) {
                     likeBtn.querySelector('.count').textContent = countData?.likes_count || 0;
+                    likeBtn.classList.toggle('filled', (countData?.likes_count || 0) > 0);
                 }
                 if (dislikeBtn) {
                     dislikeBtn.querySelector('.count').textContent = countData?.dislikes_count || 0;
+                    dislikeBtn.classList.toggle('filled', (countData?.dislikes_count || 0) > 0);
                 }
 
                 // Refresh user vote status
@@ -2263,13 +2264,13 @@ class DiaryApp {
         actionsDiv.className = 'entry-actions';
 
         const likeBtn = document.createElement('button');
-        likeBtn.className = `btn-like ${entry.userVote === true ? 'active' : ''}`;
+        likeBtn.className = `btn-like ${entry.userVote === true ? 'active' : ''} ${(entry.likesCount || 0) > 0 ? 'filled' : ''}`;
         likeBtn.setAttribute('data-entry-id', entry.id);
         likeBtn.setAttribute('title', this.t('like'));
         likeBtn.innerHTML = `<i class="bi bi-hand-thumbs-up${entry.userVote === true ? '-fill' : ''}"></i> <span class="count">${entry.likesCount || 0}</span>`;
 
         const dislikeBtn = document.createElement('button');
-        dislikeBtn.className = `btn-dislike ${entry.userVote === false ? 'active' : ''}`;
+        dislikeBtn.className = `btn-dislike ${entry.userVote === false ? 'active' : ''} ${(entry.dislikesCount || 0) > 0 ? 'filled' : ''}`;
         dislikeBtn.setAttribute('data-entry-id', entry.id);
         dislikeBtn.setAttribute('title', this.t('dislike'));
         dislikeBtn.innerHTML = `<i class="bi bi-hand-thumbs-down${entry.userVote === false ? '-fill' : ''}"></i> <span class="count">${entry.dislikesCount || 0}</span>`;
@@ -4155,19 +4156,6 @@ class DiaryApp {
             document.body.classList.add('mobile-view');
         } else {
             document.body.classList.add('desktop-view');
-        }
-    }
-
-    // Handle URL parameters on initial load
-    handleUrlParams() {
-        const params = new URLSearchParams(window.location.search);
-        const date = params.get('date');
-        const entryId = params.get('entryId');
-        
-        if (date) {
-            const [year, month] = date.split('-').map(Number);
-            this.currentDate = new Date(year, month - 1, 1);
-            this.selectedDate = date;
         }
     }
 }

@@ -2264,13 +2264,13 @@ class DiaryApp {
         actionsDiv.className = 'entry-actions';
 
         const likeBtn = document.createElement('button');
-        likeBtn.className = `btn-like ${entry.userVote === true ? 'active' : ''} ${(entry.likesCount || 0) > 0 ? 'filled' : ''}`;
+        likeBtn.className = `btn-like ${entry.userVote === true ? 'active' : ''} ${(entry.likesCount || 0) > 0 && (entry.userVote !== true) ? 'filled' : ''}`;
         likeBtn.setAttribute('data-entry-id', entry.id);
         likeBtn.setAttribute('title', this.t('like'));
         likeBtn.innerHTML = `<i class="bi bi-hand-thumbs-up${entry.userVote === true ? '-fill' : ''}"></i> <span class="count">${entry.likesCount || 0}</span>`;
 
         const dislikeBtn = document.createElement('button');
-        dislikeBtn.className = `btn-dislike ${entry.userVote === false ? 'active' : ''} ${(entry.dislikesCount || 0) > 0 ? 'filled' : ''}`;
+        dislikeBtn.className = `btn-dislike ${entry.userVote === false ? 'active' : ''} ${(entry.dislikesCount || 0) > 0 && (entry.userVote !== false) ? 'filled' : ''}`;
         dislikeBtn.setAttribute('data-entry-id', entry.id);
         dislikeBtn.setAttribute('title', this.t('dislike'));
         dislikeBtn.innerHTML = `<i class="bi bi-hand-thumbs-down${entry.userVote === false ? '-fill' : ''}"></i> <span class="count">${entry.dislikesCount || 0}</span>`;

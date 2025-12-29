@@ -449,7 +449,7 @@ const translations = {
     },
     ru: {
         appTitle: 'СНТ Тишинка',
-        appSubtitle: 'Блог. Стенгазета. Летопись. Чат.',
+        appSubtitle: '18+ | для лиц старше 18 лет',
         searchPlaceholder: 'Поиск среди записей...',
         noResults: 'Ничего не найдено',
         prevMonth: '← Назад',

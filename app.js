@@ -3342,8 +3342,8 @@ class DiaryApp {
         let longPressTimer;
         
         img.addEventListener('touchstart', (e) => {
+            e.preventDefault();
             longPressTimer = setTimeout(() => {
-                e.preventDefault();
                 this.showImageActionsModal(imageUrl, entryId);
             }, 600);
         });

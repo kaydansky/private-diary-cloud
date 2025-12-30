@@ -3030,35 +3030,51 @@ class DiaryApp {
     // Share entry
     async shareEntry(entry, dateStr) {
         const readableDate = this.formatDate(dateStr);
-        
+        const entryUrl = `https://snt-tishinka.ru/?date=${dateStr}&entryId=${entry.id}`;
+
         if (navigator.share) {
-            if ((!entry.text || entry.text.trim() === '') && entry.images && entry.images.length > 0) {
-                try {
-                    const files = [];
-                    for (const imageUrl of entry.images) {
-                        const blob = await this.getImage(imageUrl);
-                        if (blob) {
-                            const file = new File([blob], `diary-image.jpg`, { type: 'image/jpeg' });
-                            files.push(file);
-                        }
+            // Always prepare image files first
+            const files = [];
+            if (entry.images && entry.images.length > 0) {
+                for (const imageUrl of entry.images) {
+                    const blob = await this.getImage(imageUrl);
+                    if (blob) {
+                        const file = new File([blob], `diary-image.jpg`, { type: 'image/jpeg' });
+                        files.push(file);
                     }
-                    if (files.length > 0) {
-                        await navigator.share({
-                            title: `Diary • ${readableDate}`,
-                            files: files
-                        });
-                        return;
-                    }
-                } catch (err) {
-                    console.log('Image sharing failed', err);
                 }
             }
             
-            const sharedText = `${readableDate}\n\n${entry.text}`;
-            navigator.share({
-                title: `Diary • ${readableDate}`,
-                text: sharedText
-            }).catch(err => console.log("Share cancelled or failed", err));
+            const hasText = entry.text && entry.text.trim() !== '';
+            
+            try {
+                const shareData = {
+                    title: `${this.t('appTitle')} • ${readableDate}`,
+                };
+                
+                // Combine text and files in a single share
+                // Use plain URL instead of HTML - apps will auto-detect and make it clickable
+                if (hasText) {
+                    shareData.text = `${this.t('sharedFrom')} ${this.t('appTitle')}\n\n${entry.text}\n— ${entry.username}\n\n${this.t('lookOnSite')}: ${entryUrl}`;
+                }
+                
+                if (files.length > 0) {
+                    shareData.files = files;
+                }
+                
+                await navigator.share(shareData);
+            } catch (err) {
+                if (err.name !== 'AbortError') {
+                    console.log('Share failed', err);
+                    // Fallback to text-only share if combined share fails
+                    if (hasText && files.length === 0) {
+                        navigator.share({
+                            title: `${this.t('appTitle')} • ${readableDate}`,
+                            text: shareData.text
+                        });
+                    }
+                }
+            }
         } else {
             alert("Share failed — the option is not supported on this device.");
         }
@@ -3391,12 +3407,15 @@ class DiaryApp {
         this.hideImageContextMenu();
         this.hideImageActionsModal();
         const blob = await this.getImage(this.currentImageUrl);
+        const readableDate = this.formatDate(dateStr);
+        const entryUrl = `https://snt-tishinka.ru/?date=${dateStr}&entryId=${entry.id}`;
         
         if (blob && navigator.share) {
             const file = new File([blob], 'diary-image.jpg', { type: 'image/jpeg' });
             try {
                 await navigator.share({
-                    title: 'Diary Image',
+                    title: `${this.t('appTitle')} • ${readableDate}`,
+                    text: `${this.t('sharedFrom')} ${this.t('appTitle')}\n${entryUrl}\n\n`,
                     files: [file]
                 });
             } catch (err) {

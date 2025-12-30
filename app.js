@@ -3054,7 +3054,7 @@ class DiaryApp {
         };
 
         if (hasText) {
-            const shareText = entry.text.substring(0, 50) + '...';
+            const shareText = entry.text.length > 50 ? entry.text.substring(0, 50) + '...' : entry.text;
             shareData.text = `${this.t('sharedFrom')} ${this.t('appTitle')}:\n\n«${shareText}»\n— ${entry.username}`;
 
             if (hasImage) {

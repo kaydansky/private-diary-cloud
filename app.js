@@ -958,7 +958,7 @@ class DiaryApp {
 
     // Send push notification to all users except author
     async sendPushNotification(type, entryId = null) {
-        // return;
+        return;
         if (!this.user) return;
 
         try {
@@ -3031,52 +3031,47 @@ class DiaryApp {
     async shareEntry(entry, dateStr) {
         const readableDate = this.formatDate(dateStr);
         const entryUrl = `https://snt-tishinka.ru/?date=${dateStr}&entryId=${entry.id}`;
+        const hasText = entry.text && entry.text.trim() !== '';
+        const hasImage = entry.images && entry.images.length > 0;
 
-        if (navigator.share) {
-            // Always prepare image files first
-            const files = [];
-            if (entry.images && entry.images.length > 0) {
-                for (const imageUrl of entry.images) {
-                    const blob = await this.getImage(imageUrl);
-                    if (blob) {
-                        const file = new File([blob], `diary-image.jpg`, { type: 'image/jpeg' });
-                        files.push(file);
-                    }
-                }
+        // if (entry.images && entry.images.length > 0) {
+        //     for (const imageUrl of entry.images) {
+        //         const blob = await this.getImage(imageUrl);
+        //         if (blob) {
+        //             const file = new File([blob], `diary-image.jpg`, { type: 'image/jpeg' });
+        //             files.push(file);
+        //         }
+        //     }
+        // }
+
+        const shareData = {
+            title: `${this.t('appTitle')} • ${readableDate}`
+        };
+
+        if (hasText) {
+            const shareText = entry.text.substring(0, 50) + '...';
+            shareData.text = `${this.t('sharedFrom')} ${this.t('appTitle')}:\n\n«${shareText}»\n— ${entry.username}`;
+
+            if (hasImage) {
+                shareData.text += `\n\n${this.t('entryContainsImages')}`;
             }
-            
-            const hasText = entry.text && entry.text.trim() !== '';
-            
+
+            shareData.text += `\n\n${this.t('lookOnSite')}: ${entryUrl}`;
+        }
+        
+        // if (files.length > 0) {
+        //     shareData.files = files;
+        // }
+
+        if (navigator.canShare && navigator.canShare(shareData)) {
             try {
-                const shareData = {
-                    title: `${this.t('appTitle')} • ${readableDate}`,
-                };
-                
-                // Combine text and files in a single share
-                // Use plain URL instead of HTML - apps will auto-detect and make it clickable
-                if (hasText) {
-                    shareData.text = `${this.t('sharedFrom')} ${this.t('appTitle')}\n\n${entry.text}\n— ${entry.username}\n\n${this.t('lookOnSite')}: ${entryUrl}`;
-                }
-                
-                if (files.length > 0) {
-                    shareData.files = files;
-                }
-                
                 await navigator.share(shareData);
             } catch (err) {
-                if (err.name !== 'AbortError') {
-                    console.log('Share failed', err);
-                    // Fallback to text-only share if combined share fails
-                    if (hasText) {
-                        navigator.share({
-                            title: `${this.t('appTitle')} • ${readableDate}`,
-                            text: shareData.text
-                        });
-                    }
-                }
+                console.error('Share failed:', err.message);
             }
         } else {
-            alert("Share failed — the option is not supported on this device.");
+            // Fallback for browsers that don't support file sharing
+            console.log('File sharing not supported in this browser/OS combination.');
         }
     }
 
@@ -3406,24 +3401,39 @@ class DiaryApp {
         
         this.hideImageContextMenu();
         this.hideImageActionsModal();
-        const blob = await this.getImage(this.currentImageUrl);
+        // const blob = await this.getImage(this.currentImageUrl);
         const readableDate = this.formatDate(dateStr);
         const entryUrl = `https://snt-tishinka.ru/?date=${dateStr}&entryId=${entry.id}`;
-        
-        if (blob && navigator.share) {
-            const file = new File([blob], 'diary-image.jpg', { type: 'image/jpeg' });
+        const shareData = {
+            title: `${this.t('appTitle')} • ${readableDate}`,
+            text: `${this.t('sharedImages')} ${this.t('appTitle')}:\n${entryUrl}\n\n`,
+        };
+
+        if (navigator.canShare && navigator.canShare(shareData)) {
             try {
-                await navigator.share({
-                    title: `${this.t('appTitle')} • ${readableDate}`,
-                    text: `${this.t('sharedFrom')} ${this.t('appTitle')}\n${entryUrl}\n\n`,
-                    files: [file]
-                });
+                await navigator.share(shareData);
             } catch (err) {
-                console.log('Share cancelled or failed', err);
+                console.error('Share failed:', err.message);
             }
         } else {
-            alert(this.t('imageSharingNotSupported'));
+            // Fallback for browsers that don't support file sharing
+            console.log('File sharing not supported in this browser/OS combination.');
         }
+        
+        // if (blob && navigator.share) {
+        //     const file = new File([blob], 'diary-image.jpg', { type: 'image/jpeg' });
+        //     try {
+        //         await navigator.share({
+        //             title: `${this.t('appTitle')} • ${readableDate}`,
+        //             text: `${this.t('sharedFrom')} ${this.t('appTitle')}\n${entryUrl}\n\n`,
+        //             files: [file]
+        //         });
+        //     } catch (err) {
+        //         console.log('Share cancelled or failed', err);
+        //     }
+        // } else {
+        //     alert(this.t('imageSharingNotSupported'));
+        // }
     }
 
     // Confirm image deletion

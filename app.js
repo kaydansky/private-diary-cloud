@@ -3342,8 +3342,8 @@ class DiaryApp {
         let longPressTimer;
         
         img.addEventListener('touchstart', (e) => {
-            e.preventDefault();
             longPressTimer = setTimeout(() => {
+                e.preventDefault();
                 this.showImageActionsModal(imageUrl, entryId);
             }, 600);
         });
@@ -3356,19 +3356,14 @@ class DiaryApp {
             clearTimeout(longPressTimer);
         });
 
-        // Support right-click (button === 2) using mousedown; some browsers don't fire auxclick for right button
-        // img.addEventListener('mousedown', (e) => {
-        //     if (e.button === 2) {
-        //         e.preventDefault();
-        //         this.showImageActionsModal(imageUrl, entryId);
-        //     }
-        // });
+        // Prevent native context menu on Android long-press
+        img.addEventListener('contextmenu', (e) => {
+            e.preventDefault();
+            return false;
+        });
 
-        // Fallback for the classic context menu event
-        // img.addEventListener('contextmenu', (e) => {
-        //     e.preventDefault();
-        //     this.showImageActionsModal(imageUrl, entryId);
-        // });
+        // Also prevent oncontextmenu via attribute for extra compatibility
+        img.oncontextmenu = () => false
     }
 
     // Show image context menu

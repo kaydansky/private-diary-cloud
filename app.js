@@ -1094,7 +1094,12 @@ class DiaryApp {
         document.getElementById('cancelImageBtn').addEventListener('click', () => this.hideMobileOptions());
         document.getElementById('shareImageBtn').addEventListener('click', () => this.shareImage());
         document.getElementById('deleteImageBtn').addEventListener('click', () => this.confirmImageDelete());
-        document.getElementById('shareImageModalBtn').addEventListener('click', () => this.shareImage());
+        document.getElementById('shareImageModalBtn').addEventListener('click', () => {
+    const entry = this.entries[this.selectedDate]?.find(e => e.id === this.currentImageEntryId);
+    if (entry) {
+        this.shareImage(this.selectedDate, entry);
+    }
+});
         document.getElementById('deleteImageModalBtn').addEventListener('click', () => this.confirmImageDelete());
         document.getElementById('cancelImageActionsBtn').addEventListener('click', () => this.hideImageActionsModal());
         this.saveEntryBtn.addEventListener('click', () => this.doneEntry());
@@ -3330,9 +3335,9 @@ class DiaryApp {
         // Check if user owns this entry
         const entry = this.entries[this.selectedDate]?.find(e => e.id === entryId);
         const isOwnEntry = this.user && entry && entry.user_id === this.user.id;
-        
+
         // Only add custom handlers if user owns the entry
-        if (!isOwnEntry) return;
+        // if (!isOwnEntry) return;
         
         let longPressTimer;
         
@@ -3350,12 +3355,20 @@ class DiaryApp {
         img.addEventListener('touchmove', () => {
             clearTimeout(longPressTimer);
         });
-        
-        img.addEventListener('contextmenu', (e) => {
-            e.preventDefault();
-            // this.showImageContextMenu(e, imageUrl, entryId);
-            this.showImageActionsModal(imageUrl, entryId);
-        });
+
+        // Support right-click (button === 2) using mousedown; some browsers don't fire auxclick for right button
+        // img.addEventListener('mousedown', (e) => {
+        //     if (e.button === 2) {
+        //         e.preventDefault();
+        //         this.showImageActionsModal(imageUrl, entryId);
+        //     }
+        // });
+
+        // Fallback for the classic context menu event
+        // img.addEventListener('contextmenu', (e) => {
+        //     e.preventDefault();
+        //     this.showImageActionsModal(imageUrl, entryId);
+        // });
     }
 
     // Show image context menu
@@ -3396,7 +3409,7 @@ class DiaryApp {
     }
 
     // Share image
-    async shareImage() {
+    async shareImage(dateStr, entry) {
         if (!this.currentImageUrl) return;
         
         this.hideImageContextMenu();
@@ -3406,7 +3419,7 @@ class DiaryApp {
         const entryUrl = `https://snt-tishinka.ru/?date=${dateStr}&entryId=${entry.id}`;
         const shareData = {
             title: `${this.t('appTitle')} • ${readableDate}`,
-            text: `${this.t('sharedImages')} ${this.t('appTitle')}:\n${entryUrl}\n\n`,
+            text: `${this.t('sharedImages')} ${this.t('appTitle')}. ${this.t('lookOnSite')}:\n\n${entryUrl}\n\n`,
         };
 
         if (navigator.canShare && navigator.canShare(shareData)) {

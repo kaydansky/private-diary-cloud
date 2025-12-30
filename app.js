@@ -3067,7 +3067,7 @@ class DiaryApp {
                 if (err.name !== 'AbortError') {
                     console.log('Share failed', err);
                     // Fallback to text-only share if combined share fails
-                    if (hasText && files.length === 0) {
+                    if (hasText) {
                         navigator.share({
                             title: `${this.t('appTitle')} • ${readableDate}`,
                             text: shareData.text

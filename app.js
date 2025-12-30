@@ -958,7 +958,7 @@ class DiaryApp {
 
     // Send push notification to all users except author
     async sendPushNotification(type, entryId = null) {
-        return;
+        // return;
         if (!this.user) return;
 
         try {

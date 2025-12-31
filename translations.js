@@ -149,8 +149,11 @@ const translations = {
         writeBtn: 'Write',
         sharedFrom: 'Shared from',
         lookOnSite: 'View on site',
+        lookOriginal: 'View on site',
         entryContainsImages: 'Entry contains images.',
-        sharedImages: 'Shared images from'
+        sharedImages: 'Shared images from',
+        sharedPoll: 'Shared poll from',
+        nothingToShare: 'Nothing to share'
     },
     fr: {
         appTitle: 'Journal Privé Cloud',
@@ -302,8 +305,11 @@ const translations = {
         writeBtn: 'Écrire',
         sharedFrom: 'Partagé depuis',
         lookOnSite: 'Voir sur le site',
+        lookOriginal: 'Voir sur le site',
         entryContainsImages: "L'entrée contient des images.",
-        sharedImages: 'Images partagées depuis'
+        sharedImages: 'Images partagées depuis',
+        sharedPoll: 'Sondage partagé depuis',
+        nothingToShare: 'Rien à partager'
     },
     de: {
         appTitle: 'Tagebuch Cloud',
@@ -456,8 +462,11 @@ const translations = {
         writeBtn: 'Schreiben',
         sharedFrom: 'Gesendet von',
         lookOnSite: 'Auf der Website ansehen',
+        lookOriginal: 'Auf der Website ansehen',
         entryContainsImages: 'Dieser Eintrag enthält Bilder.',
-        sharedImages: 'Geteilte Bilder von'
+        sharedImages: 'Geteilte Bilder von',
+        sharedPoll: 'Geteilte Umfrage von',
+        nothingToShare: 'Nichts zu teilen'
     },
     ru: {
         appTitle: 'СНТ Тишинка',
@@ -606,8 +615,11 @@ const translations = {
         voteError: 'Не удалось отправить голос. Попробуйте ещё раз.',
         writeBtn: 'Написать',
         sharedFrom: 'Отправлено с сайта',
-        lookOnSite: 'Посмотреть оригинал',
+        lookOnSite: 'Посмотреть',
+        lookOriginal: 'Посмотреть оригинал',
         entryContainsImages: 'Запись содержит изображения.',
-        sharedImages: 'Отправлено изображение с сайта'
+        sharedImages: 'Отправлено изображение с сайта',
+        sharedPoll: 'Голосование на сайте',
+        nothingToShare: 'Нет данных для отправки'
     }
 };

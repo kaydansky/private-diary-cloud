@@ -316,7 +316,7 @@ class DiaryApp {
     }
 
     async broadcast() {
-        if (!this.user) return;
+        if (!this.user || this.user.is_anonymous === true) return;
 
         // Skip if channel already exists
         if (this.broadcastChannel) return;
@@ -383,7 +383,7 @@ class DiaryApp {
         const addImageBtn = document.getElementById('addImageBtn');
         const peopleBtn = document.getElementById('peopleBtn');
         
-        if (this.user) {
+        if (this.user && this.user.is_anonymous === false) {
             if (signInBtn) signInBtn.style.display = 'none';
             if (footerText) footerText.style.display = 'none';
             if (signOutBtn) signOutBtn.style.display = 'block';
@@ -613,7 +613,7 @@ class DiaryApp {
         this.checkNavigationTarget();
         
         // Find most recent entry date from both diary entries and polls
-        if (!this.user) {
+        if (!this.user || this.user.is_anonymous === true) {
             const [recentEntry, recentPoll] = await Promise.all([
                 this.supabase
                     .from('diary_entries')
@@ -820,7 +820,7 @@ class DiaryApp {
     // Toggle notifications
     async toggleNotifications() {
         this.hideHeaderMenu();
-        if (!this.user) return;
+        if (!this.user || this.user.is_anonymous === true) return;
         
         if (this.isNotificationsEnabled) {
             await this.unsubscribeFromNotifications();
@@ -959,7 +959,7 @@ class DiaryApp {
     // Send push notification to all users except author
     async sendPushNotification(type, entryId = null) {
         // return;
-        if (!this.user) return;
+        if (!this.user || this.user.is_anonymous === true) return;
 
         try {
             await fetch(`${SUPABASE_URL}/functions/v1/send-notification`, {
@@ -1058,11 +1058,11 @@ class DiaryApp {
         this.nextEntryBtn.addEventListener('click', () => this.navigateEntry(1));
         this.initEntrySwipeNavigation();
         this.addEntryBtn.addEventListener('click', () => {
-            if (!this.user) return alert(this.t('signInToAddEntries'));
+            if (!this.user || this.user.is_anonymous === true) return alert(this.t('signInToAddEntries'));
             this.showEntryForm();
         });
         this.addImageBtn.addEventListener('click', () => {
-            if (!this.user) return alert(this.t('signInToAddImages'));
+            if (!this.user || this.user.is_anonymous === true) return alert(this.t('signInToAddImages'));
             // Reset currentEntryId to ensure a new entry is created
             this.currentEntryId = null;
             this.handleImageUpload();
@@ -1124,11 +1124,11 @@ class DiaryApp {
                     const entries = this.entries[date] || [];
                     const entry = entries.find(en => en.id === entryId);
                     if (entry && entry.type === 'poll') {
-                        if (menuBtn.dataset.userId !== this.user?.id) {
-                            menuBtn.classList.add('hidden');
-                        } else {
+                        // if (menuBtn.dataset.userId !== this.user?.id) {
+                        //     menuBtn.classList.add('hidden');
+                        // } else {
                             this.showPollActionsModal(entryId, date);
-                        }
+                        // }
                     } else {
                         this.showEntryActionsModal(entryId, date);
                     }
@@ -1186,6 +1186,8 @@ class DiaryApp {
         document.getElementById('imageEntryModalBtn').addEventListener('click', () => this.handleEntryAction('image'));
         document.getElementById('editEntryModalBtn').addEventListener('click', () => this.handleEntryAction('edit'));
         document.getElementById('deleteEntryModalBtn').addEventListener('click', () => this.handleEntryAction('delete'));
+        document.getElementById('imagePollModalBtn').addEventListener('click', () => this.handleEntryAction('image'));
+        document.getElementById('sharePollModalBtn').addEventListener('click', () => this.handleEntryAction('share'));
         document.getElementById('deletePollModalBtn').addEventListener('click', () => this.handleEntryAction('delete'));
         document.getElementById('cancelEntryActionsBtn').addEventListener('click', () => this.hideEntryActionsModal());
         document.getElementById('cancelPollActionsBtn').addEventListener('click', () => this.hidePollActionsModal());
@@ -1220,7 +1222,7 @@ class DiaryApp {
         
         // Poll event listeners
         this.addPollBtn.addEventListener('click', () => {
-            if (!this.user) return alert(this.t('alertSignInToCreatePoll'));
+            if (!this.user || this.user.is_anonymous === true) return alert(this.t('alertSignInToCreatePoll'));
             this.showPollForm();
         });
         
@@ -1395,7 +1397,7 @@ class DiaryApp {
                 // Load user votes for these polls
                 const { data: userVotes, error: userVotesError } = await this.supabase
                     .from('poll_votes')
-                    .select('poll_id, option_id')
+                    .select('poll_id, option_id, user_id')
                     .in('poll_id', pollIds);
                 
                 // Add user votes to poll entries
@@ -2069,7 +2071,7 @@ class DiaryApp {
     }
 
     toggleReplyButton() {
-        if (!this.user) return;
+        if (!this.user || this.user.is_anonymous === true) return;
 
         // Hide reply button if entry form is shown
         if (!this.entryForm.classList.contains('hidden')) {
@@ -2090,7 +2092,7 @@ class DiaryApp {
     }
 
     toggleAddPollBtn() {
-        if (!this.user) return;
+        if (!this.user || this.user.is_anonymous === true) return;
 
         if (this.isDateEarlierThanToday(this.selectedDate)) {
             this.addPollBtn.style.display = 'none';
@@ -2374,7 +2376,12 @@ class DiaryApp {
             input.type = 'radio';
             input.name = `poll-${poll.id}`;
             input.value = option.id;
-            if (this.user && this.user.id === poll.user_id && poll.userVote && poll.userVote.option_id === option.id) {
+            
+            if (this.user 
+                && this.user.id === poll.user_id 
+                && poll.userVote 
+                && poll.userVote.option_id === option.id 
+                && poll.userVote.user_id === this.user.id) {
                 input.checked = true;
             }
             if (isExpired) {
@@ -2404,7 +2411,7 @@ class DiaryApp {
         const actionsDiv = document.createElement('div');
         actionsDiv.className = 'entry-actions';
 
-        if (this.user && poll.user_id === this.user.id) {
+        // if (this.user && poll.user_id === this.user.id) {
             const menuBtn = document.createElement('button');
             menuBtn.className = 'menu-btn';
             menuBtn.setAttribute('data-entry-id', poll.id);
@@ -2413,7 +2420,7 @@ class DiaryApp {
             menuBtn.title = this.t('entryOptions');
             menuBtn.innerHTML = '<i class="bi bi-three-dots-vertical"></i>';
             actionsDiv.appendChild(menuBtn);
-        }
+        // }
 
         li.appendChild(actionsDiv);
         return li;
@@ -2434,8 +2441,8 @@ class DiaryApp {
         const optionsHtml = poll.options.map(option => {
             // Check if user has voted for this option
             let checkedAttr = '';
-
-            if (this.user && this.user.id === poll.user_id && poll.userVote && poll.userVote.option_id === option.id) {
+            
+;            if (this.user && this.user.id === poll.user_id && poll.userVote && poll.userVote.option_id === option.id) {
                 checkedAttr = 'checked="true"';
             }
             
@@ -2477,10 +2484,29 @@ class DiaryApp {
 
     // Vote on a poll
     async voteOnPoll(pollId, optionId) {
+        // if (!this.user) {
+        //     alert(this.t('alertSignInToVote'));
+        //     this.renderEntries(this.selectedDate);
+        //     return;
+        // }
+
         if (!this.user) {
-            alert(this.t('alertSignInToVote'));
-            this.renderEntries(this.selectedDate);
-            return;
+            try {
+                // Attempt anonymous sign-in
+                const { data, error } = await this.supabase.auth.signInAnonymously();
+                if (error) throw error;
+                
+                // Update local user state
+                this.user = data.user;
+                
+                // Refresh UI to reflect logged-in status
+                this.updateAuthUI();
+                
+            } catch (err) {
+                console.error('Anonymous auth failed:', err);
+                alert(this.t('alertSignInToVote'));
+                return;
+            }
         }
 
         try {
@@ -2886,7 +2912,7 @@ class DiaryApp {
         document.getElementById('imageEntryModalBtn').style.display = isOwnEntry ? '' : 'none';
 
         document.getElementById('replyEntryModalBtn').addEventListener('click', () => {
-            if (!this.user) {
+            if (!this.user || this.user.is_anonymous === true) {
                 alert(this.t('signInToAddEntries'));
                 return;
             }
@@ -2923,6 +2949,7 @@ class DiaryApp {
         // Only show delete for own polls
         const isOwnPoll = this.user && poll && poll.user_id === this.user.id;
         document.getElementById('deletePollModalBtn').style.display = isOwnPoll ? '' : 'none';
+        document.getElementById('imagePollModalBtn').style.display = isOwnPoll ? '' : 'none';
         
         this.currentEntryId = pollId;
         this.currentEntryDate = date;
@@ -3037,7 +3064,14 @@ class DiaryApp {
         const readableDate = this.formatDate(dateStr);
         const entryUrl = `https://snt-tishinka.ru/?date=${dateStr}&entryId=${entry.id}`;
         const hasText = entry.text && entry.text.trim() !== '';
+        const hasQuestion = entry.type === 'poll' && entry.question && entry.question.trim() !== '';
         const hasImage = entry.images && entry.images.length > 0;
+        const isPoll = entry.type === 'poll';
+
+        if (!hasText && !hasImage && !hasQuestion) {
+            alert(this.t('nothingToShare'));
+            return;
+        }
 
         // if (entry.images && entry.images.length > 0) {
         //     for (const imageUrl of entry.images) {
@@ -3053,15 +3087,20 @@ class DiaryApp {
             title: `${this.t('appTitle')} • ${readableDate}`
         };
 
-        if (hasText) {
-            const shareText = entry.text.length > 50 ? entry.text.substring(0, 50) + '...' : entry.text;
-            shareData.text = `${this.t('sharedFrom')} ${this.t('appTitle')}:\n\n«${shareText}»\n— ${entry.username}`;
+        if (hasText || hasQuestion) {
+            const shareText = hasText 
+                ? (entry.text.length > 50 ? entry.text.substring(0, 50) + '...' : entry.text) 
+                : (entry.question.length > 50 ? entry.question.substring(0, 50) + '...' : entry.question);
+            const titleText = isPoll ? this.t('sharedPoll') : this.t('sharedFrom');
+            shareData.text = `${titleText} ${this.t('appTitle')}:\n\n«${shareText}»\n— ${entry.username}`;
 
             if (hasImage) {
                 shareData.text += `\n\n${this.t('entryContainsImages')}`;
             }
 
-            shareData.text += `\n\n${this.t('lookOnSite')}: ${entryUrl}`;
+            shareData.text += isPoll ? `\n\n${this.t('lookOnSite')}: ${entryUrl}` : `\n\n${this.t('lookOriginal')}: ${entryUrl}`;
+        } else if (hasImage) {
+            shareData.text = `${this.t('sharedImages')} ${this.t('appTitle')}. ${this.t('lookOnSite')}:\n\n${entryUrl}\n\n`;
         }
         
         // if (files.length > 0) {

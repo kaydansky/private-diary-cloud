@@ -1286,7 +1286,16 @@ class DiaryApp {
             } catch (e) {
                 this.entries = Object.assign({}, this._monthCache.get(monthKey));
             }
-            return;
+            // Compute and return the last date that has a diary entry (or any entry as fallback)
+            const cachedDates = Object.keys(this.entries).sort().reverse();
+            for (const d of cachedDates) {
+                const items = this.entries[d] || [];
+                if (items.some(i => i.type === 'entry')) return d;
+            }
+            for (const d of cachedDates) {
+                if ((this.entries[d] || []).length > 0) return d;
+            }
+            return null;
         }
 
         this.showLoadingOverlay();
@@ -1431,6 +1440,18 @@ class DiaryApp {
             this.hideLoadingOverlay();
             await this.broadcast();
         }
+
+        // After loading, return the last date in the month that has a diary entry.
+        const loadedDates = Object.keys(this.entries).sort().reverse();
+        for (const d of loadedDates) {
+            const items = this.entries[d] || [];
+            if (items.some(i => i.type === 'entry')) return d;
+        }
+        // Fallback: return the last date that has any entries (including polls)
+        for (const d of loadedDates) {
+            if ((this.entries[d] || []).length > 0) return d;
+        }
+        return null;
     }
 
     async loadLikeDislikeData() {
@@ -1810,7 +1831,11 @@ class DiaryApp {
         if (!this.canNavigateToFuture(direction)) return;
         
         this.currentDate.setMonth(this.currentDate.getMonth() + direction);
-        await this.loadEntriesForMonth(this.currentDate.getFullYear(), this.currentDate.getMonth());
+        const lastEntryDate = await this.loadEntriesForMonth(this.currentDate.getFullYear(), this.currentDate.getMonth());
+        if (lastEntryDate) {
+            this.selectedDate = lastEntryDate;
+            this.renderEntries(this.selectedDate);
+        }
         this.renderCalendar();
     }
 

@@ -958,7 +958,7 @@ class DiaryApp {
 
     // Send push notification to all users except author
     async sendPushNotification(type, entryId = null) {
-        // return;
+        return;
         if (!this.user || this.user.is_anonymous === true) return;
 
         try {
@@ -1276,11 +1276,11 @@ class DiaryApp {
     }
 
     // Load entries for specific month from Supabase
-    async loadEntriesForMonth(year, month) {
+    async loadEntriesForMonth(year, month, forceReload = false) {
         const monthKey = `${year}-${String(month + 1).padStart(2, '0')}`;
 
         // Return cached month if available (deep clone to avoid accidental mutations)
-        if (this._monthCache && this._monthCache.has(monthKey)) {
+        if (this._monthCache && this._monthCache.has(monthKey) && !forceReload) {
             try {
                 this.entries = JSON.parse(JSON.stringify(this._monthCache.get(monthKey)));
             } catch (e) {
@@ -1334,6 +1334,7 @@ class DiaryApp {
                     date,
                     created_at,
                     username,
+                    images,
                     poll_options (
                         id,
                         option_text,
@@ -1364,10 +1365,11 @@ class DiaryApp {
                     options: options,
                     createdAt: poll.created_at,
                     username: poll.username || null,
+                    images: poll.images || [],
                     type: 'poll'
                 });
             });
-            
+
             // Load vote counts for all polls
             const pollIds = pollsData?.map(poll => poll.id) || [];
             if (pollIds.length > 0) {
@@ -2045,7 +2047,7 @@ class DiaryApp {
 
         // Load images lazily for entries
         entries.forEach(entry => {
-            if (entry.type === 'entry' && entry.images && entry.images.length > 0) {
+            if (entry.images && entry.images.length > 0) {
                 this.loadEntryImages(entry.id, entry.images);
             }
         });
@@ -2359,6 +2361,12 @@ class DiaryApp {
         questionDiv.className = 'poll-question';
         questionDiv.textContent = poll.question;
         contentDiv.appendChild(questionDiv);
+
+        // Images container
+        const imagesDiv = document.createElement('div');
+        imagesDiv.className = 'entry-images';
+        imagesDiv.id = `images-${poll.id}`;
+        contentDiv.appendChild(imagesDiv);
 
         // Poll options
         const optionsDiv = document.createElement('div');
@@ -2744,6 +2752,8 @@ class DiaryApp {
             // Reset form and hide it
             this.hidePollForm();
             this.showToast(this.t('pollCreated'));
+            // Reload month to ensure consistency
+            this.loadEntriesForMonth(this.currentDate.getFullYear(), this.currentDate.getMonth(), true);
             this.renderEntries(this.selectedDate);
         } catch (error) {
             console.error('Error saving poll:', error);
@@ -3054,7 +3064,7 @@ class DiaryApp {
                 .eq('id', id);
         }
 
-        await this.loadEntriesForMonth(this.currentDate.getFullYear(), this.currentDate.getMonth());
+        await this.loadEntriesForMonth(this.currentDate.getFullYear(), this.currentDate.getMonth(), true);
         this.renderEntries(this.selectedDate);
         this.renderCalendar();
     }
@@ -3171,8 +3181,10 @@ class DiaryApp {
     // Process image file
     async processImageFile(file) {
         if (!file) return;
+        if (!this.currentEntryDate) return
         
         this.hideMobileOptions();
+        const entry = this.currentEntryId ? this.entries[this.selectedDate].find(e => e.id === this.currentEntryId) : null;
         
         if (file.size > 15 * 1024 * 1024) {
             alert(this.t('imageTooLarge'));
@@ -3186,13 +3198,30 @@ class DiaryApp {
             // Log compression ratio for diagnostics
             const ratio = ((1 - compressedBlob.size / file.size) * 100).toFixed(1);
             console.log(`Image compressed: ${(file.size / 1024).toFixed(0)}KB → ${(compressedBlob.size / 1024).toFixed(0)}KB (${ratio}% reduction)`);
-            
             const imageUrl = await this.saveImage(compressedBlob);
-            await this.attachImageToEntry(imageUrl);
+            
+            if (entry && entry.type === 'poll') {
+                await this.attachImageToPoll(imageUrl, entry);
+            } else {
+                await this.attachImageToEntry(imageUrl);
+            }
         } catch (error) {
             console.error('Error processing image:', error);
             alert(this.t('alertImageProcessingFailed'));
         }
+    }
+
+    async attachImageToPoll(imageUrl, poll) {        
+        if (!poll.images) poll.images = [];
+        poll.images.push(imageUrl);
+        await this.supabase
+            .from('polls')
+            .update({ images: poll.images })
+            .eq('id', poll.id);
+        this.loadEntriesForMonth(this.currentDate.getFullYear(), this.currentDate.getMonth(), true);
+        this.renderEntries(this.currentEntryDate);
+        this.renderCalendar();
+        // await this.sendPushNotification('image', poll.id);
     }
 
     // Attach image to entry
@@ -3398,7 +3427,7 @@ class DiaryApp {
         // Prevent native context menu on Android long-press
         img.addEventListener('contextmenu', (e) => {
             e.preventDefault();
-            return false;
+            this.showImageActionsModal(imageUrl, entryId);
         });
 
         // Also prevent oncontextmenu via attribute for extra compatibility
@@ -3524,6 +3553,8 @@ class DiaryApp {
         await this.deleteImageFromStorage(imageUrl);
         
         const entry = this.entries[this.selectedDate].find(e => e.id === entryId);
+        const table = entry.type === 'poll' ? 'polls' : 'diary_entries';
+
         if (entry && entry.images) {
             entry.images = entry.images.filter(img => img !== imageUrl);
             if (entry.images.length === 0) {
@@ -3531,14 +3562,14 @@ class DiaryApp {
             }
             
             await this.supabase
-                .from('diary_entries')
+                .from(table)
                 .update({ 
                     images: entry.images || [],
                     updated_at: new Date().toISOString()
                 })
                 .eq('id', entryId);
             
-            if ((!entry.text || entry.text.trim() === '') && !entry.images) {
+            if ((!entry.text || entry.text.trim() === '') && !entry.images && entry.type !== 'poll') {
                 await this.supabase
                     .from('diary_entries')
                     .delete()
@@ -3551,6 +3582,7 @@ class DiaryApp {
             }
         }
         
+        this.loadEntriesForMonth(this.currentDate.getFullYear(), this.currentDate.getMonth(), true);
         this.renderEntries(this.selectedDate);
         this.renderCalendar();
     }

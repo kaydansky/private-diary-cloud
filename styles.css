@@ -1000,7 +1000,6 @@ body {
 .poll-question {
     font-size: 1.4rem;
     font-weight: 500;
-    margin-bottom: 25px;
     color: var(--text-color);
 }
 
@@ -1011,7 +1010,7 @@ body {
 }
 
 .poll-options {
-    margin-top: 10px;
+    margin-top: 30px;
 }
 
 .poll-option-label {

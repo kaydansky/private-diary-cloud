@@ -1409,7 +1409,8 @@ class DiaryApp {
                 const { data: userVotes, error: userVotesError } = await this.supabase
                     .from('poll_votes')
                     .select('poll_id, option_id, user_id')
-                    .in('poll_id', pollIds);
+                    .in('poll_id', pollIds)
+                    .eq('user_id', this.user.id);
                 
                 // Add user votes to poll entries
                 if (userVotes) {
@@ -2409,14 +2410,14 @@ class DiaryApp {
             input.type = 'radio';
             input.name = `poll-${poll.id}`;
             input.value = option.id;
-            
+
             if (this.user 
                 && this.user.id === poll.user_id 
                 && poll.userVote 
                 && poll.userVote.option_id === option.id 
                 && poll.userVote.user_id === this.user.id) {
                 input.checked = true;
-            }
+            } 
             if (isExpired) {
                 input.disabled = true;
             }

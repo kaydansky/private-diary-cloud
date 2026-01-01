@@ -258,9 +258,9 @@ class DiaryApp {
         }
         this.updateDateSelects();
         
-        if (this.selectedDate) {
-            this.renderEntries(this.selectedDate);
-        }
+        // if (this.selectedDate) {
+        //     this.renderEntries(this.selectedDate);
+        // }
         this.renderCalendar();
         
         if (this.user) {
@@ -2080,7 +2080,6 @@ class DiaryApp {
         this.searchQuery = '';
 
         // Initialize poll countdown timers and start updates (single update manager)
-        if (!this.pollCountdowns) this.pollCountdowns = new Map();
         this.updatePollCountdowns(entries);
 
         this.toggleReplyButton();
@@ -2130,18 +2129,19 @@ class DiaryApp {
 
     // Update poll countdowns in real-time
     updatePollCountdowns(entries) {
+        let pollCountdowns = new Map();
         const currentPollIds = new Set();
         entries.forEach(entry => {
             if (entry.type === 'poll' && entry.createdAt) {
-            currentPollIds.add(entry.id);
+                currentPollIds.add(entry.id);
             }
         });
 
         // Clear intervals for polls no longer displayed
-        for (const [pollId, intervalId] of this.pollCountdowns.entries()) {
+        for (const [pollId, intervalId] of pollCountdowns.entries()) {
             if (!currentPollIds.has(pollId)) {
-            clearInterval(intervalId);
-            this.pollCountdowns.delete(pollId);
+                clearInterval(intervalId);
+                pollCountdowns.delete(pollId);
             }
         }
 
@@ -2156,7 +2156,7 @@ class DiaryApp {
             if (!pollElement) return;
 
             const countdownEl = pollElement.querySelector(
-            `.poll-countdown[data-poll-id="${entry.id}"]`
+                `.poll-countdown[data-poll-id="${entry.id}"]`
             );
 
             if (!countdownEl) return;
@@ -2164,34 +2164,34 @@ class DiaryApp {
             const isExpired = this.isPollExpired(entry);
 
             // Clear an old interval for already expired polls
-            if (this.pollCountdowns.has(entry.id) && isExpired) {
-            clearInterval(this.pollCountdowns.get(entry.id));
-            this.pollCountdowns.delete(entry.id);
+            if (pollCountdowns.has(entry.id) && isExpired) {
+                clearInterval(pollCountdowns.get(entry.id));
+                pollCountdowns.delete(entry.id);
             }
 
-            if (!isExpired && !this.pollCountdowns.has(entry.id)) {
-            const intervalId = setInterval(() => {
-                const nowExpired = this.isPollExpired(entry);
-                if (nowExpired) {
+            if (!isExpired && !pollCountdowns.has(entry.id)) {
+                const intervalId = setInterval(() => {
+                    const nowExpired = this.isPollExpired(entry);
+                    if (nowExpired) {
+                        countdownEl.textContent = this.t('pollExpired');
+                        countdownEl.classList.add('poll-expired');
+                        clearInterval(intervalId);
+                        pollCountdowns.delete(entry.id);
+                        return;
+                    }
+
+                    const pollCreationTime = new Date(entry.createdAt).getTime();
+                    const expirationTime = pollCreationTime + POLL_LIFETIME_SECONDS * 1000;
+                    const currentTime = Date.now();
+                    const timeLeft = expirationTime - currentTime;
+                    const timeRemaining = this.formatTimeRemaining(timeLeft);
+                    countdownEl.textContent = timeRemaining;
+                }, 1000);
+
+                pollCountdowns.set(entry.id, intervalId);
+            } else if (isExpired) {
                 countdownEl.textContent = this.t('pollExpired');
                 countdownEl.classList.add('poll-expired');
-                clearInterval(intervalId);
-                this.pollCountdowns.delete(entry.id);
-                return;
-                }
-
-                const pollCreationTime = new Date(entry.createdAt).getTime();
-                const expirationTime = pollCreationTime + POLL_LIFETIME_SECONDS * 1000;
-                const currentTime = Date.now();
-                const timeLeft = expirationTime - currentTime;
-                const timeRemaining = this.formatTimeRemaining(timeLeft);
-                countdownEl.textContent = timeRemaining;
-            }, 1000);
-
-            this.pollCountdowns.set(entry.id, intervalId);
-            } else if (isExpired) {
-            countdownEl.textContent = this.t('pollExpired');
-            countdownEl.classList.add('poll-expired');
             }
         });
     }

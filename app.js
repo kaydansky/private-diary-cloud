@@ -1406,26 +1406,28 @@ class DiaryApp {
                 });
                 
                 // Load user votes for these polls
-                const { data: userVotes, error: userVotesError } = await this.supabase
-                    .from('poll_votes')
-                    .select('poll_id, option_id, user_id')
-                    .in('poll_id', pollIds)
-                    .eq('user_id', this.user.id);
-                
-                // Add user votes to poll entries
-                if (userVotes) {
-                    userVotes.forEach(userVote => {
-                        for (const date in this.entries) {
-                            const poll = this.entries[date].find(entry =>
-                                entry.type === 'poll' && entry.id === userVote.poll_id
-                            );
-                            
-                            if (poll) {
-                                poll.userVote = userVote;
-                                break;
+                if (this.user) {
+                    const { data: userVotes, error: userVotesError } = await this.supabase
+                        .from('poll_votes')
+                        .select('poll_id, option_id, user_id')
+                        .in('poll_id', pollIds)
+                        .eq('user_id', this.user.id);
+                    
+                    // Add user votes to poll entries
+                    if (userVotes) {
+                        userVotes.forEach(userVote => {
+                            for (const date in this.entries) {
+                                const poll = this.entries[date].find(entry =>
+                                    entry.type === 'poll' && entry.id === userVote.poll_id
+                                );
+                                
+                                if (poll) {
+                                    poll.userVote = userVote;
+                                    break;
+                                }
                             }
-                        }
-                    });
+                        });
+                    }
                 }
             }
 

@@ -1535,24 +1535,43 @@ class DiaryApp {
         }
 
         const q = query.trim();
-        const { data } = await this.supabase
-            .from('diary_entries')
-            .select('*')
-            .ilike('text', `%${q}%`)
-            .limit(10);
 
-        if (!data || data.length === 0) {
+        // Run both queries in parallel
+        const [entriesResult, pollsResult] = await Promise.all([
+            this.supabase
+                .from('diary_entries')
+                .select('*')
+                .ilike('text', `%${q}%`)
+                .limit(10),
+            this.supabase
+                .from('polls')
+                .select('*')
+                .ilike('question', `%${q}%`)
+                .limit(10)
+        ]);
+
+        // Combine results from both queries
+        const diaryEntries = entriesResult.data || [];
+        const polls = pollsResult.data || [];
+        const data = [...diaryEntries, ...polls];
+
+        if (data.length === 0) {
             this.searchResults.innerHTML = '<div class="no-entries">' + this.t('noResults') + '</div>';
             this.searchResults.classList.remove('hidden');
             return;
         }
 
         this.searchResults.innerHTML = data.map(result => {
-            const preview = result.text.substring(0, 100) + (result.text.length > 100 ? '...' : '');
+            // Determine if this is an entry or poll
+            const isPoll = result.question !== undefined;
+            const preview = isPoll
+                ? result.question.substring(0, 100)
+                : result.text.substring(0, 100);
+            const previewWithEllipsis = preview.length > 100 ? preview + '...' : preview;
             return `
                 <div class="search-result-item" data-date="${result.date}" data-entry-id="${result.id}">
                     <div class="search-result-date">${this.formatDate(result.date)}</div>
-                    <div class="search-result-text">${this.escapeHtml(preview)}</div>
+                    <div class="search-result-text">${this.escapeHtml(previewWithEllipsis)}</div>
                 </div>
             `;
         }).join('');
@@ -1584,7 +1603,7 @@ class DiaryApp {
             alert(this.t('signInToLike'));
             return;
         }
-
+        
         const entryEl = document.querySelector(`.entry-item[data-entry-id="${entryId}"]`);
         if (!entryEl) return;
 
@@ -2032,7 +2051,7 @@ class DiaryApp {
             this.toggleReplyButton();
             return;
         }
-
+        
         // Build entries using DocumentFragment with DOM factories (no HTML templates)
         const frag = document.createDocumentFragment();
 
@@ -2040,7 +2059,7 @@ class DiaryApp {
             const el = entry.type === 'poll' ? this.createPollElement(entry, date) : this.createEntryElement(entry, date);
             frag.appendChild(el);
         }
-
+        
         // Clear and append fragment in one reflow
         this.entryList.innerHTML = '';
         this.entryList.appendChild(frag);
@@ -2079,7 +2098,7 @@ class DiaryApp {
             this.replyButton.classList.add('hidden');
             return;
         }
-
+        
         if (document.activeElement === this.entryTextarea) {
             this.replyButton.classList.add('hidden');
             return;
@@ -2296,10 +2315,13 @@ class DiaryApp {
     scrollToEntry(entryId) {
         setTimeout(() => {
             const entryEl = document.querySelector(`.entry-item[data-entry-id="${entryId}"]`);
-            if (entryEl) {
-                entryEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                entryEl.classList.add('highlight');
-                setTimeout(() => entryEl.classList.remove('highlight'), 2000);
+            const pollEl = document.querySelector(`.poll-item[data-poll-id="${entryId}"]`);
+            const elToScroll = entryEl || pollEl;
+
+            if (elToScroll) {
+                elToScroll.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                elToScroll.classList.add('highlight');
+                setTimeout(() => elToScroll.classList.remove('highlight'), 2000);
             }
         }, 100);
     }

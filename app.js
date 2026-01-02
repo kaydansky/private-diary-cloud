@@ -687,20 +687,7 @@ class DiaryApp {
                     // console.log('Looking for entryId:', entryId);
                     // console.log('Available entries:', this.entries[date]);
                     // console.log('Available entry IDs:', this.entries[date]?.map(e => e.id));
-                    setTimeout(() => {
-                        const entryEl = document.querySelector(`[data-entry-id="${entryId}"]`);
-                        // console.log('Found entry element:', entryEl);
-                        if (entryEl) {
-                            const entryItem = entryEl.closest('.entry-item');
-                            if (entryItem) {
-                                entryItem.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                                entryItem.style.backgroundColor = 'var(--hover-color)';
-                                setTimeout(() => {
-                                    entryItem.style.backgroundColor = '';
-                                }, 2000);
-                            }
-                        }
-                    }, 500);
+                    this.scrollToEntry(entryId);
                 }
             });
             window.history.replaceState({}, '', '/');
@@ -722,20 +709,7 @@ class DiaryApp {
                             this.showEntries(date);
                             this.entriesSection.classList.remove('hidden');
                             if (entryId) {
-                                setTimeout(() => {
-                                    const entryEl = document.querySelector(`[data-entry-id="${entryId}"]`);
-                                    // console.log('Found entry element:', entryEl);
-                                    if (entryEl) {
-                                        const entryItem = entryEl.closest('.entry-item');
-                                        if (entryItem) {
-                                            entryItem.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                                            entryItem.style.backgroundColor = 'var(--hover-color)';
-                                            setTimeout(() => {
-                                                entryItem.style.backgroundColor = '';
-                                            }, 2000);
-                                        }
-                                    }
-                                }, 500);
+                                this.scrollToEntry(entryId);
                             }
                         });
                     }
@@ -777,11 +751,7 @@ class DiaryApp {
                             if (entryEl) {
                                 const entryItem = entryEl.closest('.entry-item');
                                 if (entryItem) {
-                                    entryItem.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                                    entryItem.style.backgroundColor = 'var(--hover-color)';
-                                    setTimeout(() => {
-                                        entryItem.style.backgroundColor = '';
-                                    }, 2000);
+                                    this.scrollToEntry(entryId);
                                 }
                             }
                         }, 500);
@@ -1580,7 +1550,7 @@ class DiaryApp {
         this.searchResults.innerHTML = data.map(result => {
             const preview = result.text.substring(0, 100) + (result.text.length > 100 ? '...' : '');
             return `
-                <div class="search-result-item" data-date="${result.date}">
+                <div class="search-result-item" data-date="${result.date}" data-entry-id="${result.id}">
                     <div class="search-result-date">${this.formatDate(result.date)}</div>
                     <div class="search-result-text">${this.escapeHtml(preview)}</div>
                 </div>
@@ -1593,12 +1563,14 @@ class DiaryApp {
             const item = e.target.closest('.search-result-item');
             if (!item) return;
             const date = item.dataset.date;
+            const entryId = item.dataset.entryId;
             const [year, month, day] = date.split('-').map(Number);
             this.currentDate = new Date(year, month - 1, day);
             this.selectedDate = date;
             this.searchQuery = q;
             await this.loadEntriesForMonth(year, month - 1);
             this.showEntries(date);
+            this.scrollToEntry(entryId);
             this.searchInput.value = '';
             this.searchResults.classList.add('hidden');
         };
@@ -2247,15 +2219,7 @@ class DiaryApp {
                         this.renderCalendar();
                         this.showEntries(parentDate);
                         this.entriesSection.classList.remove('hidden');
-                        // Scroll to and highlight the parent entry
-                        setTimeout(() => {
-                            const parentEntryEl = document.querySelector(`.entry-item[data-entry-id="${entry.parentEntry.id}"]`);
-                            if (parentEntryEl) {
-                                parentEntryEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                                parentEntryEl.classList.add('highlight');
-                                setTimeout(() => parentEntryEl.classList.remove('highlight'), 2000);
-                            }
-                        }, 100);
+                        this.scrollToEntry(entry.parentEntry.id);
                     });
                 }
             });
@@ -2326,6 +2290,18 @@ class DiaryApp {
         li.appendChild(actionsDiv);
 
         return li;
+    }
+
+    // Scroll to and highlight the parent entry
+    scrollToEntry(entryId) {
+        setTimeout(() => {
+            const entryEl = document.querySelector(`.entry-item[data-entry-id="${entryId}"]`);
+            if (entryEl) {
+                entryEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                entryEl.classList.add('highlight');
+                setTimeout(() => entryEl.classList.remove('highlight'), 2000);
+            }
+        }, 100);
     }
 
     // Render a diary entry (legacy method, now uses factory)
@@ -2886,15 +2862,7 @@ class DiaryApp {
             }
 
             // Focus on newly added entry
-            setTimeout(() => {
-                const entryEl = document.querySelector(`[data-entry-id="${data.id}"]`);
-                if (entryEl) {
-                    const entryItem = entryEl.closest('.entry-item');
-                    if (entryItem) {
-                        entryItem.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                    }
-                }
-            }, 100);
+            this.scrollToEntry(data.id);
 
             await this.sendPushNotification('entry', data.id); // Send notification
         } catch (error) {

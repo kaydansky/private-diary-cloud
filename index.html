@@ -95,6 +95,9 @@
                     <button class="header-menu-item" id="signOutBtn" style="display: none;">
                         <i class="bi bi-box-arrow-right"></i> <span data-i18n="signOut">Sign Out</span>
                     </button>
+                    <button class="header-menu-item" id="aiBtn" style="display: none;">
+                        <i class="bi bi-magic"></i> <span data-i18n="addAiPrompt">Задать промпт</span>
+                    </button>
                 </div>
             </div>
         </div>
@@ -151,6 +154,14 @@
                     <div class="form-actions">
                         <button class="save-btn" id="savePollBtn" data-i18n="done">Готово</button>
                         <button class="clear-btn" id="clearPollBtn" data-i18n="cancel">Отмена</button>
+                    </div>
+                </div>
+
+                <div class="entry-form hidden" id="aiForm">
+                    <textarea class="entry-textarea" id="aiTextarea" placeholder="AI Prompt" maxlength="1000"></textarea>
+                    <div class="form-actions">
+                        <button class="save-btn" id="savePromptBtn" data-i18n="done">Готово</button>
+                        <button class="clear-btn" id="clearPromptBtn" data-i18n="close">Закрыть</button>
                     </div>
                 </div>
 

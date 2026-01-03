@@ -153,7 +153,9 @@ const translations = {
         entryContainsImages: 'Entry contains images.',
         sharedImages: 'Shared images from',
         sharedPoll: 'Shared poll from',
-        nothingToShare: 'Nothing to share'
+        nothingToShare: 'Nothing to share',
+        addAiPrompt: 'Add AI Prompt',
+        errorSavingEntry: 'Error saving entry'
     },
     fr: {
         appTitle: 'Journal Privé Cloud',
@@ -309,7 +311,9 @@ const translations = {
         entryContainsImages: "L'entrée contient des images.",
         sharedImages: 'Images partagées depuis',
         sharedPoll: 'Sondage partagé depuis',
-        nothingToShare: 'Rien à partager'
+        nothingToShare: 'Rien à partager',
+        addAiPrompt: 'Ajouter une invite IA',
+        errorSavingEntry: 'Erreur lors de la sauvegarde de l\'entrée'
     },
     de: {
         appTitle: 'Tagebuch Cloud',
@@ -466,7 +470,9 @@ const translations = {
         entryContainsImages: 'Dieser Eintrag enthält Bilder.',
         sharedImages: 'Geteilte Bilder von',
         sharedPoll: 'Geteilte Umfrage von',
-        nothingToShare: 'Nichts zu teilen'
+        nothingToShare: 'Nichts zu teilen',
+        addAiPrompt: 'KI-Aufforderung hinzufügen',
+        errorSavingEntry: 'Fehler beim Speichern des Eintrags'
     },
     ru: {
         appTitle: 'СНТ Тишинка',
@@ -620,6 +626,8 @@ const translations = {
         entryContainsImages: 'Запись содержит изображения.',
         sharedImages: 'Отправлено изображение с сайта',
         sharedPoll: 'Голосование на сайте',
-        nothingToShare: 'Нет данных для отправки'
+        nothingToShare: 'Нет данных для отправки',
+        addAiPrompt: 'Задать промпт',
+        errorSavingEntry: 'Ошибка при сохранении записи'
     }
 };

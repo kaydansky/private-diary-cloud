@@ -382,6 +382,13 @@ class DiaryApp {
         const addPollBtn = document.getElementById('addPollBtn');
         const addImageBtn = document.getElementById('addImageBtn');
         const peopleBtn = document.getElementById('peopleBtn');
+        const aiBtn = document.getElementById('aiBtn');
+
+        if (this.user && (this.user.email === 'kaydansky@gmail.com' || this.user.email === 'info@kaydansky.ru')) {
+            if (aiBtn) aiBtn.style.display = 'block';
+        } else {
+            if (aiBtn) aiBtn.style.display = 'none';
+        }
         
         if (this.user && this.user.is_anonymous === false) {
             if (signInBtn) signInBtn.style.display = 'none';
@@ -928,7 +935,7 @@ class DiaryApp {
 
     // Send push notification to all users except author
     async sendPushNotification(type, entryId = null) {
-        // return;
+        return;
         if (!this.user || this.user.is_anonymous === true) return;
 
         try {
@@ -1003,6 +1010,11 @@ class DiaryApp {
         this.signOutBtn = document.getElementById('signOutBtn');
         this.resetEmail = document.getElementById('resetEmail');
         this.replyButton = document.getElementById('replyButton');
+        this.aiBtn = document.getElementById('aiBtn');
+        this.aiForm = document.getElementById('aiForm');
+        this.aiTextarea = document.getElementById('aiTextarea');
+        this.savePromptBtn = document.getElementById('savePromptBtn');
+        this.clearPromptBtn = document.getElementById('clearPromptBtn');
         
         // Poll elements
         this.pollForm = document.getElementById('pollForm');
@@ -1065,11 +1077,11 @@ class DiaryApp {
         document.getElementById('shareImageBtn').addEventListener('click', () => this.shareImage());
         document.getElementById('deleteImageBtn').addEventListener('click', () => this.confirmImageDelete());
         document.getElementById('shareImageModalBtn').addEventListener('click', () => {
-    const entry = this.entries[this.selectedDate]?.find(e => e.id === this.currentImageEntryId);
-    if (entry) {
-        this.shareImage(this.selectedDate, entry);
-    }
-});
+            const entry = this.entries[this.selectedDate]?.find(e => e.id === this.currentImageEntryId);
+            if (entry) {
+                this.shareImage(this.selectedDate, entry);
+            }
+        });
         document.getElementById('deleteImageModalBtn').addEventListener('click', () => this.confirmImageDelete());
         document.getElementById('cancelImageActionsBtn').addEventListener('click', () => this.hideImageActionsModal());
         this.saveEntryBtn.addEventListener('click', () => this.doneEntry());
@@ -1151,6 +1163,12 @@ class DiaryApp {
         document.getElementById('accountBtn').addEventListener('click', () => this.showAccountModal());
         document.getElementById('peopleBtn').addEventListener('click', () => this.showPeopleModal());
         this.signOutBtn.addEventListener('click', () => this.signOut());
+        this.aiBtn.addEventListener('click', () => {
+            if (!this.user && this.user.email !== 'kaydansky@gmail.com' && this.user.email !== 'info@kaydansky.ru') return alert(this.t('Куды?..'));
+            this.showAiPromptForm();
+        });
+        this.clearPromptBtn.addEventListener('click', () => this.hideAiForm());
+        this.savePromptBtn.addEventListener('click', () => this.generateAiPrompt());
         document.getElementById('shareEntryModalBtn').addEventListener('click', () => this.handleEntryAction('share'));
         document.getElementById('copyEntryModalBtn').addEventListener('click', () => this.handleEntryAction('copy'));
         document.getElementById('imageEntryModalBtn').addEventListener('click', () => this.handleEntryAction('image'));
@@ -2683,6 +2701,10 @@ class DiaryApp {
         }
     }
 
+    hideAiForm() {
+        this.aiForm.classList.add('hidden');
+        this.aiPromptTextarea.value = '';
+    }
 
     // Save poll to Supabase
     async savePoll() {
@@ -4282,6 +4304,85 @@ class DiaryApp {
             document.body.classList.add('mobile-view');
         } else {
             document.body.classList.add('desktop-view');
+        }
+    }
+
+    showAiPromptForm() {
+        this.aiForm.classList.remove('hidden');
+        this.aiTextarea.focus();
+        this.entryForm.classList.add('hidden');
+        this.pollForm.classList.add('hidden');
+    }
+
+    async generateAiPrompt() {
+        const prompt = this.aiTextarea.value.trim();
+        if (!prompt) return;
+
+        try {
+            // Fetch all AI users (ai_user = true)
+            const { data: aiUsers, error } = await this.supabase
+                .from('users')
+                .select('*')
+                .eq('ai_user', true);
+        
+            if (error) throw error;
+            if (!aiUsers || aiUsers.length === 0) {
+                alert('No AI users available');
+                return;
+            }
+
+            // Randomly select one AI user
+            const randomIndex = Math.floor(Math.random() * aiUsers.length);
+            const selectedUser = aiUsers[randomIndex];
+
+            console.log('Selected AI user:', selectedUser);
+            this.showToast(`AI prompt generated for user: ${selectedUser.username || selectedUser.email}`);
+
+            const payload = {
+                userId: selectedUser.id,
+                username: selectedUser?.username || null,
+                date: this.selectedDate, // 'YYYY-MM-DD'
+                gender: selectedUser.male ? 'male' : 'female',
+                prompt: prompt
+            };
+
+            const response = await fetch('/api/ai-insert', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            if (!response.ok) {
+                const err = await response.json().catch(() => ({}));
+                console.error('AI insert error', err);
+                alert(this.t('errorSavingEntry'));
+                return;
+            }
+
+            const { entry } = await response.json();
+
+            if (!this.entries[this.selectedDate]) {
+                this.entries[this.selectedDate] = [];
+            }
+
+            this.entries[this.selectedDate].push({
+                id: entry.id,
+                user_id: entry.user_id,
+                username: entry.username,
+                text: entry.text,
+                images: entry.images || [],
+                createdAt: entry.createdat,
+                updatedAt: entry.updatedat,
+                type: 'entry',
+                originalText: entry.text,
+                originalImages: entry.images || []
+            });
+
+            this.showEntries(this.selectedDate);
+            this.hideAiForm();
+        } catch (error) {
+            console.error('Error fetching AI users:', error);
+            this.showToast('Failed to generate AI prompt');
         }
     }
 }

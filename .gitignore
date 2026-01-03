@@ -1,1 +1,3 @@
 .amazonq
+node_modules
+.env

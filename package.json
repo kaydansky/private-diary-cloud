@@ -1,0 +1,24 @@
+{
+  "name": "private-diary-cloud",
+  "version": "1.0.0",
+  "description": "A cloud-based Progressive Web App (PWA) for sharing diary entries with the world. Built with Supabase for authentication and data storage.",
+  "main": "app.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kaydansky/private-diary-cloud.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "bugs": {
+    "url": "https://github.com/kaydansky/private-diary-cloud/issues"
+  },
+  "homepage": "https://github.com/kaydansky/private-diary-cloud#readme",
+  "dependencies": {
+    "@supabase/supabase-js": "^2.89.0"
+  }
+}

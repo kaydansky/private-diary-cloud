@@ -37,10 +37,11 @@ export default async function handler(req, res) {
 
         console.log(`[AI-CALLBACK] User found`, { userId: userData.id, username: userData.username });
 
+        const currentDate = new Date().toISOString().split('T')[0]; // Current date 'YYYY-MM-DD'
         const payload = {
             user_id: userData.id,
             username: userData.username || null,
-            date: new Date().toISOString().split('T')[0], // Current date 'YYYY-MM-DD'
+            date: currentDate,
             text: result[0].message.content
         };
 
@@ -60,23 +61,22 @@ export default async function handler(req, res) {
         console.log(`[AI-CALLBACK] Diary entry saved successfully`, { entryId: diaryEntry.id, userId: payload.user_id });
 
         // Trigger notification function
-        // const notifyBody = {
-        //     username: data.username || 'Someone',
-        //     userId: data.userid,
-        //     type: 'entry',
-        //     date: data.date,
-        //     entryId: data.id
-        // };
+        const notifyBody = {
+            username: userData.username || 'Someone',
+            userId: userData.id,
+            type: 'entry',
+            date: currentDate,
+            entryId: diaryEntry.id
+        };
 
-        // await fetch(`${process.env.SUPABASE_URL}/functions/v1/send-notification`, {
-        //     method: 'POST',
-        //     headers: {
-        //         'Content-Type': 'application/json',
-        //         // If your function expects auth, send a key:
-        //         Authorization: `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`,
-        //     },
-        //     body: JSON.stringify(notifyBody),
-        // });
+        await fetch(`${process.env.SUPABASE_URL}/functions/v1/send-notification`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`,
+            },
+            body: JSON.stringify(notifyBody),
+        });
     } catch (e) {
         console.error(`[AI-CALLBACK] Error`, { error: e.message, stack: e.stack });
         return res.status(500).json({ error: e.message });

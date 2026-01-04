@@ -12,7 +12,7 @@ export default async function handler(req, res) {
         return res.status(405).json({ error: 'Method not allowed' });
     }
 
-    const { userId, username, date, gender, prompt } = req.body;
+    const { userId, username, date, gender, prompt, outputLength } = req.body;
 
     if (!userId || !gender || !date || !prompt) {
         return res.status(400).json({ error: 'userId, date, gender and prompt are required' });
@@ -21,7 +21,7 @@ export default async function handler(req, res) {
     try {
         const model = 'deepseek-chat';
         const genderAddition = gender === 'male' ? ' Твой пол мужской.' : ' Твой пол женский.';
-        const promptAddition = `. — Напиши ответ в разговорном стиле, не более 50 слов, от лица члена СНТ. Избегай упоминания о том, что это вымышленная запись.${genderAddition}`;
+        const promptAddition = `. — Напиши ответ в разговорном стиле, не более ${outputLength} слов, от лица члена СНТ. Иногда делай грамматические ошибки или опечатки.${genderAddition}`;
 
         const response1 = await fetch('https://api.gen-api.ru/api/v1/networks/' + model, {
             method: 'POST',
@@ -67,6 +67,8 @@ export default async function handler(req, res) {
         });
 
         const result = await response2.json();
+
+        console.log('AI API Result:', result);
 
         if (result.status === 'failed') {
             console.error('AI API Error:', result);

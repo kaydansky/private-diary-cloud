@@ -1015,6 +1015,7 @@ class DiaryApp {
         this.aiTextarea = document.getElementById('aiTextarea');
         this.savePromptBtn = document.getElementById('savePromptBtn');
         this.clearPromptBtn = document.getElementById('clearPromptBtn');
+        this.lengthSelect = document.getElementById('lengthSelect');
         
         // Poll elements
         this.pollForm = document.getElementById('pollForm');
@@ -2703,7 +2704,7 @@ class DiaryApp {
 
     hideAiForm() {
         this.aiForm.classList.add('hidden');
-        this.aiPromptTextarea.value = '';
+        this.aiTextarea.value = '';
     }
 
     // Save poll to Supabase
@@ -4316,6 +4317,7 @@ class DiaryApp {
 
     async generateAiPrompt() {
         const prompt = this.aiTextarea.value.trim();
+        const wordsLength = this.lengthSelect.value;
         if (!prompt) return;
 
         try {
@@ -4343,7 +4345,8 @@ class DiaryApp {
                 username: selectedUser?.username || null,
                 date: this.selectedDate, // 'YYYY-MM-DD'
                 gender: selectedUser.male ? 'male' : 'female',
-                prompt: prompt
+                prompt: prompt,
+                outputLength: wordsLength
             };
 
             const response = await fetch('/api/ai-insert', {

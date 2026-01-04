@@ -628,6 +628,7 @@ const translations = {
         sharedPoll: 'Голосование на сайте',
         nothingToShare: 'Нет данных для отправки',
         addAiPrompt: 'Задать промпт',
-        errorSavingEntry: 'Ошибка при сохранении записи'
+        errorSavingEntry: 'Ошибка при сохранении записи',
+        answerLength: "Слов в ответе"
     }
 };

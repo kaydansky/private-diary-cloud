@@ -48,6 +48,7 @@ export default async function handler(req, res) {
         });
 
         const statusReply = await response1.json();
+        console.log('AI API Status:', statusReply);
 
         if (statusReply.status === 'error' || !statusReply.request_id) {
             console.error('AI API Error:', statusReply);
@@ -67,7 +68,6 @@ export default async function handler(req, res) {
         });
 
         const result = await response2.json();
-
         console.log('AI API Result:', result);
 
         if (result.status === 'failed') {

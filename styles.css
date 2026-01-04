@@ -612,7 +612,6 @@ body {
 }
 
 .length_select {
-    float: right;
     margin-top: 8px;
 }
 
@@ -1110,6 +1109,9 @@ label {
 
 .entry-form {
     margin-bottom: 20px;
+    justify-content: flex-start;
+    gap: 20px;
+    flex-wrap: wrap;
 }
 
 .entry-textarea {

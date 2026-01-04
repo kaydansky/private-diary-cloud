@@ -981,6 +981,7 @@ class DiaryApp {
         // this.shareDayBtn = document.getElementById('shareDayBtn');
         this.yearSelect = document.getElementById('yearSelect');
         this.monthSelect = document.getElementById('monthSelect');
+        this.aiUserSelect = document.getElementById('aiUserSelect');
         this.imageModal = document.getElementById('imageModal');
         this.imageModalClose = document.getElementById('imageModalClose');
         this.modalImage = document.getElementById('modalImage');
@@ -4311,34 +4312,75 @@ class DiaryApp {
         }
     }
 
-    showAiPromptForm() {
+    async showAiPromptForm() {
         this.aiForm.classList.remove('hidden');
         this.aiTextarea.focus();
         this.entryForm.classList.add('hidden');
         this.pollForm.classList.add('hidden');
+        const aiUsers = await this.getAiUsers();
+        this.populateAiUsersSelect(aiUsers);
+    }
+
+    async getAiUsers() {
+        const { data: aiUsers, error } = await this.supabase
+            .from('users')
+            .select('*')
+            .eq('ai_user', true);
+        if (error) {
+            console.error('Error fetching AI users:', error);
+            return [];
+        }
+        return aiUsers || [];
+    }
+
+    populateAiUsersSelect(aiUsers) {
+        this.aiUserSelect.innerHTML = '<option value="">Random</option>';
+        aiUsers.forEach(user => {
+            const option = document.createElement('option');
+            option.value = user.id;
+            option.textContent = user.username || user.email;
+            this.aiUserSelect.appendChild(option);
+        });
     }
 
     async generateAiPrompt() {
         const prompt = this.aiTextarea.value.trim();
         const wordsLength = this.lengthSelect.value;
+        const selectedUserId = this.aiUserSelect.value;
         if (!prompt) return;
 
         try {
-            // Fetch all AI users (ai_user = true)
-            const { data: aiUsers, error } = await this.supabase
-                .from('users')
-                .select('*')
-                .eq('ai_user', true);
-        
-            if (error) throw error;
-            if (!aiUsers || aiUsers.length === 0) {
-                alert('No AI users available');
-                return;
-            }
+            let selectedUser;
 
-            // Randomly select one AI user
-            const randomIndex = Math.floor(Math.random() * aiUsers.length);
-            const selectedUser = aiUsers[randomIndex];
+            if (selectedUserId) {
+                // Use selected user ID
+                const { data: userData, error } = await this.supabase
+                    .from('users')
+                    .select('*')
+                    .eq('id', selectedUserId)
+                    .single();
+
+                if (error || !userData) {
+                    alert('Selected AI user not found');
+                    return;
+                }
+                selectedUser = userData;
+            } else {
+                // Randomly select one AI user
+                const { data: aiUsers, error } = await this.supabase
+                    .from('users')
+                    .select('*')
+                    .eq('ai_user', true);
+
+                if (error) throw error;
+                if (!aiUsers || aiUsers.length === 0) {
+                    alert('No AI users available');
+                    return;
+                }
+
+                const randomIndex = Math.floor(Math.random() * aiUsers.length);
+                selectedUser = aiUsers[randomIndex];
+            }
 
             console.log('Selected AI user:', selectedUser);
             this.showToast(`AI prompt generated for user: ${selectedUser.username || selectedUser.email}`);

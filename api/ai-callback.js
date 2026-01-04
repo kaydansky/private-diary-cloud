@@ -6,11 +6,12 @@ const supabaseAdmin = createClient(
 );
 
 export default async function handler(req, res) {
-    const { request_id, status, output, result } = req.body;
+    const { request_id, status, result } = req.body;
 
     console.log(`[AI-CALLBACK] Received callback:`, req.body);
+    console.log(`[AI-CALLBACK] Received callback:`, result[0].message.content);
 
-    if (status !== 'success' || !request_id || !output) {
+    if (status !== 'success' || !request_id || !result[0].message.content) {
         console.error(`[AI-CALLBACK] Invalid callback data`, { request_id, status, output });
         return res.status(400).json({ error: 'Invalid callback data' });
     }
@@ -40,7 +41,7 @@ export default async function handler(req, res) {
             user_id: userData.id,
             username: userData.username || null,
             date: new Date().toISOString().split('T')[0], // Current date 'YYYY-MM-DD'
-            text: output
+            text: result[0].message.content
         };
 
         console.log(`[AI-CALLBACK] Upserting diary entry`, { userId: payload.user_id, date: payload.date });

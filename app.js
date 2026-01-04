@@ -3746,6 +3746,8 @@ class DiaryApp {
             const { data, error } = await this.supabase
                 .from('users')
                 .select('id, email, username, created_at')
+                .not('username', 'is', null)
+                .neq('email', 'info@kaydansky.ru')
                 .order('created_at', { ascending: false });
 
             if (!error && data && data.length > 0) {
@@ -3763,7 +3765,8 @@ class DiaryApp {
             try {
                 const { data: entries } = await this.supabase
                     .from('diary_entries')
-                    .select('user_id, username, created_at');
+                    .select('user_id, username, created_at')
+                    .not('username', 'is', null);
 
                 const map = new Map();
                 if (entries && entries.length) {

@@ -4383,12 +4383,9 @@ class DiaryApp {
             }
 
             console.log('Selected AI user:', selectedUser);
-            this.showToast(`AI prompt generated for user: ${selectedUser.username || selectedUser.email}`);
 
             const payload = {
                 userId: selectedUser.id,
-                username: selectedUser?.username || null,
-                date: this.selectedDate, // 'YYYY-MM-DD'
                 gender: selectedUser.male ? 'male' : 'female',
                 prompt: prompt,
                 outputLength: wordsLength
@@ -4407,26 +4404,7 @@ class DiaryApp {
                 return;
             }
 
-            const { entry } = await response.json();
-
-            if (!this.entries[this.selectedDate]) {
-                this.entries[this.selectedDate] = [];
-            }
-
-            this.entries[this.selectedDate].push({
-                id: entry.id,
-                user_id: entry.user_id,
-                username: entry.username,
-                text: entry.text,
-                images: entry.images || [],
-                createdAt: entry.createdat,
-                updatedAt: entry.updatedat,
-                type: 'entry',
-                originalText: entry.text,
-                originalImages: entry.images || []
-            });
-
-            this.showEntries(this.selectedDate);
+            this.showToast(`AI prompt triggered for user: ${selectedUser.username || selectedUser.email}`);
             this.hideAiForm();
         } catch (error) {
             console.error('Error fetching AI users:', error);

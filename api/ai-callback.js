@@ -8,7 +8,7 @@ const supabaseAdmin = createClient(
 export default async function handler(req, res) {
     const { request_id, status, output, result } = req.body;
 
-    console.log(`[AI-CALLBACK] Received callback:`, { request_id, status, hasOutput: !!output });
+    console.log(`[AI-CALLBACK] Received callback:`, req.body);
 
     if (status !== 'success' || !request_id || !output) {
         console.error(`[AI-CALLBACK] Invalid callback data`, { request_id, status, output });

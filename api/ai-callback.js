@@ -42,7 +42,8 @@ export default async function handler(req, res) {
             user_id: userData.id,
             username: userData.username || null,
             date: currentDate,
-            text: result[0].message.content
+            text: result[0].message.content,
+            ai_entry: true
         };
 
         console.log(`[AI-CALLBACK] Upserting diary entry`, { userId: payload.user_id, date: payload.date });

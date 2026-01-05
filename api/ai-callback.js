@@ -37,13 +37,15 @@ export default async function handler(req, res) {
 
         console.log(`[AI-CALLBACK] User found`, { userId: userData.id, username: userData.username });
 
+        const fireTime = new Date(Date.now() + Math.random() * 10 * 60 * 1000).toISOString();
         const currentDate = new Date().toISOString().split('T')[0]; // Current date 'YYYY-MM-DD'
         const payload = {
             user_id: userData.id,
             username: userData.username || null,
             date: currentDate,
             text: result[0].message.content,
-            ai_entry: true
+            ai_entry: true,
+            fire_time: fireTime
         };
 
         console.log(`[AI-CALLBACK] Upserting diary entry`, { userId: payload.user_id, date: payload.date });

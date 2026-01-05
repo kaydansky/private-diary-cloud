@@ -158,6 +158,7 @@ class DiaryApp {
         this.broadcastChannel = null; // Track the broadcast channel
         this.parentEntry = null; // To hold parent entry data when replying
         this.quoteMaxLength = 100; // Max length for quoted text
+        this.aiEntryWordsLength = 40; // Avoid vanishing text in AI
         
         this.initServiceWorker();
         this.initElements();
@@ -625,6 +626,7 @@ class DiaryApp {
                 this.supabase
                     .from('diary_entries')
                     .select('date')
+                    .or(`fire_time.is.null,fire_time.lte.now`)
                     .order('date', { ascending: false })
                     .limit(1)
                     .single(),
@@ -1170,7 +1172,7 @@ class DiaryApp {
             this.showAiPromptForm();
         });
         this.clearPromptBtn.addEventListener('click', () => this.hideAiForm());
-        this.savePromptBtn.addEventListener('click', () => this.generateAiPrompt());
+        this.savePromptBtn.addEventListener('click', () => this.generateAiEntry());
         document.getElementById('shareEntryModalBtn').addEventListener('click', () => this.handleEntryAction('share'));
         document.getElementById('copyEntryModalBtn').addEventListener('click', () => this.handleEntryAction('copy'));
         document.getElementById('imageEntryModalBtn').addEventListener('click', () => this.handleEntryAction('image'));
@@ -1298,6 +1300,7 @@ class DiaryApp {
                 .select('*, parent_entry:parent_entry_id (id, username, created_at, text)')
                 .gte('date', `${monthKey}-01`)
                 .lte('date', `${monthKey}-${String(lastDay).padStart(2, '0')}`)
+                .or(`fire_time.is.null,fire_time.lte.now`)
                 .order('date', { ascending: true });
 
             this.entries = {};
@@ -2910,6 +2913,7 @@ class DiaryApp {
             // Focus on newly added entry
             this.scrollToEntry(data.id);
 
+            await this.generateAiReply(data.text, data.username, data.id);
             await this.sendPushNotification('entry', data.id); // Send notification
         } catch (error) {
             console.error('Error saving entry:', error);
@@ -4155,6 +4159,7 @@ class DiaryApp {
         // Get dates from diary entries
         const { data: entryData } = await this.supabase
             .from('diary_entries')
+            .or(`fire_time.is.null,fire_time.lte.now`)
             .select('date')
             .order('date', { ascending: true });
         
@@ -4343,50 +4348,61 @@ class DiaryApp {
         });
     }
 
-    async generateAiPrompt() {
+    async selectAiUser(aiUserId) {
+        let selectedUser;
+
+        if (aiUserId) {
+            // Use selected user ID
+            const { data: userData, error } = await this.supabase
+                .from('users')
+                .select('*')
+                .eq('id', aiUserId)
+                .single();
+
+            if (error || !userData) {
+                alert('Selected AI user not found');
+                return;
+            }
+
+            selectedUser = userData;
+        } else {
+            // Randomly select one AI user
+            const { data: aiUsers, error } = await this.supabase
+                .from('users')
+                .select('*')
+                .eq('ai_user', true);
+
+            if (error) throw error;
+            if (!aiUsers || aiUsers.length === 0) {
+                alert('No AI users available');
+                return;
+            }
+
+            const randomIndex = Math.floor(Math.random() * aiUsers.length);
+            selectedUser = aiUsers[randomIndex];
+        }
+
+        return selectedUser;
+    }
+
+    async generateAiEntry() {
         const prompt = this.aiTextarea.value.trim();
-        const wordsLength = this.lengthSelect.value;
-        const selectedUserId = this.aiUserSelect.value;
+        const wordsLength = this.lengthSelect.value || this.aiEntryWordsLength;
+        const selectedAiUserId = this.aiUserSelect.value;
         if (!prompt) return;
 
         try {
-            let selectedUser;
-
-            if (selectedUserId) {
-                // Use selected user ID
-                const { data: userData, error } = await this.supabase
-                    .from('users')
-                    .select('*')
-                    .eq('id', selectedUserId)
-                    .single();
-
-                if (error || !userData) {
-                    alert('Selected AI user not found');
-                    return;
-                }
-                selectedUser = userData;
-            } else {
-                // Randomly select one AI user
-                const { data: aiUsers, error } = await this.supabase
-                    .from('users')
-                    .select('*')
-                    .eq('ai_user', true);
-
-                if (error) throw error;
-                if (!aiUsers || aiUsers.length === 0) {
-                    alert('No AI users available');
-                    return;
-                }
-
-                const randomIndex = Math.floor(Math.random() * aiUsers.length);
-                selectedUser = aiUsers[randomIndex];
+            const selectedAiUser = await this.selectAiUser(selectedAiUserId);
+            if (!selectedAiUser) {
+                alert('Selected AI user not found');
+                return;
             }
 
-            console.log('Selected AI user:', selectedUser);
+            console.log('Selected AI user:', selectedAiUser);
 
             const payload = {
-                userId: selectedUser.id,
-                gender: selectedUser.male ? 'male' : 'female',
+                userId: selectedAiUser.id,
+                gender: selectedAiUser.male ? 'male' : 'female',
                 prompt: prompt,
                 outputLength: wordsLength
             };
@@ -4409,6 +4425,44 @@ class DiaryApp {
         } catch (error) {
             console.error('Error fetching AI users:', error);
             this.showToast('Failed to generate AI prompt');
+        }
+    }
+
+    async generateAiReply(prompt, starterUsername, starterEntryId) {
+        if (!prompt) return;
+
+        try {
+            const selectedAiUser = await this.selectAiUser();
+            if (!selectedAiUser) {
+                console.log('Selected AI user not found');
+                return;
+            }
+
+            console.log('Selected AI user:', selectedAiUser);
+
+            const payload = {
+                userId: selectedAiUser.id,
+                username: selectedAiUser.username,
+                gender: selectedAiUser.male ? 'male' : 'female',
+                prompt: prompt,
+                outputLength: this.aiEntryWordsLength,
+                starterUsername: starterUsername,
+                starterEntryId: starterEntryId
+            };
+
+            const response = await fetch('/api/ai-reply', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            if (!response.ok) {
+                const err = await response.json().catch(() => ({}));
+                console.error('AI insert error', err);
+                return;
+            }
+        } catch (error) {
+            console.error('Error fetching AI users:', error);
         }
     }
 }

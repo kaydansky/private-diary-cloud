@@ -4159,8 +4159,8 @@ class DiaryApp {
         // Get dates from diary entries
         const { data: entryData } = await this.supabase
             .from('diary_entries')
-            .or(`fire_time.is.null,fire_time.lte.now`)
             .select('date')
+            .or(`fire_time.is.null,fire_time.lte.now`)
             .order('date', { ascending: true });
         
         // Get dates from polls

@@ -159,7 +159,8 @@ class DiaryApp {
         this.parentEntry = null; // To hold parent entry data when replying
         this.quoteMaxLength = 100; // Max length for quoted text
         this.aiEntryWordsLength = 70; // Avoid vanishing text in AI
-        this.aiRandomUsersNumber = 2; // Number of random users to retrieve
+        this.aiRandomUsersNumberMin = 2; // Min number of random users to retrieve
+        this.aiRandomUsersNumberMax = 4; // Max number of random users to retrieve
         
         this.initServiceWorker();
         this.initElements();
@@ -4377,9 +4378,13 @@ class DiaryApp {
                 return [];
             }
 
-            const count = Math.min(this.aiRandomUsersNumber, aiUsers.length);
+            // Random count between min and max
+            const min = this.aiRandomUsersNumberMin;
+            const max = this.aiRandomUsersNumberMax;
+            const count = Math.floor(Math.random() * (max - min + 1)) + min;
+            const limitedCount = Math.min(count, aiUsers.length);
             const shuffled = aiUsers.sort(() => 0.5 - Math.random());
-            return shuffled.slice(0, count);
+            return shuffled.slice(0, limitedCount);
         }
     }
 

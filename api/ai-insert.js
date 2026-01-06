@@ -16,7 +16,7 @@ export default async function handler(req, res) {
         return res.status(405).json({ error: 'Method not allowed' });
     }
 
-    const { userId, gender, prompt, outputLength } = req.body;
+    const { userId, gender, prompt, outputLength, username } = req.body;
 
     console.log(`[AI-INSERT] Processing request`, { userId, gender, hasPrompt: !!prompt, outputLength });
 

@@ -4401,6 +4401,7 @@ class DiaryApp {
             for (const selectedAiUser of selectedAiUsers) {
                 const payload = {
                     userId: selectedAiUser.id,
+                    username: selectedAiUser.username,
                     gender: selectedAiUser.male ? 'male' : 'female',
                     prompt: prompt,
                     outputLength: wordsLength

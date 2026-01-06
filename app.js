@@ -4428,6 +4428,9 @@ class DiaryApp {
 
     async generateAiReply(prompt, starterUsername, starterEntryId) {
         if (!prompt) return;
+        
+        const wordCount = prompt.trim().split(/\s+/).length;
+        if (wordCount < 5) return;
 
         try {
             const selectedAiUsers = await this.selectAiUsers();

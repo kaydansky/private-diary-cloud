@@ -87,7 +87,7 @@ serve(async (req: Request) => {
           data: {
             url: '/',
             date: entry.date,
-            entryId: entry.entry_id
+            entryId: entry.id
           }
         })
 

@@ -2750,6 +2750,7 @@ class DiaryApp {
         // Disable save button and show loading state
         this.savePollBtn.disabled = true;
         this.savePollBtn.classList.add('spinning');
+        const username = this.user.user_metadata?.username || null;
         
         try {
             // Insert poll into polls table
@@ -2759,7 +2760,7 @@ class DiaryApp {
                     question: question,
                     user_id: this.user.id,
                     date: this.selectedDate,
-                    username: this.user.user_metadata?.username || null,
+                    username: username,
                 })
                 .select()
                 .single();
@@ -2792,7 +2793,7 @@ class DiaryApp {
                     votes: 0
                 })),
                 createdAt: new Date().toISOString(),
-                username: this.user.user_metadata?.username || null,
+                username: username,
                 type: 'poll'
             };
             
@@ -2807,6 +2808,7 @@ class DiaryApp {
             // Reset form and hide it
             this.hidePollForm();
             this.showToast(this.t('pollCreated'));
+            await this.generateAiReply(question, username, pollData.id);
             // Reload month to ensure consistency
             this.loadEntriesForMonth(this.currentDate.getFullYear(), this.currentDate.getMonth(), true);
             this.renderEntries(this.selectedDate);

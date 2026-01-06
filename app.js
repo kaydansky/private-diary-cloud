@@ -2917,7 +2917,7 @@ class DiaryApp {
             // Focus on newly added entry
             this.scrollToEntry(data.id);
 
-            await this.generateAiReply(data.text, data.username, data.id);
+            await this.generateAiReply(data.text, data.username, data.id, this.parentEntry?.id || null);
             await this.sendPushNotification('entry', data.id); // Send notification
         } catch (error) {
             console.error('Error saving entry:', error);
@@ -4359,6 +4359,7 @@ class DiaryApp {
                 .from('users')
                 .select('*')
                 .eq('id', aiUserId)
+                .eq('ai_user', true)
                 .single();
 
             if (error || !userData) {
@@ -4434,14 +4435,14 @@ class DiaryApp {
         }
     }
 
-    async generateAiReply(prompt, starterUsername, starterEntryId) {
+    async generateAiReply(prompt, starterUsername, starterEntryId, aiUserId) {
         if (!prompt) return;
         
         const wordCount = prompt.trim().split(/\s+/).length;
         if (wordCount < 5) return;
 
         try {
-            const selectedAiUsers = await this.selectAiUsers();
+            const selectedAiUsers = await this.selectAiUsers(aiUserId);
             if (!selectedAiUsers || selectedAiUsers.length === 0) {
                 console.log('Selected AI user not found');
                 return;

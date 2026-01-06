@@ -37,7 +37,7 @@ export default async function handler(req, res) {
 
         console.log(`[AI-CALLBACK] User found`, { userId: userData.id, username: userData.username });
 
-        const fireTime = new Date(Date.now() + Math.random() * 10 * 60 * 1000).toISOString();
+        const fireTime = new Date(Date.now() + Math.random() * 15 * 60 * 1000).toISOString();
         const currentDate = new Date(Date.now() + 3 * 60 * 60 * 1000).toISOString().split('T')[0]; // Current date 'YYYY-MM-DD' in GMT+3
         const payload = {
             user_id: userData.id,

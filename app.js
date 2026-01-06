@@ -158,7 +158,7 @@ class DiaryApp {
         this.broadcastChannel = null; // Track the broadcast channel
         this.parentEntry = null; // To hold parent entry data when replying
         this.quoteMaxLength = 100; // Max length for quoted text
-        this.aiEntryWordsLength = 50; // Avoid vanishing text in AI
+        this.aiEntryWordsLength = 70; // Avoid vanishing text in AI
         this.aiRandomUsersNumber = 2; // Number of random users to retrieve
         
         this.initServiceWorker();

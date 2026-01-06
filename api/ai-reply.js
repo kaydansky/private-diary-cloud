@@ -26,7 +26,7 @@ export default async function handler(req, res) {
         const model = username === 'Алексей' || username === 'Лежана Раздвиногова' ? 'deepseek-chat' : 'gpt-4o-mini';
         const genderAddition = gender === 'male' ? ' Твой пол мужской.' : ' Твой пол женский.';
         let promptAddition = `. — Напиши ответ в разговорном стиле, не более ${outputLength} слов, от лица члена СНТ. Иногда делай грамматические ошибки или опечатки.${genderAddition}`;
-        promptAddition += starterUsername ? ` Можешь обратиться к автору этого промпта по имени ${starterUsername}, но не всегда и необязательно.` : '';
+        promptAddition += starterUsername ? ` Избегай обращаться к автору этого промпта по имени ${starterUsername}, только если есть нобходимость быть убедительным.` : '';
         promptAddition += username === 'Алексей' ? ' Отвечай в шутливой манере.' : '';
         promptAddition += username === 'Лежана Раздвиногова' ? ' Отвечай в наглой манере, но по теме промпта.' : '';
         promptAddition += ' Если спросили, кто ты, откуда ты и тому подобное, то уклоняйся от ответа, можно в шутливой манере.';

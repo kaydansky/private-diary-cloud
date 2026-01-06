@@ -43,6 +43,7 @@ export default async function handler(req, res) {
             },
             body: JSON.stringify({
                 model: model,
+                auto_cache: true,
                 top_p: 0.6,
                 callback_url: 'https://snt-tishinka.ru/api/ai-callback.js',
                 messages: [

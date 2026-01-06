@@ -158,7 +158,8 @@ class DiaryApp {
         this.broadcastChannel = null; // Track the broadcast channel
         this.parentEntry = null; // To hold parent entry data when replying
         this.quoteMaxLength = 100; // Max length for quoted text
-        this.aiEntryWordsLength = 40; // Avoid vanishing text in AI
+        this.aiEntryWordsLength = 50; // Avoid vanishing text in AI
+        this.aiRandomUsersNumber = 2; // Number of random users to retrieve
         
         this.initServiceWorker();
         this.initElements();
@@ -4348,9 +4349,7 @@ class DiaryApp {
         });
     }
 
-    async selectAiUser(aiUserId) {
-        let selectedUser;
-
+    async selectAiUsers(aiUserId) {
         if (aiUserId) {
             // Use selected user ID
             const { data: userData, error } = await this.supabase
@@ -4361,12 +4360,12 @@ class DiaryApp {
 
             if (error || !userData) {
                 alert('Selected AI user not found');
-                return;
+                return [];
             }
 
-            selectedUser = userData;
+            return [userData];
         } else {
-            // Randomly select one AI user
+            // Randomly select multiple AI users
             const { data: aiUsers, error } = await this.supabase
                 .from('users')
                 .select('*')
@@ -4375,14 +4374,13 @@ class DiaryApp {
             if (error) throw error;
             if (!aiUsers || aiUsers.length === 0) {
                 alert('No AI users available');
-                return;
+                return [];
             }
 
-            const randomIndex = Math.floor(Math.random() * aiUsers.length);
-            selectedUser = aiUsers[randomIndex];
+            const count = Math.min(this.aiRandomUsersNumber, aiUsers.length);
+            const shuffled = aiUsers.sort(() => 0.5 - Math.random());
+            return shuffled.slice(0, count);
         }
-
-        return selectedUser;
     }
 
     async generateAiEntry() {
@@ -4392,35 +4390,35 @@ class DiaryApp {
         if (!prompt) return;
 
         try {
-            const selectedAiUser = await this.selectAiUser(selectedAiUserId);
-            if (!selectedAiUser) {
+            const selectedAiUsers = await this.selectAiUsers(selectedAiUserId);
+            if (!selectedAiUsers || selectedAiUsers.length === 0) {
                 alert('Selected AI user not found');
                 return;
             }
 
-            console.log('Selected AI user:', selectedAiUser);
+            console.log('Selected AI users:', selectedAiUsers);
 
-            const payload = {
-                userId: selectedAiUser.id,
-                gender: selectedAiUser.male ? 'male' : 'female',
-                prompt: prompt,
-                outputLength: wordsLength
-            };
+            for (const selectedAiUser of selectedAiUsers) {
+                const payload = {
+                    userId: selectedAiUser.id,
+                    gender: selectedAiUser.male ? 'male' : 'female',
+                    prompt: prompt,
+                    outputLength: wordsLength
+                };
 
-            const response = await fetch('/api/ai-insert', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            });
+                const response = await fetch('/api/ai-insert', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
 
-            if (!response.ok) {
-                const err = await response.json().catch(() => ({}));
-                console.error('AI insert error', err);
-                alert(this.t('errorSavingEntry'));
-                return;
+                if (!response.ok) {
+                    const err = await response.json().catch(() => ({}));
+                    console.error('AI insert error', err);
+                }
             }
 
-            this.showToast(`AI prompt triggered for user: ${selectedUser.username || selectedUser.email}`);
+            this.showToast(`AI prompt triggered for ${selectedAiUsers.length} user(s)`);
             this.hideAiForm();
         } catch (error) {
             console.error('Error fetching AI users:', error);
@@ -4432,34 +4430,35 @@ class DiaryApp {
         if (!prompt) return;
 
         try {
-            const selectedAiUser = await this.selectAiUser();
-            if (!selectedAiUser) {
+            const selectedAiUsers = await this.selectAiUsers();
+            if (!selectedAiUsers || selectedAiUsers.length === 0) {
                 console.log('Selected AI user not found');
                 return;
             }
 
-            console.log('Selected AI user:', selectedAiUser);
+            console.log('Selected AI users:', selectedAiUsers);
 
-            const payload = {
-                userId: selectedAiUser.id,
-                username: selectedAiUser.username,
-                gender: selectedAiUser.male ? 'male' : 'female',
-                prompt: prompt,
-                outputLength: this.aiEntryWordsLength,
-                starterUsername: starterUsername,
-                starterEntryId: starterEntryId
-            };
+            for (const selectedAiUser of selectedAiUsers) {
+                const payload = {
+                    userId: selectedAiUser.id,
+                    username: selectedAiUser.username,
+                    gender: selectedAiUser.male ? 'male' : 'female',
+                    prompt: prompt,
+                    outputLength: this.aiEntryWordsLength,
+                    starterUsername: starterUsername,
+                    starterEntryId: starterEntryId
+                };
 
-            const response = await fetch('/api/ai-reply', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            });
+                const response = await fetch('/api/ai-reply', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
 
-            if (!response.ok) {
-                const err = await response.json().catch(() => ({}));
-                console.error('AI insert error', err);
-                return;
+                if (!response.ok) {
+                    const err = await response.json().catch(() => ({}));
+                    console.error('AI insert error', err);
+                }
             }
         } catch (error) {
             console.error('Error fetching AI users:', error);

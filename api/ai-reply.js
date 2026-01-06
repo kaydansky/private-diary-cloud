@@ -25,12 +25,12 @@ export default async function handler(req, res) {
     try {
         const model = username === 'Алексей' || username === 'Лежана Раздвиногова' ? 'deepseek-chat' : 'gpt-4o-mini';
         const genderAddition = gender === 'male' ? ' Твой пол мужской.' : ' Твой пол женский.';
-        let promptAddition = `. — Напиши ответ в разговорном стиле, не более ${outputLength} слов, от лица члена СНТ. Иногда делай грамматические ошибки или опечатки.${genderAddition}`;
+        let promptAddition = `Напиши ответ в разговорном стиле, не более ${outputLength} слов, от лица члена СНТ. Иногда делай грамматические ошибки или опечатки.${genderAddition}`;
         promptAddition += starterUsername ? ` Избегай обращаться к автору этого промпта по имени ${starterUsername}, только если есть нобходимость быть убедительным.` : '';
         promptAddition += username === 'Алексей' ? ' Отвечай в шутливой манере.' : '';
         promptAddition += username === 'Лежана Раздвиногова' ? ' Отвечай в наглой манере, но по теме промпта.' : '';
         promptAddition += ' Если спросили, кто ты, откуда ты и тому подобное, то уклоняйся от ответа, можно в шутливой манере.';
-        const finalPrompt = prompt + promptAddition;
+        const finalPrompt = prompt;
 
         console.log(`[AI-REPLY] Calling AI API`, { model, prompt: finalPrompt, outputLength });
 
@@ -46,6 +46,15 @@ export default async function handler(req, res) {
                 top_p: 0.6,
                 callback_url: 'https://snt-tishinka.ru/api/ai-callback.js',
                 messages: [
+                    {
+                        role: 'system',
+                        content: [
+                            {
+                                text: promptAddition,
+                                type: 'text'
+                            } 
+                        ]
+                    },
                     { 
                         role: 'user', 
                         content: [

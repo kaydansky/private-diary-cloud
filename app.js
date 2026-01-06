@@ -2881,6 +2881,8 @@ class DiaryApp {
 
             if (error) throw error;
 
+            await this.generateAiReply(data.text, data.username, data.id, this.parentEntry?.id || null);
+
             // Add new entry to local state immediately
             if (!this.editingEntryId) {
                 if (!this.entries[this.selectedDate]) this.entries[this.selectedDate] = [];
@@ -2916,8 +2918,6 @@ class DiaryApp {
 
             // Focus on newly added entry
             this.scrollToEntry(data.id);
-
-            await this.generateAiReply(data.text, data.username, data.id, this.parentEntry?.id || null);
             await this.sendPushNotification('entry', data.id); // Send notification
         } catch (error) {
             console.error('Error saving entry:', error);
@@ -4435,13 +4435,28 @@ class DiaryApp {
         }
     }
 
-    async generateAiReply(prompt, starterUsername, starterEntryId, aiUserId) {
+    async generateAiReply(prompt, starterUsername, starterEntryId, parentEntryId) {
         if (!prompt) return;
         
         const wordCount = prompt.trim().split(/\s+/).length;
         if (wordCount < 5) return;
 
         try {
+            let aiUserId = null;
+
+            // If parentEntryId is provided, fetch its user_id from diary_entries
+            if (parentEntryId) {
+                const { data: parentEntry } = await this.supabase
+                    .from('diary_entries')
+                    .select('user_id')
+                    .eq('id', parentEntryId)
+                    .single();
+
+                if (parentEntry?.user_id) {
+                    aiUserId = parentEntry.user_id;
+                }
+            }
+
             const selectedAiUsers = await this.selectAiUsers(aiUserId);
             if (!selectedAiUsers || selectedAiUsers.length === 0) {
                 console.log('Selected AI user not found');

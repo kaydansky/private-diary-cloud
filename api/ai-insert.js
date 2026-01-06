@@ -28,7 +28,8 @@ export default async function handler(req, res) {
     try {
         const model = 'deepseek-chat';
         const genderAddition = gender === 'male' ? ' Твой пол мужской.' : ' Твой пол женский.';
-        const promptAddition = `Напиши ответ в разговорном стиле, не более ${outputLength} слов, от лица члена СНТ. Иногда делай грамматические ошибки или опечатки.${genderAddition}`;
+        let promptAddition = `Напиши ответ в разговорном стиле, не более ${outputLength} слов, от лица члена СНТ. Иногда делай грамматические ошибки или опечатки.${genderAddition}`;
+        promptAddition += username === 'Лежана Раздвиногова' ? ' Отвечай в наглой манере, но по теме промпта.' : '';
 
         console.log(`[AI-INSERT] Calling AI API`, { model, promptLength: prompt.length, outputLength });
 

@@ -58,7 +58,7 @@ serve(async (req: Request) => {
     const { data: subscriptions, error: subError } = await supabaseClient
       .from('push_subscriptions')
       .select('subscription, user_id')
-      .eq('user_id', TESTER_USER_ID)
+      // .eq('user_id', TESTER_USER_ID)
 
     if (subError) {
       throw subError
@@ -76,12 +76,8 @@ serve(async (req: Request) => {
 
     for (const entry of pendingNotifications) {
       try {
-        const notificationTitle = entry.type === 'entry' 
-          ? `Новое сообщение от ${entry.username}` 
-          : `Новая картинка от ${entry.username}`
-        const notificationBody = entry.type === 'entry'
-          ? 'Пополнение в летопись СНТ'
-          : 'Пополнение в летопись СНТ'
+        const notificationTitle = `Новое сообщение от ${entry.username}`;
+        const notificationBody = 'Пополнение в летопись СНТ';
 
         const payload = JSON.stringify({
           title: notificationTitle,

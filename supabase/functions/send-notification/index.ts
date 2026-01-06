@@ -4,7 +4,9 @@ import webpush from 'npm:web-push@3.6.6'
 
 serve(async (req) => {
   // CORS
-  const allowedOrigin = Deno.env.get('SITE_URL') ?? '*'
+  const siteUrl = Deno.env.get('SITE_URL') ?? ''
+  // Strip trailing slash to avoid CORS mismatch (browser doesn't send trailing slash in Origin header)
+  const allowedOrigin = siteUrl.replace(/\/$/, '') || '*'
   const corsHeaders: Record<string, string> = {
     'Access-Control-Allow-Origin': allowedOrigin,
     'Access-Control-Allow-Methods': 'POST, OPTIONS',
@@ -33,7 +35,7 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
     const vapidPublic = Deno.env.get('VAPID_PUBLIC_KEY')
     const vapidPrivate = Deno.env.get('VAPID_PRIVATE_KEY')
-    const siteUrl = Deno.env.get('SITE_URL')
+    const siteUrl = Deno.env.get('SITE_URL') ?? ''
 
     if (!supabaseUrl || !supabaseKey || !vapidPublic || !vapidPrivate) {
       console.error('Missing required environment variables')
@@ -99,8 +101,8 @@ serve(async (req) => {
     const payload = JSON.stringify({
       title: notificationTitle,
       body: notificationBody,
-      icon: `${siteUrl ?? ''}/assets/icons/icon.svg`,
-      badge: `${siteUrl ?? ''}/assets/icons/icon.svg`,
+      icon: `${siteUrl}/assets/icons/icon.svg`,
+      badge: `${siteUrl}/assets/icons/icon.svg`,
       data: {
         url: '/',
         date: date,

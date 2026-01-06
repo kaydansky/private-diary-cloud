@@ -3,11 +3,28 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import webpush from 'npm:web-push@3.6.6'
 
 serve(async (req) => {
+  // CORS
+  const allowedOrigin = Deno.env.get('SITE_URL') ?? '*'
+  const corsHeaders: Record<string, string> = {
+    'Access-Control-Allow-Origin': allowedOrigin,
+    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+  }
+
+  const json = (body: unknown, status = 200) =>
+    new Response(JSON.stringify(body), {
+      status,
+      headers: { 'Content-Type': 'application/json', ...corsHeaders },
+    })
+
+  // Handle preflight
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { status: 204, headers: corsHeaders })
+  }
+
   // Only accept POST requests
   if (req.method !== 'POST') {
-    return new Response(JSON.stringify({ error: 'Method not allowed' }), {
-      status: 405,
-    })
+    return json({ error: 'Method not allowed' }, 405)
   }
 
   try {
@@ -20,9 +37,7 @@ serve(async (req) => {
 
     if (!supabaseUrl || !supabaseKey || !vapidPublic || !vapidPrivate) {
       console.error('Missing required environment variables')
-      return new Response(JSON.stringify({ error: 'Server configuration error' }), {
-        status: 500,
-      })
+      return json({ error: 'Server configuration error' }, 500)
     }
 
     // Parse and validate request body
@@ -30,9 +45,7 @@ serve(async (req) => {
     try {
       body = await req.json()
     } catch {
-      return new Response(JSON.stringify({ error: 'Invalid JSON in request body' }), {
-        status: 400,
-      })
+      return json({ error: 'Invalid JSON in request body' }, 400)
     }
 
     const { username, userId, type, date, entryId } = body
@@ -40,17 +53,13 @@ serve(async (req) => {
     // Validate required fields
     if (!username || !userId || !type || !date) {
       console.warn('Missing required fields:', { username, userId, type, date })
-      return new Response(JSON.stringify({ error: 'Missing required fields: username, userId, type, date' }), {
-        status: 400,
-      })
+      return json({ error: 'Missing required fields: username, userId, type, date' }, 400)
     }
 
     // Validate type field
     if (type !== 'entry' && type !== 'image' && type !== 'poll') {
       console.warn('Invalid type:', type)
-      return new Response(JSON.stringify({ error: 'Invalid type. Must be: entry, image, or poll' }), {
-        status: 400,
-      })
+      return json({ error: 'Invalid type. Must be: entry, image, or poll' }, 400)
     }
 
     const supabaseClient = createClient(supabaseUrl, supabaseKey)
@@ -68,9 +77,7 @@ serve(async (req) => {
 
     if (!subscriptions || subscriptions.length === 0) {
       console.log('No subscriptions found for notification')
-      return new Response(JSON.stringify({ message: 'No subscriptions' }), {
-        status: 200,
-      })
+      return json({ message: 'No subscriptions' }, 200)
     }
 
     console.log(`Sending notification to ${subscriptions.length} subscribers`)
@@ -121,19 +128,10 @@ serve(async (req) => {
       console.warn(`Notification delivery: ${successful} succeeded, ${failed} failed`)
     }
 
-    return new Response(
-      JSON.stringify({ 
-        message: 'Notifications sent', 
-        sent: successful,
-        failed: failed
-      }),
-      { status: 200 }
-    )
+    return json({ message: 'Notifications sent', sent: successful, failed: failed }, 200)
 
   } catch (error) {
     console.error('Critical error in send-notification:', error)
-    return new Response(JSON.stringify({ error: error.message }), {
-      status: 500,
-    })
+    return json({ error: error.message }, 500)
   }
 })

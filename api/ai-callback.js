@@ -38,12 +38,14 @@ export default async function handler(req, res) {
         console.log(`[AI-CALLBACK] User found`, { userId: userData.id, username: userData.username });
 
         const fireTime = new Date(Date.now() + Math.random() * 10 * 60 * 1000).toISOString();
-        const currentDate = new Date().toISOString().split('T')[0]; // Current date 'YYYY-MM-DD'
+        const currentDate = new Date(Date.now() + 3 * 60 * 60 * 1000).toISOString().split('T')[0]; // Current date 'YYYY-MM-DD' in GMT+3
         const payload = {
             user_id: userData.id,
             username: userData.username || null,
             date: currentDate,
             text: result[0].message.content,
+            created_at: fireTime,
+            updated_at: fireTime,
             ai_entry: true,
             fire_time: fireTime
         };

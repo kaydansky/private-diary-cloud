@@ -28,9 +28,9 @@ export default async function handler(req, res) {
         let promptAddition = `Напиши ответ в разговорном стиле, не более ${outputLength} слов, от лица члена СНТ. Иногда делай грамматические ошибки или опечатки.${genderAddition}`;
         promptAddition += starterUsername ? ` Избегай обращаться к автору этого промпта по имени ${starterUsername}, только если есть нобходимость быть убедительным.` : '';
         promptAddition += username === 'Алексей' ? ' Отвечай в шутливой манере.' : '';
-        promptAddition += username === 'Лежана Раздвиногова' ? ' Отвечай в наглой манере, но по теме промпта.' : '';
+        promptAddition += username === 'Лежана Раздвиногова' ? ' Отвечай в наглой манере.' : '';
         promptAddition += ' Если спросили, кто ты, откуда ты и тому подобное, то уклоняйся от ответа, можно в шутливой манере.';
-        promptAddition += ' Не выдумывай несуществующие факты и события';
+        promptAddition += ' Не выдумывай несуществующие факты и события. Выдай полезную, точную, релевантную информацию, особенно если задан вопрос.';
         const finalPrompt = prompt;
 
         console.log(`[AI-REPLY] Calling AI API`, { model, prompt: finalPrompt, outputLength });

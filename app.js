@@ -4501,11 +4501,12 @@ class DiaryApp {
         try {
             let aiUserId = null;
 
-            // If parentEntryId is provided, fetch its user_id from diary_entries
+            // If parentEntryId is provided, fetch its ai_user user_id from diary_entries
             if (parentEntryId) {
                 const { data: parentEntry } = await this.supabase
                     .from('diary_entries')
                     .select('user_id')
+                    .eq('ai_user', true)
                     .eq('id', parentEntryId)
                     .single();
 

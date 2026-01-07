@@ -13,7 +13,8 @@ export default async function handler(req, res) {
         return res.status(405).json({ error: 'Method not allowed' });
     }
 
-    const { userId, username, gender, prompt, outputLength, starterUsername, starterEntryId } = req.body;
+    const { userId, username, gender, prompt, starterUsername, starterEntryId } = req.body;
+    const outputLength = Math.floor(Math.random() * (100 - 40 + 1)) + 40;
 
     console.log(`[AI-REPLY] Processing request`, { userId, gender, hasPrompt: !!prompt, outputLength, starterUsername, starterEntryId });
 

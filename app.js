@@ -4507,7 +4507,7 @@ class DiaryApp {
                 const { data: parentEntry } = await this.supabase
                     .from('diary_entries')
                     .select('user_id')
-                    .eq('ai_user', true)
+                    .eq('ai_entry', true)
                     .eq('id', parentEntryId)
                     .single();
 
@@ -4515,6 +4515,8 @@ class DiaryApp {
                     aiUserId = parentEntry.user_id;
                 }
             }
+
+            console.log('Parent entry user_id', aiUserId);
 
             const selectedAiUsers = await this.selectAiUsers(aiUserId);
             if (!selectedAiUsers || selectedAiUsers.length === 0) {

@@ -23,9 +23,14 @@ export default async function handler(req, res) {
     }
 
     try {
-        const model = username === 'Алексей' 
-            || username === 'Лежана Раздвиногова' 
-            || username === 'Ольга' ? 'deepseek-chat' : 'gpt-4o-mini';
+        let model = 'chat-gpt-3';
+
+        if (username === 'Алексей' || username === 'Лежана Раздвиногова') {
+            model = 'deepseek-chat';
+        } else if (username === 'Ольга') {
+            model = 'gpt-4o-mini';
+        }
+
         const genderAddition = gender === 'male' ? ' Твой пол мужской.' : ' Твой пол женский.';
         let promptAddition = `Напиши ответ в разговорном стиле, не более ${outputLength} слов, от лица члена СНТ. Иногда делай грамматические ошибки или опечатки.${genderAddition}`;
         promptAddition += starterUsername ? ` Избегай обращаться к автору этого промпта по имени ${starterUsername}, только если есть нобходимость быть убедительным.` : '';

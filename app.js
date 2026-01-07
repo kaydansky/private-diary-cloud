@@ -335,6 +335,9 @@ class DiaryApp {
                 // console.log('New diary entry received', payload);
                 if (this.user.id === data.user_id) return;
                 
+                // Check if entry is scheduled for the future
+                if (data.fire_time && new Date(data.fire_time) > new Date()) return;
+
                 // Update UI: prepend or append new entry
                 const newEntry = {
                     id: data.id,

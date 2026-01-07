@@ -30,6 +30,7 @@ export default async function handler(req, res) {
         promptAddition += username === 'Алексей' ? ' Отвечай в шутливой манере.' : '';
         promptAddition += username === 'Лежана Раздвиногова' ? ' Отвечай в наглой манере, но по теме промпта.' : '';
         promptAddition += ' Если спросили, кто ты, откуда ты и тому подобное, то уклоняйся от ответа, можно в шутливой манере.';
+        promptAddition += ' Не выдумывай несуществующие факты и события';
         const finalPrompt = prompt;
 
         console.log(`[AI-REPLY] Calling AI API`, { model, prompt: finalPrompt, outputLength });
@@ -43,7 +44,6 @@ export default async function handler(req, res) {
             },
             body: JSON.stringify({
                 model: model,
-                auto_cache: true,
                 top_p: 0.6,
                 callback_url: 'https://snt-tishinka.ru/api/ai-callback.js',
                 messages: [

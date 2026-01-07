@@ -29,6 +29,7 @@ export default async function handler(req, res) {
         const model = 'deepseek-chat';
         const genderAddition = gender === 'male' ? ' Твой пол мужской.' : ' Твой пол женский.';
         let promptAddition = `Напиши ответ в разговорном стиле, не более ${outputLength} слов, от лица члена СНТ. Иногда делай грамматические ошибки или опечатки.${genderAddition}`;
+        promptAddition += ' Не выдумывай несуществующие факты и события';
         promptAddition += username === 'Лежана Раздвиногова' ? ' Отвечай в наглой манере, но по теме промпта.' : '';
 
         console.log(`[AI-INSERT] Calling AI API`, { model, promptLength: prompt.length, outputLength });
@@ -42,7 +43,6 @@ export default async function handler(req, res) {
             },
             body: JSON.stringify({
                 model: model,
-                auto_cache: true,
                 top_p: 0.6,
                 callback_url: 'https://snt-tishinka.ru/api/ai-callback.js',
                 messages: [

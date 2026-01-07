@@ -2975,6 +2975,7 @@ class DiaryApp {
 
             // Focus on newly added entry
             this.scrollToEntry(data.id);
+            this.replyQuoteDisplay.classList.add('hidden');
             await this.sendPushNotification('entry', data.id); // Send notification
         } catch (error) {
             console.error('Error saving entry:', error);

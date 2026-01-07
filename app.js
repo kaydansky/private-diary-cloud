@@ -2308,6 +2308,8 @@ class DiaryApp {
         // Entry text
         const textDiv = document.createElement('div');
         textDiv.className = 'entry-text';
+        textDiv.style.userSelect = 'none';
+        textDiv.style.webkitUserSelect = 'none';
         if (this.searchQuery) {
             textDiv.innerHTML = this.highlightText(entry.text, this.searchQuery);
         } else {

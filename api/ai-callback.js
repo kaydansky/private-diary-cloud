@@ -64,24 +64,6 @@ export default async function handler(req, res) {
         }
 
         console.log(`[AI-CALLBACK] Diary entry saved successfully`, { entryId: diaryEntry.id, userId: payload.user_id });
-
-        // Trigger notification function
-        const notifyBody = {
-            username: userData.username || 'Someone',
-            userId: userData.id,
-            type: 'entry',
-            date: currentDate,
-            entryId: diaryEntry.id
-        };
-
-        await fetch(`${process.env.SUPABASE_URL}/functions/v1/send-notification`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                Authorization: `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`,
-            },
-            body: JSON.stringify(notifyBody),
-        });
     } catch (e) {
         console.error(`[AI-CALLBACK] Error`, { error: e.message, stack: e.stack });
         return res.status(500).json({ error: e.message });

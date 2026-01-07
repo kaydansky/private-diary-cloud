@@ -187,6 +187,14 @@
                 <ul class="entry-list" id="entryList"></ul>
 
                 <div class="entry-form hidden" id="entryForm">
+                    <div id="replyQuoteDisplay" class="reply-quote hidden">
+                        <div class="reply-quote-header">
+                            <span data-i18n="replyingTo">Reply to:</span>
+                            <button class="reply-quote-close" id="cancelReplyBtn" title="Отменить ответ">&times;</button>
+                        </div>
+                        <div class="reply-quote-author" id="replyQuoteAuthor"></div>
+                        <div class="reply-quote-text" id="replyQuoteText"></div>
+                    </div>
                     <textarea class="entry-textarea" id="entryTextarea" placeholder="Write your thoughts..." data-i18n-placeholder="writeThoughts" maxlength="1000"></textarea>
                     <div class="form-actions">
                         <button class="save-btn" id="saveEntryBtn" data-i18n="done">Готово</button>

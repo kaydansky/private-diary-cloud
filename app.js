@@ -1002,6 +1002,13 @@ class DiaryApp {
         this.entryTextarea = document.getElementById('entryTextarea');
         this.saveEntryBtn = document.getElementById('saveEntryBtn');
         this.clearEntryBtn = document.getElementById('clearEntryBtn');
+        
+        // Reply quote elements
+        this.replyQuoteDisplay = document.getElementById('replyQuoteDisplay');
+        this.replyQuoteAuthor = document.getElementById('replyQuoteAuthor');
+        this.replyQuoteText = document.getElementById('replyQuoteText');
+        this.cancelReplyBtn = document.getElementById('cancelReplyBtn');
+        
         this.entryList = document.getElementById('entryList');
         this.entryNavigation = document.getElementById('entryNavigation');
         this.prevEntryBtn = document.getElementById('prevEntryBtn');
@@ -1095,6 +1102,15 @@ class DiaryApp {
         document.getElementById('cancelImageActionsBtn').addEventListener('click', () => this.hideImageActionsModal());
         this.saveEntryBtn.addEventListener('click', () => this.doneEntry());
         this.clearEntryBtn.addEventListener('click', () => this.hideEntryForm());
+        
+        // Event listener for canceling reply
+        if (this.cancelReplyBtn) {
+            this.cancelReplyBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                this.cancelReply();
+            });
+        }
+        
         // this.entryTextarea.addEventListener('keyup', (e) => {
         //     if (e.key === 'Enter' && e.ctrlKey) {
         //         this.doneEntry();
@@ -2299,6 +2315,30 @@ class DiaryApp {
         }
         contentDiv.appendChild(textDiv);
 
+        // Long press handler for replying on mobile
+        let longPressTimer;
+        textDiv.addEventListener('touchstart', (e) => {
+            longPressTimer = setTimeout(() => {
+                if (!this.user || this.user.is_anonymous === true) {
+                    alert(this.t('signInToAddEntries'));
+                    return;
+                }
+                this.parentEntry = {
+                    id: entry.id,
+                    username: entry.username || '',
+                    createdAt: entry.createdAt || '',
+                    text: this.truncateQuote(entry.text)
+                };
+                this.showEntryForm();
+            }, 600);
+        }, { passive: true });
+
+        textDiv.addEventListener('touchend', () => clearTimeout(longPressTimer));
+        textDiv.addEventListener('touchmove', () => clearTimeout(longPressTimer));
+
+        // Prevent context menu on Android
+        textDiv.addEventListener('contextmenu', (e) => e.preventDefault());
+
         // Images container
         const imagesDiv = document.createElement('div');
         imagesDiv.className = 'entry-images';
@@ -2614,7 +2654,7 @@ class DiaryApp {
                     poll_id: pollId,
                     option_id: optionId
                 };
-                
+
                 // Update vote count for the selected option
                 const option = poll.options.find(opt => opt.id === optionId);
                 if (option) {
@@ -2639,6 +2679,15 @@ class DiaryApp {
         this.entryTextarea.focus();
         this.pollForm.classList.add('hidden');
         this.replyButton.classList.add('hidden');
+        
+        // Show parent entry quote if replying
+        if (this.parentEntry) {
+            this.replyQuoteAuthor.innerHTML = `— ${this.escapeHtml(this.parentEntry.username)}`;
+            this.replyQuoteText.textContent = this.parentEntry.text;
+            this.replyQuoteDisplay.classList.remove('hidden');
+        } else {
+            this.replyQuoteDisplay.classList.add('hidden');
+        }
     }
 
     // Hide entry form
@@ -2653,6 +2702,11 @@ class DiaryApp {
         this.autoSaveEntryId = null;
     }
 
+    cancelReply() {
+        this.parentEntry = null;
+        this.replyQuoteDisplay.classList.add('hidden');
+    }
+        
     // Show poll form
     showPollForm() {
         this.pollForm.classList.remove('hidden');
@@ -2804,7 +2858,7 @@ class DiaryApp {
             if (!this.entries[this.selectedDate]) {
                 this.entries[this.selectedDate] = [];
             }
-            
+
             // Add the new poll to the entries
             this.entries[this.selectedDate].push(newPoll);
             

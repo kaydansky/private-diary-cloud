@@ -76,11 +76,11 @@ export default async function handler(req, res) {
             return res.status(500).json({ error: 'AI voting failed' });
         }
 
-        console.log(`[AI-VOTE] Updating user with request_id`, { userId, requestId: statusReply.request_id });
+        console.log(`[AI-VOTE] Updating user with poll_request_id`, { userId, requestId: statusReply.request_id, pollId });
 
         const { error } = await supabaseAdmin
             .from('users')
-            .update({request_id: statusReply.request_id, poll_id: pollId})
+            .update({poll_request_id: statusReply.request_id, poll_id: pollId})
             .eq('id', userId);
 
         if (error) {

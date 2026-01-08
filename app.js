@@ -2841,16 +2841,24 @@ class DiaryApp {
             if (optionsError) throw optionsError;
             
             // Add the new poll to the entries object so it appears immediately
-            const newPoll = {
-                id: pollData.id,
-                user_id: this.user.id,
-                question: question,
-                options: optionsInsertData.map(optionData => ({
+            const optionsSaved = optionsInsertData.map(optionData => ({
                     id: optionData.id, // Use actual database ID
                     text: optionData.option_text,
                     position: optionData.position,
                     votes: 0
-                })),
+                }));
+
+            // Create options for AI vote (without position and votes)
+            const optionsForAiVote = optionsInsertData.map(optionData => ({
+                id: optionData.id,
+                text: optionData.option_text
+            }));
+
+            const newPoll = {
+                id: pollData.id,
+                user_id: this.user.id,
+                question: question,
+                options: optionsSaved,
                 createdAt: new Date().toISOString(),
                 username: username,
                 type: 'poll'
@@ -2868,6 +2876,7 @@ class DiaryApp {
             this.hidePollForm();
             this.showToast(this.t('pollCreated'));
             await this.generateAiReply(question, username, pollData.id);
+            await this.voteAiPoll(question, pollData.id, optionsForAiVote)
             // Reload month to ensure consistency
             this.loadEntriesForMonth(this.currentDate.getFullYear(), this.currentDate.getMonth(), true);
             this.renderEntries(this.selectedDate);
@@ -4412,7 +4421,7 @@ class DiaryApp {
         });
     }
 
-    async selectAiUsers(aiUserId) {
+    async selectAiUsers(aiUserId, all) {
         if (aiUserId) {
             // Use selected user ID
             const { data: userData, error } = await this.supabase
@@ -4441,13 +4450,17 @@ class DiaryApp {
                 return [];
             }
 
-            // Random count between min and max
-            const min = this.aiRandomUsersNumberMin;
-            const max = this.aiRandomUsersNumberMax;
-            const count = Math.floor(Math.random() * (max - min + 1)) + min;
-            const limitedCount = Math.min(count, aiUsers.length);
-            const shuffled = aiUsers.sort(() => 0.5 - Math.random());
-            return shuffled.slice(0, limitedCount);
+            if (all === true) {
+                return aiUsers;
+            } else {
+                // Random count between min and max
+                const min = this.aiRandomUsersNumberMin;
+                const max = this.aiRandomUsersNumberMax;
+                const count = Math.floor(Math.random() * (max - min + 1)) + min;
+                const limitedCount = Math.min(count, aiUsers.length);
+                const shuffled = aiUsers.sort(() => 0.5 - Math.random());
+                return shuffled.slice(0, limitedCount);
+            }
         }
     }
 
@@ -4552,6 +4565,45 @@ class DiaryApp {
             }
         } catch (error) {
             console.error('Error fetching AI users:', error);
+            this.showToast('Failed to generate AI reply');
+        }
+    }
+
+    async voteAiPoll(prompt, pollId, options) {
+        if (!prompt || !pollId || !options || !options.length) return;
+
+        try {
+            const selectedAiUsers = await this.selectAiUsers(null, true);
+            if (!selectedAiUsers || selectedAiUsers.length === 0) {
+                console.log('Selected AI user not found');
+                return;
+            }
+
+            console.log('Selected AI users:', selectedAiUsers);
+
+            for (const selectedAiUser of selectedAiUsers) {
+                const payload = {
+                    userId: selectedAiUser.id,
+                    username: selectedAiUser.username,
+                    prompt: prompt,
+                    pollId: pollId,
+                    options: options
+                };
+
+                const response = await fetch('/api/ai-vote', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) {
+                    const err = await response.json().catch(() => ({}));
+                    console.error('AI vote error', err);
+                }
+            }
+        } catch (error) {
+            console.error('Error fetching AI users:', error);
+            this.showToast('Failed to generate AI vote');
         }
     }
 }

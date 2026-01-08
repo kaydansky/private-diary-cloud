@@ -5,6 +5,12 @@ const supabaseAdmin = createClient(
     process.env.SUPABASE_SERVICE_ROLE_KEY
 );
 
+// UUID validation regex
+function isUUID(value) {
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    return uuidRegex.test(value);
+}
+
 export default async function handler(req, res) {
     const { request_id, status, result } = req.body;
 
@@ -36,6 +42,41 @@ export default async function handler(req, res) {
         }
 
         console.log(`[AI-CALLBACK] User found`, { userId: userData.id, username: userData.username });
+
+        // Check if this is a poll vote request
+        if (userData.poll_id) {
+            const selectedOptionId = result[0].message.content.trim();
+
+            if (isUUID(selectedOptionId)) {
+                console.log(`[AI-CALLBACK] Processing poll vote`, { pollId: userData.poll_id, optionId: selectedOptionId, userId: userData.id });
+
+                const { error: voteError } = await supabaseAdmin
+                    .from('poll_votes')
+                    .insert({
+                        poll_id: userData.poll_id,
+                        option_id: selectedOptionId,
+                        user_id: userData.id
+                    });
+
+                if (voteError) {
+                    console.error(`[AI-CALLBACK] Poll vote insert failed`, { error: voteError.message });
+                    return res.status(500).json({ error: voteError.message });
+                }
+
+                console.log(`[AI-CALLBACK] Poll vote inserted successfully`, { pollId: userData.poll_id, optionId: selectedOptionId });
+
+                // Clear poll_id from user and return (stop further execution)
+                await supabaseAdmin
+                    .from('users')
+                    .update({ poll_id: null })
+                    .eq('id', userData.id);
+
+                return res.status(200).json({ success: true, voteInserted: true });
+            } else {
+                console.error(`[AI-CALLBACK] Invalid UUID format in poll vote result`, { selectedOptionId });
+                return res.status(400).json({ error: 'Invalid option ID format' });
+            }
+        }
 
         const fireTime = new Date(Date.now() + Math.random() * 15 * 60 * 1000).toISOString();
         const currentDate = new Date(Date.now() + 3 * 60 * 60 * 1000).toISOString().split('T')[0]; // Current date 'YYYY-MM-DD' in GMT+3

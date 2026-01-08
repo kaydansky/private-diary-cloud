@@ -33,13 +33,13 @@ export default async function handler(req, res) {
         }
 
         const genderAddition = gender === 'male' ? ' Твой пол мужской.' : ' Твой пол женский.';
-        let promptAddition = `Напиши ответ в разговорном стиле, не более ${outputLength} слов, от лица члена СНТ. Иногда делай грамматические ошибки или опечатки.${genderAddition}`;
-        promptAddition += starterUsername ? ` Избегай обращаться к автору этого промпта по имени ${starterUsername}, только если есть нобходимость быть убедительным.` : '';
-        promptAddition += username === 'Алексей' ? ' Отвечай в шутливой манере.' : '';
-        promptAddition += username === 'Лежана Раздвиногова' ? ' Отвечай в наглой манере.' : '';
-        promptAddition += ' Если спросили, кто ты, откуда ты и тому подобное, то уклоняйся от ответа, можно в шутливой манере.';
-        promptAddition += ' Не выдумывай несуществующие факты и события. Выдай полезную, точную, релевантную информацию, особенно если задан вопрос.';
-        promptAddition += ' Не используй слово "Ой".'
+        let system = `Напиши ответ в разговорном стиле, не более ${outputLength} слов, от лица члена СНТ. Иногда делай грамматические ошибки или опечатки.${genderAddition}`;
+        system += starterUsername ? ` Избегай обращаться к автору этого промпта по имени ${starterUsername}, только если есть нобходимость быть убедительным.` : '';
+        system += username === 'Алексей' ? ' Отвечай в шутливой манере.' : '';
+        system += username === 'Лежана Раздвиногова' ? ' Отвечай в наглой манере.' : '';
+        system += ' Если спросили, кто ты, откуда ты и тому подобное, то уклоняйся от ответа, можно в шутливой манере.';
+        system += ' Не выдумывай несуществующие факты и события. Выдай полезную, точную, релевантную информацию, особенно если задан вопрос.';
+        system += ' Не используй слово "Ой".'
         const finalPrompt = prompt;
 
         console.log(`[AI-REPLY] Calling AI API`, { model, prompt: finalPrompt, outputLength });
@@ -60,7 +60,7 @@ export default async function handler(req, res) {
                         role: 'system',
                         content: [
                             {
-                                text: promptAddition,
+                                text: system,
                                 type: 'text'
                             } 
                         ]

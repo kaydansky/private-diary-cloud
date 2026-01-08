@@ -2949,7 +2949,10 @@ class DiaryApp {
 
             if (error) throw error;
 
-            await this.generateAiReply(data.text, data.username, data.id, this.parentEntry?.id || null);
+            // Only generate AI reply for new entries, not edits
+            if (!this.editingEntryId) {
+                await this.generateAiReply(data.text, data.username, data.id, this.parentEntry?.id || null);
+            }
 
             // Add new entry to local state immediately
             if (!this.editingEntryId) {

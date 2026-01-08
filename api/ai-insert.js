@@ -31,7 +31,8 @@ export default async function handler(req, res) {
         let promptAddition = `Напиши ответ в разговорном стиле, не более ${outputLength} слов, от лица члена СНТ. Иногда делай грамматические ошибки или опечатки.${genderAddition}`;
         promptAddition += ' Не выдумывай несуществующие факты и события';
         promptAddition += username === 'Лежана Раздвиногова' ? ' Отвечай в наглой манере, но по теме промпта.' : '';
-
+        promptAddition += ' Не используй слово "Ой".'
+        
         console.log(`[AI-INSERT] Calling AI API`, { model, promptLength: prompt.length, outputLength });
 
         const response = await fetch('https://api.gen-api.ru/api/v1/networks/' + model, {

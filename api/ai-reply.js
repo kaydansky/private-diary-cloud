@@ -39,6 +39,7 @@ export default async function handler(req, res) {
         promptAddition += username === 'Лежана Раздвиногова' ? ' Отвечай в наглой манере.' : '';
         promptAddition += ' Если спросили, кто ты, откуда ты и тому подобное, то уклоняйся от ответа, можно в шутливой манере.';
         promptAddition += ' Не выдумывай несуществующие факты и события. Выдай полезную, точную, релевантную информацию, особенно если задан вопрос.';
+        promptAddition += ' Не используй слово "Ой".'
         const finalPrompt = prompt;
 
         console.log(`[AI-REPLY] Calling AI API`, { model, prompt: finalPrompt, outputLength });

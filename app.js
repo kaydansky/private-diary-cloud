@@ -2261,7 +2261,10 @@ class DiaryApp {
             
             const text = document.createElement('div');
             text.className = 'reply-quote-text';
-            text.textContent = entry.parentEntry.text;
+            
+            // Strip footnote references like [1] from the text
+            const cleanParentText = (entry.parentEntry.text || '').replace(/\[\d+\]/g, '');
+            text.textContent = cleanParentText;
             
             quote.appendChild(author);
             quote.appendChild(text);
@@ -2310,10 +2313,14 @@ class DiaryApp {
         textDiv.className = 'entry-text';
         textDiv.style.userSelect = 'none';
         textDiv.style.webkitUserSelect = 'none';
+
+        // Strip footnote references like [1] from the text
+        const cleanText = (entry.text || '').replace(/\[\d+\]/g, '');
+
         if (this.searchQuery) {
-            textDiv.innerHTML = this.highlightText(entry.text, this.searchQuery);
+            textDiv.innerHTML = this.highlightText(cleanText, this.searchQuery);
         } else {
-            textDiv.innerHTML = this.escapeHtml(entry.text);
+            textDiv.innerHTML = this.escapeHtml(cleanText);
         }
         contentDiv.appendChild(textDiv);
 

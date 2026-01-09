@@ -42,6 +42,8 @@ export default async function handler(req, res) {
             return res.status(500).json({ error: 'AI model not configured' });
         }
 
+        console.log(`[AI-REPLY] Processing with model`, { model });
+
         const genderAddition = gender === 'male' ? ' Твой пол мужской.' : ' Твой пол женский.';
         let system = `Напиши ответ в разговорном стиле, не более ${outputLength} слов, от лица члена СНТ.${genderAddition}`;
         system += starterUsername ? ` Избегай обращаться к автору этого промпта по имени ${starterUsername}, только если есть нобходимость быть убедительным.` : '';

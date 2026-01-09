@@ -35,14 +35,15 @@ export default async function handler(req, res) {
             return res.status(500).json({ error: 'User not found' });
         }
 
-        const model = userData.ai_model;
+        const modelId = userData.ai_model_id;
+        const model =  userData.ai_model;
 
-        if (!model) {
-            console.error(`[AI-REPLY] AI model not configured`, { userId, ai_model: userData.ai_model });
+        if (!modelId || !model) {
+            console.error(`[AI-REPLY] AI model or model IDs not configured`, { userId, ai_model_id: userData.ai_model_id, ai_model: userData.ai_model });
             return res.status(500).json({ error: 'AI model not configured' });
         }
 
-        console.log(`[AI-REPLY] Processing with model`, { model });
+        console.log(`[AI-REPLY] Processing with modelId, model`, { modelId, model });
 
         const genderAddition = gender === 'male' ? ' Твой пол мужской.' : ' Твой пол женский.';
         let system = `Напиши ответ в разговорном стиле, не более ${outputLength} слов, от лица члена СНТ.${genderAddition}`;
@@ -56,7 +57,7 @@ export default async function handler(req, res) {
 
         console.log(`[AI-REPLY] Calling AI API`, { model, prompt: finalPrompt, outputLength });
 
-        const response = await fetch('https://api.gen-api.ru/api/v1/networks/' + model, {
+        const response = await fetch('https://api.gen-api.ru/api/v1/networks/' + modelId, {
             method: 'POST',
             headers: {
                 'Authorization': 'Bearer ' + process.env.GEN_API_KEY,

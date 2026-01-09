@@ -14,21 +14,32 @@ function isUUID(value) {
 export default async function handler(req, res) {
     const { request_id, status, result } = req.body;
 
-    console.log(`[AI-CALLBACK] Received callback:`, req.body);
-    console.log(`[AI-CALLBACK] Received callback:`, result[0].message.content);
+    // Log full JSON with pretty formatting
+    console.log('[AI-CALLBACK] Received callback:', JSON.stringify(req.body, null, 2));
 
-    if (status !== 'success' || !request_id || !result[0].message.content) {
-        console.error(`[AI-CALLBACK] Invalid callback data`, { request_id, status, output });
+    if (status !== 'success' || !request_id) {
+        console.error('[AI-CALLBACK] Invalid callback data:', JSON.stringify({ request_id, status, result }, null, 2));
         return res.status(400).json({ error: 'Invalid callback data' });
     }
 
+    let reply = null;
+
+    if (result[0].message?.content) {
+        reply = result[0].message.content.trim();
+    } else if (result[0].choices?.[0]?.message?.content) {
+        reply = result[0].choices[0].message.content.trim();
+    } else {
+        console.error('[AI-CALLBACK] No reply found:', JSON.stringify({ request_id, status, result }, null, 2));
+        return res.status(400).json({ error: 'Invalid JSON parsing' });
+    }
+
     if (status === 'error') {
-        console.error(`[AI-CALLBACK] AI generation error`, { request_id, result });
+        console.error('[AI-CALLBACK] AI generation error:', JSON.stringify({ request_id, result }, null, 2));
         return res.status(500).json({ error: 'AI generation failed' });
     }
 
     try {
-        console.log(`[AI-CALLBACK] Looking up user by request_id`, { request_id });
+        console.log('[AI-CALLBACK] Looking up user by request_id:', JSON.stringify({ request_id }, null, 2));
 
         const { data: userData, error } = await supabaseAdmin
             .from('users')
@@ -38,7 +49,7 @@ export default async function handler(req, res) {
 
         if (error || !userData) {
             // Check if this is a poll vote request (uses poll_request_id instead)
-            console.log(`[AI-CALLBACK] User not found by request_id, checking poll_request_id`, { request_id });
+            console.log('[AI-CALLBACK] User not found by request_id, checking poll_request_id:', JSON.stringify({ request_id }, null, 2));
 
             const { data: pollUserData, pollError } = await supabaseAdmin
                 .from('users')
@@ -47,16 +58,16 @@ export default async function handler(req, res) {
                 .single();
 
             if (pollError || !pollUserData) {
-                console.error(`[AI-CALLBACK] User lookup failed`, { request_id, error: pollError?.message });
+                console.error('[AI-CALLBACK] User lookup failed:', JSON.stringify({ request_id, error: pollError?.message }, null, 2));
                 return res.status(500).json({ error: 'User not found' });
             }
 
             // Check if this is a poll vote request
             if (pollUserData.poll_id) {
-                const selectedOptionId = result[0].message.content.trim();
+                const selectedOptionId = reply;
 
                 if (isUUID(selectedOptionId)) {
-                    console.log(`[AI-CALLBACK] Processing poll vote`, { pollId: pollUserData.poll_id, optionId: selectedOptionId, userId: pollUserData.id });
+                    console.log('[AI-CALLBACK] Processing poll vote:', JSON.stringify({ pollId: pollUserData.poll_id, optionId: selectedOptionId, userId: pollUserData.id }, null, 2));
 
                     const { error: voteError } = await supabaseAdmin
                         .from('poll_votes')
@@ -67,11 +78,11 @@ export default async function handler(req, res) {
                         });
 
                     if (voteError) {
-                        console.error(`[AI-CALLBACK] Poll vote insert failed`, { error: voteError.message });
+                        console.error('[AI-CALLBACK] Poll vote insert failed:', JSON.stringify({ error: voteError.message }, null, 2));
                         return res.status(500).json({ error: voteError.message });
                     }
 
-                    console.log(`[AI-CALLBACK] Poll vote inserted successfully`, { pollId: pollUserData.poll_id, optionId: selectedOptionId });
+                    console.log('[AI-CALLBACK] Poll vote inserted successfully:', JSON.stringify({ pollId: pollUserData.poll_id, optionId: selectedOptionId }, null, 2));
 
                     // Clear poll_request_id and poll_id from user
                     await supabaseAdmin
@@ -81,23 +92,23 @@ export default async function handler(req, res) {
 
                     return res.status(200).json({ success: true, voteInserted: true });
                 } else {
-                    console.error(`[AI-CALLBACK] Invalid UUID format in poll vote result`, { selectedOptionId });
+                    console.error('[AI-CALLBACK] Invalid UUID format in poll vote result:', JSON.stringify({ selectedOptionId }, null, 2));
                     return res.status(400).json({ error: 'Invalid option ID format' });
                 }
             }
 
-            console.error(`[AI-CALLBACK] User found but no poll_id`, { request_id });
+            console.error('[AI-CALLBACK] User found but no poll_id:', JSON.stringify({ request_id }, null, 2));
             return res.status(500).json({ error: 'Poll vote request not found' });
         }
 
-        console.log(`[AI-CALLBACK] User found`, { userId: userData.id, username: userData.username });
+        console.log('[AI-CALLBACK] User found:', JSON.stringify({ userId: userData.id, username: userData.username }, null, 2));
 
         // Check if this is a poll vote request
         if (userData.poll_id) {
-            const selectedOptionId = result[0].message.content.trim();
+            const selectedOptionId = reply;
 
             if (isUUID(selectedOptionId)) {
-                console.log(`[AI-CALLBACK] Processing poll vote`, { pollId: userData.poll_id, optionId: selectedOptionId, userId: userData.id });
+                console.log('[AI-CALLBACK] Processing poll vote:', JSON.stringify({ pollId: userData.poll_id, optionId: selectedOptionId, userId: userData.id }, null, 2));
 
                 const { error: voteError } = await supabaseAdmin
                     .from('poll_votes')
@@ -108,11 +119,11 @@ export default async function handler(req, res) {
                     });
 
                 if (voteError) {
-                    console.error(`[AI-CALLBACK] Poll vote insert failed`, { error: voteError.message });
+                    console.error('[AI-CALLBACK] Poll vote insert failed:', JSON.stringify({ error: voteError.message }, null, 2));
                     return res.status(500).json({ error: voteError.message });
                 }
 
-                console.log(`[AI-CALLBACK] Poll vote inserted successfully`, { pollId: userData.poll_id, optionId: selectedOptionId });
+                console.log('[AI-CALLBACK] Poll vote inserted successfully:', JSON.stringify({ pollId: userData.poll_id, optionId: selectedOptionId }, null, 2));
 
                 // Clear poll_id from user and return (stop further execution)
                 await supabaseAdmin
@@ -122,7 +133,7 @@ export default async function handler(req, res) {
 
                 return res.status(200).json({ success: true, voteInserted: true });
             } else {
-                console.error(`[AI-CALLBACK] Invalid UUID format in poll vote result`, { selectedOptionId });
+                console.error('[AI-CALLBACK] Invalid UUID format in poll vote result:', JSON.stringify({ selectedOptionId }, null, 2));
                 return res.status(400).json({ error: 'Invalid option ID format' });
             }
         }
@@ -133,14 +144,14 @@ export default async function handler(req, res) {
             user_id: userData.id,
             username: userData.username || null,
             date: currentDate,
-            text: result[0].message.content,
+            text: reply,
             created_at: fireTime,
             updated_at: fireTime,
             ai_entry: true,
             fire_time: fireTime
         };
 
-        console.log(`[AI-CALLBACK] Upserting diary entry`, { userId: payload.user_id, date: payload.date });
+        console.log('[AI-CALLBACK] Upserting diary entry:', JSON.stringify({ userId: payload.user_id, date: payload.date }, null, 2));
 
         const { data: diaryEntry, error: diaryError } = await supabaseAdmin
             .from('diary_entries')
@@ -149,11 +160,11 @@ export default async function handler(req, res) {
             .single();
 
         if (diaryError) {
-            console.error(`[AI-CALLBACK] Diary entry upsert failed`, { error: diaryError.message, payload });
+            console.error('[AI-CALLBACK] Diary entry upsert failed:', JSON.stringify({ error: diaryError.message, payload }, null, 2));
             return res.status(500).json({ error: diaryError.message });
         }
 
-        console.log(`[AI-CALLBACK] Diary entry saved successfully`, { entryId: diaryEntry.id, userId: payload.user_id });
+        console.log('[AI-CALLBACK] Diary entry saved successfully:', JSON.stringify({ entryId: diaryEntry.id, userId: payload.user_id }, null, 2));
 
         // Clear request_id from user after successful processing
         await supabaseAdmin
@@ -161,10 +172,10 @@ export default async function handler(req, res) {
             .update({ request_id: null })
             .eq('id', userData.id);
     } catch (e) {
-        console.error(`[AI-CALLBACK] Error`, { error: e.message, stack: e.stack });
+        console.error('[AI-CALLBACK] Error:', JSON.stringify({ error: e.message, stack: e.stack }, null, 2));
         return res.status(500).json({ error: e.message });
     }
 
-    console.log(`[AI-CALLBACK] Callback completed successfully`, { request_id });
+    console.log('[AI-CALLBACK] Callback completed successfully:', JSON.stringify({ request_id }, null, 2));
     return res.status(200).json({ success: true });
 }

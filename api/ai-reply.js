@@ -24,16 +24,26 @@ export default async function handler(req, res) {
     }
 
     try {
-        let model = 'chat-gpt-3';
+        const { data: userData, userError } = await supabaseAdmin
+            .from('users')
+            .select('*')
+            .eq('id', userId)
+            .single();
 
-        if (username === 'Алексей' || username === 'Лежана Раздвиногова') {
-            model = 'deepseek-chat';
-        } else if (username === 'Ольга') {
-            model = 'gpt-4o-mini';
+        if (userError || !userData) {
+            console.error(`[AI-REPLY] User lookup failed`, { userId, error: userError?.message });
+            return res.status(500).json({ error: 'User not found' });
+        }
+
+        const model = userData.ai_model;
+
+        if (!model) {
+            console.error(`[AI-REPLY] AI model not configured`, { userId, ai_model: userData.ai_model });
+            return res.status(500).json({ error: 'AI model not configured' });
         }
 
         const genderAddition = gender === 'male' ? ' Твой пол мужской.' : ' Твой пол женский.';
-        let system = `Напиши ответ в разговорном стиле, не более ${outputLength} слов, от лица члена СНТ. Иногда делай грамматические ошибки или опечатки.${genderAddition}`;
+        let system = `Напиши ответ в разговорном стиле, не более ${outputLength} слов, от лица члена СНТ.${genderAddition}`;
         system += starterUsername ? ` Избегай обращаться к автору этого промпта по имени ${starterUsername}, только если есть нобходимость быть убедительным.` : '';
         system += username === 'Алексей' ? ' Отвечай в шутливой манере.' : '';
         system += username === 'Лежана Раздвиногова' ? ' Отвечай в наглой манере.' : '';

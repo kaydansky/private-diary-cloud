@@ -26,12 +26,29 @@ export default async function handler(req, res) {
     }
 
     try {
-        const model = 'deepseek-chat';
+        const { data: userData, userError } = await supabaseAdmin
+            .from('users')
+            .select('*')
+            .eq('id', userId)
+            .single();
+
+        if (userError || !userData) {
+            console.error(`[AI-INSERT] User lookup failed`, { userId, error: userError?.message });
+            return res.status(500).json({ error: 'User not found' });
+        }
+
+        const model = userData.ai_model;
+
+        if (!model) {
+            console.error(`[AI-INSERT] AI model not configured`, { userId, ai_model: userData.ai_model });
+            return res.status(500).json({ error: 'AI model not configured' });
+        }
+
         const genderAddition = gender === 'male' ? ' Твой пол мужской.' : ' Твой пол женский.';
-        let promptAddition = `Напиши ответ в разговорном стиле, не более ${outputLength} слов, от лица члена СНТ. Иногда делай грамматические ошибки или опечатки.${genderAddition}`;
-        promptAddition += ' Не выдумывай несуществующие факты и события';
-        promptAddition += username === 'Лежана Раздвиногова' ? ' Отвечай в наглой манере, но по теме промпта.' : '';
-        promptAddition += ' Не используй слово "Ой".'
+        let system = `Напиши ответ в разговорном стиле, не более ${outputLength} слов, от лица члена СНТ.${genderAddition}`;
+        system += ' Не выдумывай несуществующие факты и события. Выдай полезную, точную, релевантную информацию, если задан вопрос.';
+        system += username === 'Лежана Раздвиногова' ? ' Отвечай в наглой манере, но по теме промпта.' : '';
+        system += ' Не используй слово "Ой".'
         
         console.log(`[AI-INSERT] Calling AI API`, { model, promptLength: prompt.length, outputLength });
 
@@ -51,7 +68,7 @@ export default async function handler(req, res) {
                         role: 'system',
                         content: [
                             {
-                                text: promptAddition,
+                                text: system,
                                 type: 'text'
                             } 
                         ]

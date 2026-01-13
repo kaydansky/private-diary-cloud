@@ -13,7 +13,7 @@ export default async function handler(req, res) {
         return res.status(405).json({ error: 'Method not allowed' });
     }
 
-    const { userId, username, gender, prompt, starterUsername, starterEntryId } = req.body;
+    const { userId, username, gender, prompt, starterUsername, starterEntryId, parentEntry, contextEntry } = req.body;
     const outputLength = Math.floor(Math.random() * (100 - 40 + 1)) + 40;
 
     console.log(`[AI-REPLY] Processing request`, { userId, gender, hasPrompt: !!prompt, outputLength, starterUsername, starterEntryId });
@@ -53,7 +53,11 @@ export default async function handler(req, res) {
         system += ' Если спросили, кто ты, откуда ты и тому подобное, то уклоняйся от ответа, можно в шутливой манере.';
         system += ' Не выдумывай несуществующие факты и события. Выдай полезную, точную, релевантную информацию, особенно если задан вопрос.';
         system += ' Не используй слово "Ой".'
-        const finalPrompt = prompt;
+        let finalPrompt = prompt;
+
+        if (parentEntry || contextEntry) {
+            finalPrompt += ' Контекст: предыдущее сообщение — "' + (parentEntry ?? contextEntry) + '".'
+        }
 
         console.log(`[AI-REPLY] Calling AI API`, { model, prompt: finalPrompt, outputLength });
 

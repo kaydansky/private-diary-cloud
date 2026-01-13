@@ -160,7 +160,7 @@ class DiaryApp {
         this.quoteMaxLength = 100; // Max length for quoted text
         this.aiEntryWordsLength = 70; // Avoid vanishing text in AI
         this.aiRandomUsersNumberMin = 2; // Min number of random users to retrieve
-        this.aiRandomUsersNumberMax = 4; // Max number of random users to retrieve
+        this.aiRandomUsersNumberMax = 5; // Max number of random users to retrieve
         
         this.initServiceWorker();
         this.initElements();
@@ -2882,7 +2882,7 @@ class DiaryApp {
             // Reset form and hide it
             this.hidePollForm();
             this.showToast(this.t('pollCreated'));
-            await this.generateAiReply(question, username, pollData.id);
+            await this.generateAiReply(question, username, pollData.id, null, true);
             await this.voteAiPoll(question, pollData.id, optionsForAiVote)
             // Reload month to ensure consistency
             this.loadEntriesForMonth(this.currentDate.getFullYear(), this.currentDate.getMonth(), true);
@@ -4518,7 +4518,7 @@ class DiaryApp {
         }
     }
 
-    async generateAiReply(prompt, starterUsername, starterEntryId, parentEntryId) {
+    async generateAiReply(prompt, starterUsername, starterEntryId, parentEntryId, poll = false) {
         if (!prompt) return;
         
         const wordCount = prompt.trim().split(/\s+/).length;
@@ -4526,18 +4526,42 @@ class DiaryApp {
 
         try {
             let aiUserId = null;
+            let parentEntry = null;
+            let contextEntry = null;
 
             // If parentEntryId is provided, fetch its ai_user user_id from diary_entries
             if (parentEntryId) {
-                const { data: parentEntry } = await this.supabase
+                const { data: parentData } = await this.supabase
                     .from('diary_entries')
-                    .select('user_id')
+                    .select('user_id, text')
                     .eq('ai_entry', true)
                     .eq('id', parentEntryId)
                     .single();
 
-                if (parentEntry?.user_id) {
-                    aiUserId = parentEntry.user_id;
+                if (parentData?.user_id && parentData?.text) {
+                    aiUserId = parentData .user_id;
+                    parentEntry = parentData.text;
+                }
+            } else if (!poll) {
+                // Get the last two entries ordered by created_at descending
+                const { data: recentEntries, error: entriesError } = await this.supabase
+                    .from('diary_entries')
+                    .select('id, text, created_at, user_id')
+                    .order('created_at', { ascending: false })
+                    .limit(2);
+
+                if (!entriesError && recentEntries && recentEntries.length >= 2) {
+                    const lastEntry = recentEntries[0];
+                    const penultimateEntry = recentEntries[1];
+
+                    // Check if entries are more than 30 minutes apart
+                    const lastTime = new Date(lastEntry.created_at).getTime();
+                    const penultimateTime = new Date(penultimateEntry.created_at).getTime();
+                    const timeDiffMinutes = (lastTime - penultimateTime) / (1000 * 60);
+
+                    if (timeDiffMinutes < 30) {
+                        contextEntry = penultimateEntry.text;
+                    }
                 }
             }
 
@@ -4559,7 +4583,9 @@ class DiaryApp {
                     prompt: prompt,
                     outputLength: this.aiEntryWordsLength,
                     starterUsername: starterUsername,
-                    starterEntryId: starterEntryId
+                    starterEntryId: starterEntryId,
+                    parentEntry: parentEntry,
+                    contextEntry: contextEntry
                 };
 
                 const response = await fetch('/api/ai-reply', {

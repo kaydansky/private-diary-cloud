@@ -70,7 +70,7 @@ export default async function handler(req, res) {
             },
             body: JSON.stringify({
                 model: model,
-                temperature: 0.6,
+                temperature: 0.8,
                 top_p: 1,
                 callback_url: 'https://snt-tishinka.ru/api/ai-callback.js',
                 messages: [

@@ -2784,7 +2784,7 @@ class DiaryApp {
         const question = this.pollQuestion.value.trim();
         const optionInputs = this.pollOptionsContainer.querySelectorAll('.poll-option-input');
         
-        // Validate question (max 200 characters)
+        // Validate question (max 300 characters)
         if (!question) {
             alert(this.t('alertNoQuestion'));
             return;

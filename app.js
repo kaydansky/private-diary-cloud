@@ -2790,7 +2790,7 @@ class DiaryApp {
             return;
         }
         
-        if (question.length > 200) {
+        if (question.length > 300) {
             alert(this.t('alertTooLongQuestion'));
             return;
         }

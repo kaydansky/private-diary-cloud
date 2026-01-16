@@ -42,7 +42,7 @@ export default async function handler(req, res) {
             body: JSON.stringify({
                 model: model,
                 top_p: 0.6,
-                callback_url: 'https://snt-tishinka.ru/api/ai-vote-callback.js',
+                callback_url: 'https://private-diary-cloud.vercel.app/api/ai-vote-callback.js',
                 messages: [
                     {
                         role: 'system',

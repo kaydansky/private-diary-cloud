@@ -4498,7 +4498,7 @@ class DiaryApp {
                     outputLength: wordsLength
                 };
 
-                const response = await fetch('/api/ai-insert', {
+                const response = await fetch('https://private-diary-cloud.vercel.app/api/ai-insert', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)
@@ -4588,7 +4588,7 @@ class DiaryApp {
                     contextEntry: contextEntry
                 };
 
-                const response = await fetch('/api/ai-reply', {
+                const response = await fetch('https://private-diary-cloud.vercel.app/api/ai-reply', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)
@@ -4626,7 +4626,7 @@ class DiaryApp {
                     options: options
                 };
 
-                const response = await fetch('/api/ai-vote', {
+                const response = await fetch('https://private-diary-cloud.vercel.app/api/ai-vote', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)

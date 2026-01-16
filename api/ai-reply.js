@@ -72,7 +72,7 @@ export default async function handler(req, res) {
                 model: model,
                 temperature: 0.8,
                 top_p: 1,
-                callback_url: 'https://snt-tishinka.ru/api/ai-callback.js',
+                callback_url: 'https://private-diary-cloud.vercel.app/api/ai-callback.js',
                 messages: [
                     {
                         role: 'system',

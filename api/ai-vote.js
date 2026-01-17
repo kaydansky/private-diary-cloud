@@ -7,7 +7,7 @@ const supabaseAdmin = createClient(
 
 export default async function handler(req, res) {
     // Set CORS headers FIRST - before any other checks
-    res.setHeader('Access-Control-Allow-Origin', 'https://snt-tishinka.ru');
+    res.setHeader('Access-Control-Allow-Origin', 'https://www.snt-tishinka.ru');
     res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
     res.setHeader('Access-Control-Max-Age', '86400');

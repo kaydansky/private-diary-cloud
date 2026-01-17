@@ -7,24 +7,35 @@ const supabaseAdmin = createClient(
 
 export default async function handler(req, res) {
     // Set CORS headers FIRST - before any other checks
-    res.setHeader('Access-Control-Allow-Origin', 'https://snt-tishinka.ru');
+    res.setHeader('Access-Control-Allow-Origin', 'https://www.snt-tishinka.ru');
     res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
     // Handle the Preflight request (OPTIONS)
-    // if (req.method === 'OPTIONS') {
-    //     res.status(200).end();
-    //     return;
-    // }
+    if (req.method === 'OPTIONS') {
+        console.log(`[AI-VOTE] Preflight OPTIONS request`);
+        return res.status(200).json({ ok: true });
+    }
 
     console.log(`[AI-INSERT] Request received`, { method: req.method, hasBody: !!req.body });
 
-    // if (req.method !== 'POST') {
-    //     console.error(`[AI-INSERT] Invalid method`, { method: req.method });
-    //     return res.status(405).json({ error: 'Method not allowed' });
-    // }
+    if (req.method !== 'POST') {
+        console.error(`[AI-INSERT] Invalid method`, { method: req.method });
+        return res.status(405).json({ error: 'Method not allowed' });
+    }
 
-    const { userId, gender, prompt, outputLength, username } = req.body;
+    // Parse body if it's a string
+    let body = req.body;
+    if (typeof body === 'string') {
+        try {
+            body = JSON.parse(body);
+        } catch (e) {
+            console.error(`[AI-VOTE] Failed to parse body`, { error: e.message });
+            return res.status(400).json({ error: 'Invalid JSON in request body' });
+        }
+    }
+
+    const { userId, gender, prompt, outputLength, username } = body;
 
     console.log(`[AI-INSERT] Processing request`, { userId, gender, hasPrompt: !!prompt, outputLength });
 

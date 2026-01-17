@@ -4644,7 +4644,7 @@ class DiaryApp {
                 }
             }
         } catch (error) {
-            console.error('Error fetching AI users:', error);
+            console.error('Error AI poll voting:', error);
             this.showToast('Failed to generate AI vote');
         }
     }

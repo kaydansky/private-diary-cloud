@@ -10,21 +10,33 @@ export default async function handler(req, res) {
     res.setHeader('Access-Control-Allow-Origin', 'https://snt-tishinka.ru');
     res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+    res.setHeader('Access-Control-Max-Age', '86400');
 
     // Handle the Preflight request (OPTIONS)
-    // if (req.method === 'OPTIONS') {
-    //     res.status(200).end();
-    //     return;
-    // }
+    if (req.method === 'OPTIONS') {
+        console.log(`[AI-VOTE] Preflight OPTIONS request`);
+        return res.status(200).json({ ok: true });
+    }
 
-    console.log(`[AI-VOTE] Request received`, { method: req.method, hasBody: !!req.body });
+    console.log(`[AI-VOTE] Request received`, { method: req.method, hasBody: !!req.body, bodyType: typeof req.body });
 
-    // if (req.method !== 'POST') {
-    //     console.error(`[AI-VOTE] Invalid method`, { method: req.method });
-    //     return res.status(405).json({ error: 'Method not allowed' });
-    // }
+    if (req.method !== 'POST') {
+        console.error(`[AI-VOTE] Invalid method`, { method: req.method });
+        return res.status(405).json({ error: 'Method not allowed' });
+    }
 
-    const { userId, username, prompt, pollId, options } = req.body;
+    // Parse body if it's a string
+    let body = req.body;
+    if (typeof body === 'string') {
+        try {
+            body = JSON.parse(body);
+        } catch (e) {
+            console.error(`[AI-VOTE] Failed to parse body`, { error: e.message });
+            return res.status(400).json({ error: 'Invalid JSON in request body' });
+        }
+    }
+
+    const { userId, username, prompt, pollId, options } = body;
     console.log(`[AI-VOTE] Processing request`, { userId, hasPrompt: !!prompt, username, pollId, hasOptions: !!options });
 
     if (!userId || !prompt || !pollId || !options) {

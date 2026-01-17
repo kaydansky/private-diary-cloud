@@ -12,17 +12,17 @@ export default async function handler(req, res) {
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
     // Handle the Preflight request (OPTIONS)
-    if (req.method === 'OPTIONS') {
-        res.status(200).end();
-        return;
-    }
+    // if (req.method === 'OPTIONS') {
+    //     res.status(200).end();
+    //     return;
+    // }
 
     console.log(`[AI-INSERT] Request received`, { method: req.method, hasBody: !!req.body });
 
-    if (req.method !== 'POST') {
-        console.error(`[AI-INSERT] Invalid method`, { method: req.method });
-        return res.status(405).json({ error: 'Method not allowed' });
-    }
+    // if (req.method !== 'POST') {
+    //     console.error(`[AI-INSERT] Invalid method`, { method: req.method });
+    //     return res.status(405).json({ error: 'Method not allowed' });
+    // }
 
     const { userId, gender, prompt, outputLength, username } = req.body;
 

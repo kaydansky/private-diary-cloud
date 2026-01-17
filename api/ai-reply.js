@@ -6,6 +6,17 @@ const supabaseAdmin = createClient(
 );
 
 export default async function handler(req, res) {
+    // Set CORS headers FIRST - before any other checks
+    res.setHeader('Access-Control-Allow-Origin', 'https://snt-tishinka.ru');
+    res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+
+    // Handle the Preflight request (OPTIONS)
+    if (req.method === 'OPTIONS') {
+        res.status(200).end();
+        return;
+    }
+    
     console.log(`[AI-REPLY] Request received`, { method: req.method, hasBody: !!req.body });
 
     if (req.method !== 'POST') {

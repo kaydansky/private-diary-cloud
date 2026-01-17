@@ -2884,8 +2884,7 @@ class DiaryApp {
             this.showToast(this.t('pollCreated'));
             await this.generateAiReply(question, username, pollData.id, null, true);
             await this.voteAiPoll(question, pollData.id, optionsForAiVote)
-            // Reload month to ensure consistency
-            this.loadEntriesForMonth(this.currentDate.getFullYear(), this.currentDate.getMonth(), true);
+            // Render entries immediately - the poll is already in this.entries
             this.renderEntries(this.selectedDate);
         } catch (error) {
             console.error('Error saving poll:', error);

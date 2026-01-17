@@ -160,7 +160,7 @@ class DiaryApp {
         this.quoteMaxLength = 100; // Max length for quoted text
         this.aiEntryWordsLength = 70; // Avoid vanishing text in AI
         this.aiRandomUsersNumberMin = 2; // Min number of random users to retrieve
-        this.aiRandomUsersNumberMax = 5; // Max number of random users to retrieve
+        this.aiRandomUsersNumberMax = 6; // Max number of random users to retrieve
         
         this.initServiceWorker();
         this.initElements();

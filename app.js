@@ -2920,10 +2920,19 @@ class DiaryApp {
         this.clearEntryBtn.disabled = true;
         this.saveEntryBtn.classList.add('spinning');
 
+        // Determine entry date:
+        // - Admin users (kaydansky@gmail.com, info@kaydansky.ru): use selected date
+        // - Regular users: always use today's date
+        const isAdmin = this.user && (
+            this.user.email === 'kaydansky@gmail.com' || 
+            this.user.email === 'info@kaydansky.ru'
+        );
+        const entryDate = isAdmin ? this.selectedDate : this.formatDateKey(new Date());
+
         const payload = {
             user_id: this.user.id,
             username: this.user.user_metadata?.username || null,
-            date: this.selectedDate,
+            date: entryDate,
             text: text,
             parent_entry_id: this.parentEntry?.id || null // Include parent ID if replying
         };
@@ -2942,8 +2951,6 @@ class DiaryApp {
 
             entryRef.text = text;
             entryRef.originalText = text;
-        } else if (this.parentEntry) {
-            payload.date = this.selectedDate = this.formatDateKey(new Date()); // Replies are always for today
         }
 
         try {

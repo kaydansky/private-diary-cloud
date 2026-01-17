@@ -5,9 +5,17 @@ const supabaseAdmin = createClient(
     process.env.SUPABASE_SERVICE_ROLE_KEY
 );
 
+const allowedOrigins = [
+  'https://www.snt-tishinka.ru',
+  'https://private-diary-cloud.vercel.app',
+];
+
 export default async function handler(req, res) {
     // Set CORS headers FIRST - before any other checks
-    res.setHeader('Access-Control-Allow-Origin', 'https://www.snt-tishinka.ru');
+    const origin = req.headers.origin;
+    if (origin && !allowedOrigins.includes(origin)) {
+        return res.status(403).json({ error: 'Origin not allowed' });
+    }
     res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
     res.setHeader('Access-Control-Max-Age', '86400');

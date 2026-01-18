@@ -4689,7 +4689,7 @@ class DiaryApp {
             // Clear and rebuild entries for this date
             this.entries[this.selectedDate] = [];
 
-            // Process entries
+            // Process diary entries
             entriesData?.forEach(entry => {
                 this.entries[this.selectedDate].push({
                     id: entry.id,
@@ -4731,6 +4731,56 @@ class DiaryApp {
                     type: 'poll'
                 });
             });
+
+            // Load vote counts for polls
+            const pollIds = pollsData?.map(poll => poll.id) || [];
+            if (pollIds.length > 0) {
+                // Get vote counts for all options in these polls
+                const { data: voteCounts } = await this.supabase
+                    .rpc('get_poll_vote_counts', { poll_ids: pollIds });
+
+                // Update vote counts in the entries
+                voteCounts?.forEach(voteCount => {
+                    for (const date in this.entries) {
+                        const poll = this.entries[date].find(entry =>
+                            entry.type === 'poll' &&
+                            entry.options.some(option => option.id === voteCount.option_id)
+                        );
+
+                        if (poll) {
+                            const option = poll.options.find(opt => opt.id === voteCount.option_id);
+                            if (option) {
+                                option.votes = voteCount.vote_count || 0;
+                                break;
+                            }
+                        }
+                    }
+                });
+
+                // Load user votes for these polls
+                if (this.user) {
+                    const { data: userVotes } = await this.supabase
+                        .from('poll_votes')
+                        .select('poll_id, option_id, user_id')
+                        .in('poll_id', pollIds)
+                        .eq('user_id', this.user.id);
+
+                    if (userVotes) {
+                        userVotes.forEach(userVote => {
+                            for (const date in this.entries) {
+                                const poll = this.entries[date].find(entry =>
+                                    entry.type === 'poll' && entry.id === userVote.poll_id
+                                );
+
+                                if (poll) {
+                                    poll.userVote = userVote;
+                                    break;
+                                }
+                            }
+                        });
+                    }
+                }
+            }
 
             // Load like/dislike data
             await this.loadLikeDislikeData();

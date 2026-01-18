@@ -14,7 +14,7 @@
     <link rel="manifest" href="manifest.json">
     <link rel="preload" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
     <noscript><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css"></noscript>
-    <link rel="stylesheet" href="styles.css?v=3">
+    <link rel="stylesheet" href="styles.css?v=11">
 </head>
 <body>
     <!-- Authentication Container -->
@@ -202,7 +202,10 @@
                     </div>
                 </div>
 
-                <div id="replyButton" class="text-link footer entries-section hidden" data-i18n="writeBtn">Написать</div>
+            <div class="footer entries-section">
+                <div id="replyButton" class="text-link hidden" data-i18n="writeBtn">Написать</div>
+                <span id="replyBtnSeparator" class="hidden">&bull;</span>
+                <div id="refreshButton" class="text-link" data-i18n="refreshBtn">Обновить</div>
             </div>
 
             <div class="entry-navigation hidden" id="entryNavigation">
@@ -398,8 +401,8 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="config.js"></script>
-    <script src="translations.js"></script>
-    <script src="app.js"></script>
+    <script src="config.js?v=11"></script>
+    <script src="translations.js?v=11"></script>
+    <script src="app.js?v=11"></script>
 </body>
 </html>

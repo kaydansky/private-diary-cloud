@@ -1025,6 +1025,8 @@ class DiaryApp {
         this.signOutBtn = document.getElementById('signOutBtn');
         this.resetEmail = document.getElementById('resetEmail');
         this.replyButton = document.getElementById('replyButton');
+        this.replyBtnSeparator = document.getElementById('replyBtnSeparator');
+        this.refreshButton = document.getElementById('refreshButton');
         this.aiBtn = document.getElementById('aiBtn');
         this.aiForm = document.getElementById('aiForm');
         this.aiTextarea = document.getElementById('aiTextarea');
@@ -1232,6 +1234,7 @@ class DiaryApp {
         document.getElementById('howItWorksBtn').addEventListener('click', () => this.showHowItWorksModal());
         document.getElementById('closeHowItWorksBtn').addEventListener('click', () => this.hideHowItWorksModal());
         document.getElementById('replyButton').addEventListener('click', () => this.showEntryForm());
+        document.getElementById('refreshButton').addEventListener('click', () => this.refreshDay());
         
         // Poll event listeners
         this.addPollBtn.addEventListener('click', () => {
@@ -2140,18 +2143,22 @@ class DiaryApp {
         // Hide reply button if entry form is shown
         if (!this.entryForm.classList.contains('hidden')) {
             this.replyButton.classList.add('hidden');
+            this.replyBtnSeparator.classList.add('hidden');
             return;
         }
         
         if (document.activeElement === this.entryTextarea) {
             this.replyButton.classList.add('hidden');
+            this.replyBtnSeparator.classList.add('hidden');
             return;
         }
 
         if (this.entries && this.entries[this.selectedDate] && this.entries[this.selectedDate].length > 0) {
             this.replyButton.classList.remove('hidden');
+            this.replyBtnSeparator.classList.remove('hidden');
         } else {
             this.replyButton.classList.add('hidden');
+            this.replyBtnSeparator.classList.add('hidden');
         }
     }
 
@@ -2688,6 +2695,7 @@ class DiaryApp {
         this.entryTextarea.focus();
         this.pollForm.classList.add('hidden');
         this.replyButton.classList.add('hidden');
+        this.replyBtnSeparator.classList.add('hidden');
         
         // Show parent entry quote if replying
         if (this.parentEntry) {
@@ -4646,6 +4654,92 @@ class DiaryApp {
         } catch (error) {
             console.error('Error AI poll voting:', error);
             this.showToast('Failed to generate AI vote');
+        }
+    }
+
+    async refreshDay() {
+        if (!this.selectedDate) return;
+
+        this.showLoadingOverlay();
+        try {
+            // Query only the selected date
+            const { data: entriesData } = await this.supabase
+                .from('diary_entries')
+                .select('*, parent_entry:parent_entry_id (id, username, created_at, text)')
+                .eq('date', this.selectedDate)
+                .or(`fire_time.is.null,fire_time.lte.now`)
+                .order('created_at', { ascending: true });
+
+            // Query polls for the selected date
+            const { data: pollsData } = await this.supabase
+                .from('polls')
+                .select(`
+                    id,
+                    user_id,
+                    question,
+                    date,
+                    created_at,
+                    username,
+                    images,
+                    poll_options (id, option_text, position)
+                `)
+                .eq('date', this.selectedDate)
+                .order('created_at', { ascending: true });
+
+            // Clear and rebuild entries for this date
+            this.entries[this.selectedDate] = [];
+
+            // Process entries
+            entriesData?.forEach(entry => {
+                this.entries[this.selectedDate].push({
+                    id: entry.id,
+                    user_id: entry.user_id,
+                    username: entry.username || null,
+                    text: entry.text,
+                    images: entry.images || [],
+                    createdAt: entry.created_at,
+                    updatedAt: entry.updated_at,
+                    originalText: entry.text,
+                    originalImages: [...(entry.images || [])],
+                    type: 'entry',
+                    parentEntry: entry.parent_entry ? {
+                        id: entry.parent_entry.id,
+                        username: entry.parent_entry.username || null,
+                        text: this.truncateQuote(entry.parent_entry.text) || null,
+                        createdAt: entry.parent_entry.created_at
+                    } : null
+                });
+            });
+
+            // Process polls
+            pollsData?.forEach(poll => {
+                const options = poll.poll_options.map(option => ({
+                    id: option.id,
+                    text: option.option_text,
+                    position: option.position,
+                    votes: 0
+                })).sort((a, b) => a.position - b.position);
+
+                this.entries[this.selectedDate].push({
+                    id: poll.id,
+                    user_id: poll.user_id,
+                    question: poll.question,
+                    options: options,
+                    createdAt: poll.created_at,
+                    username: poll.username || null,
+                    images: poll.images || [],
+                    type: 'poll'
+                });
+            });
+
+            // Load like/dislike data
+            await this.loadLikeDislikeData();
+
+            // Re-render
+            this.renderEntries(this.selectedDate);
+            this.renderCalendar(); // Update calendar to reflect any changes
+        } finally {
+            this.hideLoadingOverlay();
         }
     }
 }

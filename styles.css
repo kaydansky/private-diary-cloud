@@ -1282,6 +1282,10 @@ label {
     margin-bottom: 0;
     word-wrap: break-word;
     text-align: center;
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 10px;
 }
 
 .entry-navigation {

@@ -157,7 +157,8 @@ const translations = {
         nothingToShare: 'Nothing to share',
         addAiPrompt: 'Add AI Prompt',
         errorSavingEntry: 'Error saving entry',
-        replyingTo: 'Replying to'
+        replyingTo: 'Replying to',
+        refreshBtn: 'Refresh'
     },
     fr: {
         appTitle: 'Journal Privé Cloud',
@@ -317,7 +318,8 @@ const translations = {
         nothingToShare: 'Rien à partager',
         addAiPrompt: 'Ajouter une invite IA',
         errorSavingEntry: 'Erreur lors de la sauvegarde de l\'entrée',
-        replyingTo: 'Répondez à'
+        replyingTo: 'Répondez à',
+        refreshBtn: 'Actualiser'
     },
     de: {
         appTitle: 'Tagebuch Cloud',
@@ -478,7 +480,8 @@ const translations = {
         nothingToShare: 'Nichts zu teilen',
         addAiPrompt: 'KI-Aufforderung hinzufügen',
         errorSavingEntry: 'Fehler beim Speichern des Eintrags',
-        replyingTo: 'Antwortieren von'
+        replyingTo: 'Antwortieren von',
+        refreshBtn: 'Schritt neu'
     },
     ru: {
         appTitle: 'СНТ Тишинка',
@@ -637,6 +640,7 @@ const translations = {
         addAiPrompt: 'Задать промпт',
         errorSavingEntry: 'Ошибка при сохранении записи',
         answerLength: 'Слов в ответе',
-        replyingTo: 'В ответ на:'
+        replyingTo: 'В ответ на:',
+        refreshBtn: 'Обновить'
     }
 };

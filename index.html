@@ -46,6 +46,15 @@
             
             <div class="auth-error hidden" id="authError"></div>
         </div>
+
+        <div class="image-actions-modal" id="resetPasswordModal">
+            <div class="image-actions-content">
+                <h3 data-i18n="resetPassword">Reset Password</h3>
+                <input type="email" class="modal-input" id="resetEmail" data-i18n-placeholder="email" placeholder="Email" />
+                <button class="image-action-btn" id="sendResetBtn" data-i18n="sendResetLink">Send Reset Link</button>
+                <button class="image-action-btn cancel" id="cancelResetBtn" data-i18n="cancel">Cancel</button>
+            </div>
+        </div>
         
         <div class="auth-card hidden" id="confirmationCard">
             <i class="bi bi-envelope-check" style="font-size: 48px; color: #667eea;"></i>
@@ -345,14 +354,7 @@
         </div>
     </div>
 
-    <div class="image-actions-modal" id="resetPasswordModal">
-        <div class="image-actions-content">
-            <h3 data-i18n="resetPassword">Reset Password</h3>
-            <input type="email" class="modal-input" id="resetEmail" data-i18n-placeholder="email" placeholder="Email" />
-            <button class="image-action-btn" id="sendResetBtn" data-i18n="sendResetLink">Send Reset Link</button>
-            <button class="image-action-btn cancel" id="cancelResetBtn" data-i18n="cancel">Cancel</button>
-        </div>
-    </div>
+    
 
     <div class="image-actions-modal" id="updatePasswordModal">
         <div class="image-actions-content">
@@ -403,7 +405,7 @@
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="config.js?v=11"></script>
-    <script src="translations.js?v=11"></script>
-    <script src="app.js?v=14"></script>
+    <script src="translations.js?v=12"></script>
+    <script src="app.js?v=15"></script>
 </body>
 </html>

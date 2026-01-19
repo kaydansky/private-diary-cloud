@@ -164,6 +164,7 @@ class DiaryApp {
         
         this.initServiceWorker();
         this.initElements();
+        this.registerModals();
         this.initAuth();
     }
 
@@ -477,6 +478,12 @@ class DiaryApp {
         const togglePassword = document.getElementById('togglePassword');
         const togglePasswordRepeat = document.getElementById('togglePasswordRepeat');
         const authPassword = document.getElementById('authPassword');
+
+        // Set up password reset link
+        const forgotPasswordLink = document.getElementById('forgotPasswordLink');
+        if (forgotPasswordLink) {
+            forgotPasswordLink.addEventListener('click', () => this.showResetPasswordModal());
+        }
 
         togglePassword.addEventListener('click', () => {
             const type = authPassword.type === 'password' ? 'text' : 'password';
@@ -1221,7 +1228,6 @@ class DiaryApp {
         this.yearSelect.addEventListener('change', () => this.resetMonthSelect());
         this.monthSelect.addEventListener('change', () => this.jumpToDate());
         this.populateDateSelects();
-        document.getElementById('forgotPasswordLink').addEventListener('click', () => this.showResetPasswordModal());
         document.getElementById('sendResetBtn').addEventListener('click', () => this.sendPasswordReset());
         document.getElementById('cancelResetBtn').addEventListener('click', () => this.hideResetPasswordModal());
         document.getElementById('updatePasswordBtn').addEventListener('click', () => this.updatePassword());
@@ -1251,9 +1257,6 @@ class DiaryApp {
                 this.handleOptionInput(e.target);
             }
         });
-
-        // Register all modals with the modal manager
-        this.registerModals();
     }
 
     // Register all modals for centralized management
@@ -3064,6 +3067,8 @@ class DiaryApp {
         document.getElementById('editEntryModalBtn').style.display = isOwnEntry ? '' : 'none';
         document.getElementById('deleteEntryModalBtn').style.display = isOwnEntry ? '' : 'none';
         document.getElementById('imageEntryModalBtn').style.display = isOwnEntry ? '' : 'none';
+        document.getElementById('copyEntryModalBtn').style.display = this.user ? '' : 'none';
+        document.getElementById('shareEntryModalBtn').style.display = this.user ? '' : 'none';
 
         document.getElementById('replyEntryModalBtn').addEventListener('click', () => {
             if (!this.user || this.user.is_anonymous === true) {
@@ -3104,6 +3109,7 @@ class DiaryApp {
         const isOwnPoll = this.user && poll && poll.user_id === this.user.id;
         document.getElementById('deletePollModalBtn').style.display = isOwnPoll ? '' : 'none';
         document.getElementById('imagePollModalBtn').style.display = isOwnPoll ? '' : 'none';
+        document.getElementById('sharePollModalBtn').style.display = isOwnPoll ? '' : 'none';
         
         this.currentEntryId = pollId;
         this.currentEntryDate = date;
@@ -3145,6 +3151,10 @@ class DiaryApp {
     async copyEntryText(entry) {
         if (!entry.text) {
             alert(this.t('noTextToCopy'));
+            return;
+        }
+
+        if (!this.user) {
             return;
         }
         
@@ -3215,6 +3225,9 @@ class DiaryApp {
 
     // Share entry
     async shareEntry(entry, dateStr) {
+        if (!this.user) {
+            return;
+        }
         const readableDate = this.formatDate(dateStr);
         const entryUrl = `https://snt-tishinka.ru/?date=${dateStr}&entryId=${entry.id}`;
         const hasText = entry.text && entry.text.trim() !== '';

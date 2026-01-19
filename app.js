@@ -2271,7 +2271,7 @@ class DiaryApp {
             
             // Strip footnote references like [1] from the text
             const cleanParentText = (entry.parentEntry.text || '').replace(/\[\d+\]/g, '');
-            text.textContent = cleanParentText;
+            text.innerHTML = this.truncateText(cleanParentText);
             
             quote.appendChild(author);
             quote.appendChild(text);
@@ -2325,9 +2325,9 @@ class DiaryApp {
         const cleanText = (entry.text || '').replace(/\[\d+\]/g, '');
 
         if (this.searchQuery) {
-            textDiv.innerHTML = this.highlightText(cleanText, this.searchQuery);
+            textDiv.innerHTML = this.highlightText(this.truncateText(cleanText), this.searchQuery);
         } else {
-            textDiv.innerHTML = this.escapeHtml(cleanText);
+            textDiv.innerHTML = this.truncateText(this.escapeHtml(cleanText));
         }
         contentDiv.appendChild(textDiv);
 
@@ -2469,7 +2469,7 @@ class DiaryApp {
         // Poll question
         const questionDiv = document.createElement('div');
         questionDiv.className = 'poll-question';
-        questionDiv.textContent = poll.question;
+        questionDiv.innerHTML = this.truncateText(poll.question);
         contentDiv.appendChild(questionDiv);
 
         // Images container
@@ -4792,6 +4792,28 @@ class DiaryApp {
         } finally {
             this.hideLoadingOverlay();
         }
+    }
+
+    truncateText(text, wordsLength = 8) {
+        if (!text) return '';
+
+        if (this.user) return text;
+        
+        const words = text.trim().split(/\s+/);
+        
+        if (words.length <= wordsLength) {
+            return text;
+        }
+        
+        // Get the words to display
+        const displayWords = words.slice(0, wordsLength);
+        
+        // Create a span with fade-out effect on last 3 words
+        const lastThreeWords = displayWords.slice(-3).join(' ');
+        const beforeLastThree = displayWords.slice(0, -3).join(' ');
+        
+        // Return HTML with gradient fade on last 3 words
+        return `${beforeLastThree}${beforeLastThree ? ' ' : ''}<span class="fade-out-text">${lastThreeWords}</span>`;
     }
 }
 

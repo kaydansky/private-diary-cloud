@@ -93,10 +93,10 @@ serve(async (req) => {
     
     const notificationTitle = type === 'entry' 
       ? `Новое сообщение от ${username}` 
-      : `Новая картинка от ${username}`
-    const notificationBody = type === 'entry' || type === 'poll'
-      ? 'Пополнение в летопись СНТ'
-      : 'Пополнение в летопись СНТ'
+      : type === 'poll'
+      ? `Новый опрос от ${username}`
+      : `Новое изображение от ${username}`
+    const notificationBody = 'Пополнение в летопись СНТ'
 
     const payload = JSON.stringify({
       title: notificationTitle,

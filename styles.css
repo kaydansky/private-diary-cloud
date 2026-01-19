@@ -918,6 +918,8 @@ body {
     opacity: 0;
     transition: opacity 0.3s;
     font-size: 1rem;
+    width: 80%;
+    max-width: 500px;
 }
 
 .toast-notification.show {

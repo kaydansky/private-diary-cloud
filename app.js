@@ -2890,10 +2890,11 @@ class DiaryApp {
             // Reset form and hide it
             this.hidePollForm();
             this.showToast(this.t('pollCreated'));
-            await this.generateAiReply(question, username, pollData.id, null, true);
-            await this.voteAiPoll(question, pollData.id, optionsForAiVote)
             // Render entries immediately - the poll is already in this.entries
             this.renderEntries(this.selectedDate);
+            await this.generateAiReply(question, username, pollData.id, null, true);
+            await this.voteAiPoll(question, pollData.id, optionsForAiVote);
+            await this.sendPushNotification('poll', pollData.id);
         } catch (error) {
             console.error('Error saving poll:', error);
             alert(this.t('alertFailedToCreatePoll'));

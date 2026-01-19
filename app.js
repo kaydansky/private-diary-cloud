@@ -490,25 +490,25 @@ class DiaryApp {
             togglePasswordRepeat.querySelector('i').className = type === 'password' ? 'bi bi-eye' : 'bi bi-eye-slash';
         });
 
-        loginTab.addEventListener('click', () => {
-            loginTab.classList.add('active');
-            signupTab.classList.remove('active');
-            authSubmit.textContent = this.t('signIn');
-            usernameInput.removeAttribute('required');
-            passwordRepeat.removeAttribute('required');
-            usernameInput.classList.add('hidden');
-            passwordRepeat.parentElement.classList.add('hidden');
-        });
+        // loginTab.addEventListener('click', () => {
+        //     loginTab.classList.add('active');
+        //     signupTab.classList.remove('active');
+        //     authSubmit.textContent = this.t('signIn');
+        //     usernameInput.removeAttribute('required');
+        //     passwordRepeat.removeAttribute('required');
+        //     usernameInput.classList.add('hidden');
+        //     passwordRepeat.parentElement.classList.add('hidden');
+        // });
 
-        signupTab.addEventListener('click', () => {
-            signupTab.classList.add('active');
-            loginTab.classList.remove('active');
-            authSubmit.textContent = this.t('signUp');
-            usernameInput.classList.remove('hidden');
-            usernameInput.setAttribute('required', '');
-            passwordRepeat.parentElement.classList.remove('hidden');
-            passwordRepeat.setAttribute('required', '');
-        });
+        // signupTab.addEventListener('click', () => {
+        //     signupTab.classList.add('active');
+        //     loginTab.classList.remove('active');
+        //     authSubmit.textContent = this.t('signUp');
+        //     usernameInput.classList.remove('hidden');
+        //     usernameInput.setAttribute('required', '');
+        //     passwordRepeat.parentElement.classList.remove('hidden');
+        //     passwordRepeat.setAttribute('required', '');
+        // });
 
         authForm.addEventListener('submit', async (e) => {
             e.preventDefault();

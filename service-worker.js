@@ -1,4 +1,4 @@
-const CACHE_NAME = 'diary-cloud-v1.2.7';
+const CACHE_NAME = 'diary-cloud-v1.2.8';
 const CDN_CACHE_NAME = 'diary-cloud-cdn-v1';
 const IMAGE_CACHE_NAME = 'diary-cloud-images-v1';
 
@@ -154,5 +154,24 @@ self.addEventListener('notificationclick', event => {
     
     event.waitUntil(
         clients.openWindow(url)
+    );
+});
+
+// Handle push subscription change (e.g., when the browser refreshes the subscription)
+self.addEventListener('pushsubscriptionchange', function(event) {
+    console.log('[Service Worker]: "pushsubscriptionchange" event fired.');
+    event.waitUntil(
+        self.registration.pushManager.subscribe({
+            userVisibleOnly: true,
+            // ApplicationServerKey should be set here if using VAPID
+            // applicationServerKey: urlBase64ToUint8Array('<YOUR_PUBLIC_VAPID_KEY>')
+        })
+        .then(function(newSubscription) {
+            // TODO: Send newSubscription to application server
+            console.log('New subscription:', newSubscription);
+        })
+        .catch(function(err) {
+            console.error('Failed to resubscribe:', err);
+        })
     );
 });

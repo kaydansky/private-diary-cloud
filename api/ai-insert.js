@@ -80,7 +80,7 @@ export default async function handler(req, res) {
         let system = `Ты умный пользователь чата. В твоём ответе должно содержаться не более ${outputLength} слов.${genderAddition}`;
         system += ' Не выдумывай несуществующие факты и события. Выдай релевантную и полезную информацию по теме промпта.';
         system += username === 'Лежана Раздвиногова' ? ' Отвечай в наглой манере, но по теме промпта.' : '';
-        // system += ' Не используй слово "Ой".'
+        system += ' Не указывай количество слов в ответе и другие технические мета-данные.';
         
         console.log(`[AI-INSERT] Calling AI API`, { model, promptLength: prompt.length, outputLength });
 

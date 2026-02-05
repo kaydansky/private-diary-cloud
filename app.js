@@ -4553,7 +4553,7 @@ class DiaryApp {
         if (wordCount < 5) return;
 
         try {
-            let aiUserId = null;
+            let aiUserId = '626dcb47-2770-4c9c-9849-c4f6bbc9d521'; // Алексей perplexity
             let parentEntry = null;
             let contextEntry = null;
 

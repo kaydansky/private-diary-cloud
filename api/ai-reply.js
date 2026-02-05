@@ -77,14 +77,15 @@ export default async function handler(req, res) {
 
         console.log(`[AI-REPLY] Processing with modelId, model`, { modelId, model });
 
-        const genderAddition = gender === 'male' ? ' Твой пол мужской.' : ' Твой пол женский. Твой собеседник мужчина.';
-        let system = `Напиши ответ в разговорном стиле, не более ${outputLength} слов, от лица члена СНТ.${genderAddition}`;
+        const genderAddition = gender === 'male' ? ' Твой пол мужской.' : ' Твой пол женский.';
+        // let system = `Напиши ответ в разговорном стиле, не более ${outputLength} слов, от лица члена СНТ.${genderAddition}`;
+        let system = `Ты умный пользователь чата. В твоём ответе должно содержаться не более ${outputLength} слов.${genderAddition}`;
         system += starterUsername ? ` Избегай обращаться к автору этого промпта по имени ${starterUsername}, только если есть нобходимость быть убедительным.` : '';
-        system += username === 'Алексей' ? ' Отвечай в шутливой манере.' : '';
+        // system += username === 'Алексей' ? ' Отвечай в шутливой манере.' : '';
         system += username === 'Лежана Раздвиногова' ? ' Отвечай в наглой манере. Твоё имя Лежана, фамилия Раздвиногова.' : '';
         system += ' Если спросили, кто ты, откуда ты и тому подобное, то уклоняйся от ответа, можно в шутливой манере.';
-        system += ' Не выдумывай несуществующие факты и события. Выдай полезную, точную, релевантную информацию, особенно если задан вопрос.';
-        system += ' Не используй слово "Ой".'
+        system += ' Не выдумывай несуществующие факты и события. Выдай релевантную и полезную информацию по теме промпта.';
+        // system += ' Не используй слово "Ой".'
         let finalPrompt = prompt;
 
         if (parentEntry || contextEntry) {
@@ -102,7 +103,7 @@ export default async function handler(req, res) {
             },
             body: JSON.stringify({
                 model: model,
-                temperature: 0.8,
+                temperature: 0.9,
                 top_p: 1,
                 callback_url: 'https://private-diary-cloud.vercel.app/api/ai-callback.js',
                 messages: [

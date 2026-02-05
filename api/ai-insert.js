@@ -77,10 +77,10 @@ export default async function handler(req, res) {
         console.log(`[AI-INSERT] Processing with modelId, model`, { modelId, model });
 
         const genderAddition = gender === 'male' ? ' Твой пол мужской.' : ' Твой пол женский.';
-        let system = `Напиши ответ в разговорном стиле, не более ${outputLength} слов, от лица члена СНТ.${genderAddition}`;
-        system += ' Не выдумывай несуществующие факты и события. Выдай полезную, точную, релевантную информацию, если задан вопрос.';
+        let system = `Ты умный пользователь чата. В твоём ответе должно содержаться не более ${outputLength} слов.${genderAddition}`;
+        system += ' Не выдумывай несуществующие факты и события. Выдай релевантную и полезную информацию по теме промпта.';
         system += username === 'Лежана Раздвиногова' ? ' Отвечай в наглой манере, но по теме промпта.' : '';
-        system += ' Не используй слово "Ой".'
+        // system += ' Не используй слово "Ой".'
         
         console.log(`[AI-INSERT] Calling AI API`, { model, promptLength: prompt.length, outputLength });
 
@@ -93,7 +93,7 @@ export default async function handler(req, res) {
             },
             body: JSON.stringify({
                 model: model,
-                temperature: 0.6,
+                temperature: 0.8,
                 top_p: 1,
                 callback_url: 'https://private-diary-cloud.vercel.app/api/ai-callback.js',
                 messages: [

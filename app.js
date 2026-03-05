@@ -4186,15 +4186,15 @@ class DiaryApp {
         }, { passive: true });
         
         // Mouse wheel navigation for desktop
-        this.calendarDays.addEventListener('wheel', (e) => {
-            e.preventDefault();
-            const direction = e.deltaY > 0 ? 1 : -1;
+        // this.calendarDays.addEventListener('wheel', (e) => {
+        //     e.preventDefault();
+        //     const direction = e.deltaY > 0 ? 1 : -1;
             
-            // Prevent wheel navigation to future months
-            if (!this.canNavigateToFuture(direction)) return;
+        //     // Prevent wheel navigation to future months
+        //     if (!this.canNavigateToFuture(direction)) return;
             
-            this.changeMonth(direction);
-        }, { passive: false });
+        //     this.changeMonth(direction);
+        // }, { passive: false });
     }
 
     // Animate page turning effect for mobile swipe

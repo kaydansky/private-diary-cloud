@@ -2328,7 +2328,7 @@ class DiaryApp {
         const cleanText = (entry.text || '').replace(/\[\d+\]/g, '');
 
         if (this.searchQuery) {
-            textDiv.innerHTML = this.highlightText(this.truncateText(cleanText), this.searchQuery);
+            textDiv.innerHTML = this.highlightText(this.truncateText(this.escapeHtml(cleanText)), this.searchQuery);
         } else {
             textDiv.innerHTML = this.truncateText(this.escapeHtml(cleanText));
         }

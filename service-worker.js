@@ -128,7 +128,7 @@ self.addEventListener('message', event => {
 self.addEventListener('push', event => {
     const data = event.data ? event.data.json() : {};
     const options = {
-        body: data.body || 'Новое сообщение | СНТ Тишинка',
+        body: data.body || 'Новое сообщение | PWA Чат',
         icon: data.icon || 'assets/icons/icon.svg',
         badge: data.badge || 'assets/icons/icon.svg',
         vibrate: [200, 100, 200],
@@ -137,7 +137,7 @@ self.addEventListener('push', event => {
         data: data.data || {}
     };
     event.waitUntil(
-        self.registration.showNotification(data.title || 'СНТ Тишинка', options)
+        self.registration.showNotification(data.title || 'PWA Чат', options)
     );
 });
 

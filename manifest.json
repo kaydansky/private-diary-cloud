@@ -1,7 +1,7 @@
 {
-    "name": "Летопись СНТ Тишинка",
-    "short_name": "Тишинка",
-    "description": "Жизнь в СНТ — события, проблемы, вопросы.",
+    "name": "PWA Чат",
+    "short_name": "PWA Чат",
+    "description": "PWA Чат",
     "start_url": "/",
     "id": "/",
     "scope": "/",

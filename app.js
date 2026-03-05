@@ -2415,7 +2415,7 @@ class DiaryApp {
 
     // Render a diary entry (legacy method, now uses factory)
     renderEntry(entry, date) {
-        const entryText = this.searchQuery ? this.highlightText(entry.text, this.searchQuery) : this.escapeHtml(entry.text);
+        const entryText = this.searchQuery ? this.highlightText(this.escapeHtml(entry.text), this.searchQuery) : this.escapeHtml(entry.text);
         const entryTime = entry.createdAt ? new Date(entry.createdAt).toLocaleDateString('ru-Ru', { day: '2-digit', month: '2-digit', year: 'numeric' }) + ' ' + new Date(entry.createdAt).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }) : '';
         
         return `

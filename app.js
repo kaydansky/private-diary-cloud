@@ -1621,7 +1621,7 @@ class DiaryApp {
             return `
                 <div class="search-result-item" data-date="${result.date}" data-entry-id="${result.id}">
                     <div class="search-result-date">${this.formatDate(result.date)}</div>
-                    <div class="search-result-text">${this.escapeHtml(previewWithEllipsis)}</div>
+                    <div class="search-result-text">${this.truncateText(previewWithEllipsis)}</div>
                 </div>
             `;
         }).join('');

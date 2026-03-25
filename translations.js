@@ -484,7 +484,7 @@ const translations = {
         refreshBtn: 'Schritt neu'
     },
     ru: {
-        appTitle: 'PWA ЧАТ',
+        appTitle: 'СНТ Тишинка',
         appSubtitle: '18+ | для лиц старше 18 лет',
         searchPlaceholder: 'Поиск среди записей...',
         noResults: 'Ничего не найдено',

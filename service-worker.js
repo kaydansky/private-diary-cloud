@@ -1,4 +1,4 @@
-const CACHE_NAME = 'diary-cloud-v1.3.3';
+const CACHE_NAME = 'diary-cloud-v1.3.4';
 const CDN_CACHE_NAME = 'diary-cloud-cdn-v1';
 const IMAGE_CACHE_NAME = 'diary-cloud-images-v1';
 

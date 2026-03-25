@@ -2082,6 +2082,11 @@ class DiaryApp {
 
     // Render list of entries
     renderEntries(date) {
+        const todayKey = this.formatDateKey(new Date());
+        if (this.selectedDate !== todayKey) {
+            this.hideEntryForm()
+        }
+
         const entries = this.entries[date] || [];
         this.toggleAddPollBtn();
 
@@ -2691,6 +2696,13 @@ class DiaryApp {
 
     // Show entry form
     async showEntryForm() {
+        // Always navigate to today's page if not already there
+        const todayKey = this.formatDateKey(new Date());
+        if (this.selectedDate !== todayKey) {
+            this.selectedDate = todayKey;
+            this.goToToday();
+        }
+
         await this.broadcast();
         this.originalText = this.entryTextarea.value;
         this.autoSaveEntryId = null;
@@ -2699,7 +2711,7 @@ class DiaryApp {
         this.pollForm.classList.add('hidden');
         this.replyButton.classList.add('hidden');
         this.replyBtnSeparator.classList.add('hidden');
-        
+
         // Show parent entry quote if replying
         if (this.parentEntry) {
             this.replyQuoteAuthor.innerHTML = `— ${this.escapeHtml(this.parentEntry.username)}`;

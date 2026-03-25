@@ -2895,8 +2895,8 @@ class DiaryApp {
             this.showToast(this.t('pollCreated'));
             // Render entries immediately - the poll is already in this.entries
             this.renderEntries(this.selectedDate);
-            await this.generateAiReply(question, username, pollData.id, null, true);
-            await this.voteAiPoll(question, pollData.id, optionsForAiVote);
+            // await this.generateAiReply(question, username, pollData.id, null, true);
+            // await this.voteAiPoll(question, pollData.id, optionsForAiVote);
             await this.sendPushNotification('poll', pollData.id);
         } catch (error) {
             console.error('Error saving poll:', error);
@@ -2975,9 +2975,9 @@ class DiaryApp {
             if (error) throw error;
 
             // Only generate AI reply for new entries, not edits
-            if (!this.editingEntryId) {
-                await this.generateAiReply(data.text, data.username, data.id, this.parentEntry?.id || null);
-            }
+            // if (!this.editingEntryId) {
+            //     await this.generateAiReply(data.text, data.username, data.id, this.parentEntry?.id || null);
+            // }
 
             // Add new entry to local state immediately
             if (!this.editingEntryId) {

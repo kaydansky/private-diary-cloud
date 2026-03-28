@@ -313,8 +313,14 @@ class DiaryApp {
                 this.updateAuthUI();
             }
         });
-        
-        this.showMainApp();
+
+        // If URL has query parameter 'register', show sign-in form (with sign-up tab)
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.has('register')) {
+            this.showSignIn();
+        } else {
+            this.showMainApp();
+        }
         // await this.broadcast();
         await this.init();
     }
@@ -450,6 +456,13 @@ class DiaryApp {
         document.querySelector('.auth-card:first-child').classList.remove('hidden');
         document.getElementById('confirmationCard').classList.add('hidden');
         this.initAuthEventListeners();
+        
+        // If URL has query parameter 'register', activate sign-up tab
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.has('register')) {
+            const signupTab = document.getElementById('signupTab');
+            if (signupTab) signupTab.click();
+        }
     }
 
     // Show confirmation

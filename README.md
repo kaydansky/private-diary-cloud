@@ -77,10 +77,22 @@ A cloud-based Progressive Web App (PWA) for sharing diary entries with the world
        text TEXT,
        images JSONB DEFAULT '[]'::jsonb,
        created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-       updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+       updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+       is_edited BOOLEAN DEFAULT FALSE,
+       edit_date TIMESTAMP WITH TIME ZONE
    );
 
-   -- Ensure RLS is enabled on target tables (no-op if already enabled)
+  -- Add is_edited and edit_date columns (for existing deployments)
+  ALTER TABLE diary_entries
+  ADD COLUMN IF NOT EXISTS is_edited BOOLEAN DEFAULT FALSE,
+  ADD COLUMN IF NOT EXISTS edit_date TIMESTAMP WITH TIME ZONE;
+
+  -- Update existing rows: if updated_at != created_at, mark as edited
+  UPDATE diary_entries
+  SET is_edited = TRUE, edit_date = updated_at
+  WHERE updated_at != created_at AND is_edited = FALSE;
+
+  -- Ensure RLS is enabled on target tables (no-op if already enabled)
     ALTER TABLE public.diary_entries ENABLE ROW LEVEL SECURITY;
     ALTER TABLE public.push_subscriptions ENABLE ROW LEVEL SECURITY;
     
@@ -271,6 +283,8 @@ open http://localhost:8000
 - `images`: JSONB (Array of image URLs)
 - `created_at`: TIMESTAMP
 - `updated_at`: TIMESTAMP
+- `is_edited`: BOOLEAN (TRUE if entry has been edited)
+- `edit_date`: TIMESTAMP (when entry was last edited)
 
 #### Storage Buckets
 - `diary-images`: Public bucket for image storage

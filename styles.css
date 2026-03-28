@@ -981,6 +981,13 @@ body {
     margin-bottom: 12px;
 }
 
+.entry-edited {
+    color: var(--text-color);
+    opacity: 0.6;
+    font-size: 1rem;
+    margin-left: 4px;
+}
+
 .entry-text {
     color: var(--text-color);
     font-size: 1.3rem;

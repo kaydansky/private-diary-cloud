@@ -158,6 +158,7 @@ const translations = {
         addAiPrompt: 'Add AI Prompt',
         errorSavingEntry: 'Error saving entry',
         replyingTo: 'Replying to',
+        editedAt: 'Edited at',
         refreshBtn: 'Refresh'
     },
     fr: {
@@ -319,6 +320,7 @@ const translations = {
         addAiPrompt: 'Ajouter une invite IA',
         errorSavingEntry: 'Erreur lors de la sauvegarde de l\'entrée',
         replyingTo: 'Répondez à',
+        editedAt: 'Modifié à',
         refreshBtn: 'Actualiser'
     },
     de: {
@@ -481,11 +483,12 @@ const translations = {
         addAiPrompt: 'KI-Aufforderung hinzufügen',
         errorSavingEntry: 'Fehler beim Speichern des Eintrags',
         replyingTo: 'Antwortieren von',
+        editedAt: 'Bearbeitet um',
         refreshBtn: 'Schritt neu'
     },
     ru: {
-        appTitle: 'СНТ Тишинка',
-        appSubtitle: '18+ | для лиц старше 18 лет',
+        appTitle: 'Тишинка',
+        appSubtitle: 'Чат СНТ Тишинка | 18+',
         searchPlaceholder: 'Поиск среди записей...',
         noResults: 'Ничего не найдено',
         prevMonth: '← Назад',
@@ -641,6 +644,7 @@ const translations = {
         errorSavingEntry: 'Ошибка при сохранении записи',
         answerLength: 'Слов в ответе',
         replyingTo: 'В ответ на:',
+        editedAt: 'Изменено в',
         refreshBtn: 'Обновить'
     }
 };

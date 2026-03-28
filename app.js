@@ -345,8 +345,12 @@ class DiaryApp {
                     user_id: data.user_id,
                     username: data.username,
                     text: data.text,
+                    images: data.images || [],
                     type: 'entry',
-                    createdAt: data.created_at
+                    createdAt: data.created_at,
+                    updatedAt: data.updated_at,
+                    isEdited: data.is_edited || false,
+                    editDate: data.edit_date || null
                 };
                 
                 // Ensure entries array exists for the date
@@ -1341,6 +1345,8 @@ class DiaryApp {
                     images: entry.images || [],
                     createdAt: entry.created_at,
                     updatedAt: entry.updated_at,
+                    isEdited: entry.is_edited || false,
+                    editDate: entry.edit_date || null,
                     originalText: entry.text,
                     originalImages: [...(entry.images || [])],
                     type: 'entry',
@@ -1549,6 +1555,9 @@ class DiaryApp {
                 if (!needsSave) {
                     continue; // No changes → skip
                 }
+                // For existing entries with changes, set edit flags
+                payload.is_edited = true;
+                payload.edit_date = new Date().toISOString();
             } else {
                 // New entry → always save
                 needsSave = true;
@@ -1567,6 +1576,11 @@ class DiaryApp {
             // Update originalText and originalImages after successful save
             entry.originalText = entry.text;
             entry.originalImages = [...(entry.images || [])]; // deep copy
+            // Update edit flags if they were set in payload
+            if (payload.is_edited) {
+                entry.isEdited = true;
+                entry.editDate = payload.edit_date;
+            }
         }
         // Invalidate cached month for the selected date so next fetch reads fresh data
         try {
@@ -2320,6 +2334,17 @@ class DiaryApp {
                 timeSpan.textContent = `${dateStr} ${timeStr}`;
             }
             authorDiv.appendChild(timeSpan);
+            
+            // Add edit indicator if entry was edited
+            if (entry.isEdited && entry.editDate) {
+                const editSpan = document.createElement('span');
+                editSpan.className = 'entry-edited';
+                const editTime = new Date(entry.editDate);
+                const formattedTime = editTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
+                editSpan.textContent = ` ${this.t('editedAt')} ${formattedTime}`;
+                authorDiv.appendChild(editSpan);
+            }
+            
             contentDiv.appendChild(authorDiv);
         }
 
@@ -2422,11 +2447,12 @@ class DiaryApp {
     renderEntry(entry, date) {
         const entryText = this.searchQuery ? this.highlightText(this.escapeHtml(entry.text), this.searchQuery) : this.escapeHtml(entry.text);
         const entryTime = entry.createdAt ? new Date(entry.createdAt).toLocaleDateString('ru-Ru', { day: '2-digit', month: '2-digit', year: 'numeric' }) + ' ' + new Date(entry.createdAt).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }) : '';
+        const editIndicator = entry.isEdited && entry.editDate ? `<span class="entry-edited"> ${this.t('editedAt')} ${new Date(entry.editDate).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false })}</span>` : '';
         
         return `
             <li class="entry-item">
                 <div class="entry-content">
-                    ${entry.username ? `<div class="entry-author">— ${this.escapeHtml(entry.username)} <br> <span class="entry-time">${entryTime}</span></div>` : ''}
+                    ${entry.username ? `<div class="entry-author">— ${this.escapeHtml(entry.username)} <br> <span class="entry-time">${entryTime}</span>${editIndicator}</div>` : ''}
                     <div class="entry-text">${entryText}</div>
                     <div class="entry-images" id="images-${entry.id}"></div>
                 </div>
@@ -2568,7 +2594,7 @@ class DiaryApp {
             // Check if user has voted for this option
             let checkedAttr = '';
             
-;            if (this.user && this.user.id === poll.user_id && poll.userVote && poll.userVote.option_id === option.id) {
+            if (this.user && this.user.id === poll.user_id && poll.userVote && poll.userVote.option_id === option.id) {
                 checkedAttr = 'checked="true"';
             }
             
@@ -2962,19 +2988,43 @@ class DiaryApp {
         };
 
         if (this.editingEntryId) {
-            const entryRef = this.entries[this.selectedDate].find(e => e.id === this.editingEntryId);
+            // Ensure entries for selectedDate exists
+            if (!this.entries[this.selectedDate]) {
+                this.entries[this.selectedDate] = [];
+            }
+            
+            let entryRef = this.entries[this.selectedDate].find(e => e.id === this.editingEntryId);
+            
+            // If not found, search across all dates
+            if (!entryRef) {
+                for (const date in this.entries) {
+                    entryRef = this.entries[date].find(e => e.id === this.editingEntryId);
+                    if (entryRef) break;
+                }
+            }
+            
+            // If still not found, we cannot update local state, but we can still upsert
+            if (!entryRef) {
+                console.warn('Editing entry not found in local state, proceeding with upsert');
+            }
+            
             payload.id = this.editingEntryId;
             payload.updated_at = new Date().toISOString();
+            // Set edit flags
+            payload.is_edited = true;
+            payload.edit_date = new Date().toISOString();
             
-            // Check if text changed
-            const textChanged = entryRef.originalText !== undefined && text !== entryRef.originalText;
-            
-            if (!textChanged) {
-                return; // No changes → skip
+            // Check if text changed (only if entryRef exists)
+            if (entryRef) {
+                const textChanged = entryRef.originalText !== undefined && text !== entryRef.originalText;
+                if (!textChanged) {
+                    return; // No changes → skip
+                }
+                entryRef.text = text;
+                entryRef.originalText = text;
+                entryRef.isEdited = true;
+                entryRef.editDate = payload.edit_date;
             }
-
-            entryRef.text = text;
-            entryRef.originalText = text;
         }
 
         try {
@@ -3001,6 +3051,9 @@ class DiaryApp {
                     username: data.username,
                     text: data.text,
                     createdAt: data.created_at,
+                    updatedAt: data.updated_at,
+                    isEdited: data.is_edited || false,
+                    editDate: data.edit_date || null,
                     parentEntry: this.parentEntry || null,
                     originalText: data.text,
                     originalImages: [...(data.images || [])] // deep copy
@@ -3076,7 +3129,8 @@ class DiaryApp {
         
         // Only show edit/delete for own entries
         const isOwnEntry = this.user && entry && entry.user_id === this.user.id;
-        document.getElementById('editEntryModalBtn').style.display = isOwnEntry ? '' : 'none';
+        const isToday = this.selectedDate === this.formatDateKey(new Date());
+        document.getElementById('editEntryModalBtn').style.display = isOwnEntry && isToday ? '' : 'none';
         document.getElementById('deleteEntryModalBtn').style.display = isOwnEntry ? '' : 'none';
         document.getElementById('imageEntryModalBtn').style.display = isOwnEntry ? '' : 'none';
         document.getElementById('copyEntryModalBtn').style.display = this.user ? '' : 'none';
@@ -3195,7 +3249,21 @@ class DiaryApp {
 
     // Edit entry
     editEntry(id) {
-        const entry = this.entries[this.selectedDate].find(e => e.id === id);
+        // Ensure entries for selectedDate exists
+        if (!this.entries[this.selectedDate]) {
+            this.entries[this.selectedDate] = [];
+        }
+        
+        let entry = this.entries[this.selectedDate].find(e => e.id === id);
+        
+        // If not found, search across all dates
+        if (!entry) {
+            for (const date in this.entries) {
+                entry = this.entries[date].find(e => e.id === id);
+                if (entry) break;
+            }
+        }
+        
         if (!entry) return;
 
         this.editingEntryId = id;
@@ -3208,7 +3276,25 @@ class DiaryApp {
     async deleteEntry(id) {
         if (!confirm(this.t('deleteEntryConfirm'))) return;
 
-        const entry = this.entries[this.selectedDate].find(e => e.id === id);
+        // Ensure entries for selectedDate exists
+        if (!this.entries[this.selectedDate]) {
+            this.entries[this.selectedDate] = [];
+        }
+        
+        let entry = this.entries[this.selectedDate].find(e => e.id === id);
+        
+        // If not found, search across all dates
+        if (!entry) {
+            for (const date in this.entries) {
+                entry = this.entries[date].find(e => e.id === id);
+                if (entry) break;
+            }
+        }
+        
+        if (!entry) {
+            console.warn('Entry not found in local state, cannot delete');
+            return;
+        }
         
         if (entry.type === 'poll') {
             // Delete poll and related data
@@ -3876,6 +3962,7 @@ class DiaryApp {
                 .select('id, email, username, created_at')
                 .not('username', 'is', null)
                 .neq('email', 'info@kaydansky.ru')
+                .eq('ai_user', false)
                 .order('created_at', { ascending: false });
 
             if (!error && data && data.length > 0) {
@@ -4725,6 +4812,8 @@ class DiaryApp {
                     images: entry.images || [],
                     createdAt: entry.created_at,
                     updatedAt: entry.updated_at,
+                    isEdited: entry.is_edited || false,
+                    editDate: entry.edit_date || null,
                     originalText: entry.text,
                     originalImages: [...(entry.images || [])],
                     type: 'entry',

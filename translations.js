@@ -488,7 +488,7 @@ const translations = {
     },
     ru: {
         appTitle: 'Тишинка',
-        appSubtitle: 'Чат СНТ Тишинка | 18+',
+        appSubtitle: 'Чат СНТ Тишинка',
         searchPlaceholder: 'Поиск среди записей...',
         noResults: 'Ничего не найдено',
         prevMonth: '← Назад',

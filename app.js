@@ -461,7 +461,10 @@ class DiaryApp {
         const urlParams = new URLSearchParams(window.location.search);
         if (urlParams.has('register')) {
             const signupTab = document.getElementById('signupTab');
+            const authSubmit = document.getElementById('authSubmit');
             if (signupTab) signupTab.click();
+            signupTab.classList.add('active');
+            authSubmit.textContent = this.t('signUp');
         }
     }
 

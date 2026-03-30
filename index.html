@@ -30,8 +30,8 @@
             </div>
             
             <form class="auth-form" id="authForm">
-                <input type="text" id="authUsername" placeholder="Username" data-i18n-placeholder="userName" class="hidden" maxlength="20">
-                <input type="email" id="authEmail" placeholder="Email" data-i18n-placeholder="email" required>
+                <input type="text" id="authUsername" placeholder="Имя пользователя" data-i18n-placeholder="userName" maxlength="20">
+                <!-- <input type="email" id="authEmail" placeholder="Email" data-i18n-placeholder="email" required> -->
                 <div class="password-wrapper">
                     <input type="password" id="authPassword" placeholder="Password" data-i18n-placeholder="password" required>
                     <button type="button" id="togglePassword" class="password-toggle"><i class="bi bi-eye"></i></button>
@@ -40,7 +40,7 @@
                     <input type="password" id="authPasswordRepeat" placeholder="Repeat Password" data-i18n-placeholder="userPasswordRepeat">
                     <button type="button" id="togglePasswordRepeat" class="password-toggle"><i class="bi bi-eye"></i></button>
                 </div>
-                <button data-i18n="signIn" type="submit" id="authSubmit">Log In</button>
+                <button data-i18n="signUp" type="submit" id="authSubmit">Log In</button>
                 <a id="forgotPasswordLink" class="text-link" data-i18n="forgotPassword">Забыли пароль?</a>
             </form>
             
@@ -49,10 +49,11 @@
 
         <div class="image-actions-modal" id="resetPasswordModal">
             <div class="image-actions-content">
-                <h3 data-i18n="resetPassword">Reset Password</h3>
-                <input type="email" class="modal-input" id="resetEmail" data-i18n-placeholder="email" placeholder="Email" />
-                <button class="image-action-btn" id="sendResetBtn" data-i18n="sendResetLink">Send Reset Link</button>
-                <button class="image-action-btn cancel" id="cancelResetBtn" data-i18n="cancel">Cancel</button>
+                <h3 data-i18n="resetPassword">Восстановление доступа</h3>
+                <!-- <input type="email" class="modal-input" id="resetEmail" data-i18n-placeholder="email" placeholder="Email" />
+                <button class="image-action-btn" id="sendResetBtn" data-i18n="sendResetLink">Send Reset Link</button> -->
+                <p id="sendResetBtn">Чтобы восстановить доступ к вашему аккаунту, напишите на <a href="mailto:info@snt-tishinka.ru">info@snt-tishinka.ru</a></p>
+                <button class="image-action-btn cancel" id="cancelResetBtn" data-i18n="cancel">Закрыть</button>
             </div>
         </div>
         
@@ -404,8 +405,8 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="config.js?v=12"></script>
-    <script src="translations.js?v=18"></script>
-    <script src="app.js?v=22"></script>
+    <script src="config.js?v=13"></script>
+    <script src="translations.js?v=19"></script>
+    <script src="app.js?v=23"></script>
 </body>
 </html>

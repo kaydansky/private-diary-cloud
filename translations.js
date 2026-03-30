@@ -645,6 +645,7 @@ const translations = {
         answerLength: 'Слов в ответе',
         replyingTo: 'В ответ на:',
         editedAt: 'Изменено в',
-        refreshBtn: 'Обновить'
+        refreshBtn: 'Обновить',
+        plotNumber: 'Номер участка'
     }
 };

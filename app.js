@@ -462,9 +462,14 @@ class DiaryApp {
         if (urlParams.has('register')) {
             const signupTab = document.getElementById('signupTab');
             const authSubmit = document.getElementById('authSubmit');
-            if (signupTab) signupTab.click();
-            signupTab.classList.add('active');
-            authSubmit.textContent = this.t('signUp');
+            if (signupTab) {
+                signupTab.click();
+                signupTab.classList.add('active');
+                // Wait for DOM update before changing textContent
+                setTimeout(() => {
+                    authSubmit.textContent = this.t('signUp');
+                }, 0);
+            }
         }
     }
 
@@ -521,9 +526,9 @@ class DiaryApp {
             loginTab.classList.add('active');
             signupTab.classList.remove('active');
             authSubmit.textContent = this.t('signIn');
-            usernameInput.removeAttribute('required');
+            // usernameInput.removeAttribute('required');
             passwordRepeat.removeAttribute('required');
-            usernameInput.classList.add('hidden');
+            // usernameInput.classList.add('hidden');
             passwordRepeat.parentElement.classList.add('hidden');
         });
 
@@ -539,9 +544,12 @@ class DiaryApp {
 
         authForm.addEventListener('submit', async (e) => {
             e.preventDefault();
-            const email = document.getElementById('authEmail').value;
+            const oldUsers = ['kaydansky@gmail.com', 'info@kaydansky.ru', 'sidorin73@yandex.ru'];
+            // const email = document.getElementById('authEmail').value;
             const password = document.getElementById('authPassword').value;
             const username = usernameInput.value.trim();
+            const email = oldUsers.includes(username) ? username : this.compileEmailFromUsername(username);
+            console.log(email);
             const isLogin = loginTab.classList.contains('active');
 
             if (!isLogin) {
@@ -573,6 +581,17 @@ class DiaryApp {
         });
     }
 
+    compileEmailFromUsername(username) {
+        // DJB2 hash function
+        let hash = 5381;
+        const str = username.toLowerCase();
+        for (let i = 0; i < str.length; i++) {
+            hash = (hash * 33) ^ str.charCodeAt(i);
+        }
+        const hashHex = (hash >>> 0).toString(16);
+        return `${hashHex}@snt-tishinka.ru`;
+    }
+
     // Sign in user
     async signIn(email, password) {
         const { error } = await this.supabase.auth.signInWithPassword({ email, password });
@@ -601,7 +620,8 @@ class DiaryApp {
             }
         });
         if (error) throw error;
-        this.showConfirmation();
+        location.href = '/';
+        // this.showConfirmation();
     }
 
     // Sign in

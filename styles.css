@@ -1790,6 +1790,10 @@ label {
     flex-direction: column;
 }
 
+.text-center {
+    text-align: center;
+}
+
 .user-entries-header {
     display: flex;
     align-items: center;
@@ -1909,6 +1913,17 @@ label {
     border-radius: 8px;
     transition: background-color 0.2s;
     margin-bottom: 5px;
+}
+
+/* Clickable username in entry author */
+.clickable-username {
+    cursor: pointer;
+    text-decoration: underline;
+    transition: color 0.2s;
+}
+
+.clickable-username:hover {
+    color: var(--share-btn-color);
 }
 
 #peopleList li:hover {

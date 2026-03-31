@@ -14,7 +14,7 @@
     <link rel="manifest" href="manifest.json">
     <link rel="preload" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
     <noscript><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css"></noscript>
-    <link rel="stylesheet" href="styles.css?v=15">
+    <link rel="stylesheet" href="styles.css?v=16">
 </head>
 <body>
     <!-- Authentication Container -->
@@ -397,6 +397,10 @@
     <div class="image-actions-modal" id="peopleModal">
         <div class="image-actions-content">
             <h3 data-i18n="peopleTitle">Пользователи</h3>
+            <p class="text-center">Нажмите на пользователя, чтобы просмотреть его записи</p>
+            <div class="user-entries-empty hidden" id="userEntriesEmpty">
+                <p>Этот пользователь еще не создал ни одной записи.</p>
+            </div>
             <ul class="how-it-works-list" id="peopleList">
                 <!-- User list will be populated here -->
             </ul>
@@ -412,18 +416,13 @@
                     <i class="bi bi-arrow-left"></i>
                 </button>
             </div>
-            <div class="user-entries-info">
-                <div class="user-entries-username" id="userEntriesUsername"></div>
-                <div class="user-entries-stats" id="userEntriesStats"></div>
-            </div>
+            <p class="text-center">Нажмите на запись, чтобы перейти в ветку</p>
+            <br>
             <div class="user-entries-list-container">
                 <ul class="entry-list" id="userEntriesList"></ul>
                 <div class="user-entries-loading hidden" id="userEntriesLoading">
                     <div class="loading-spinner small"></div>
                     <span data-i18n="loading">Загрузка...</span>
-                </div>
-                <div class="user-entries-empty hidden" id="userEntriesEmpty">
-                    <p data-i18n="noEntries">Нет записей</p>
                 </div>
                 <button class="image-action-btn load-more" id="loadMoreEntriesBtn" data-i18n="loadMoreEntries">Загрузить еще</button>
             </div>
@@ -433,7 +432,7 @@
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="config.js?v=13"></script>
-    <script src="translations.js?v=19"></script>
-    <script src="app.js?v=24"></script>
+    <script src="translations.js?v=20"></script>
+    <script src="app.js?v=25"></script>
 </body>
 </html>

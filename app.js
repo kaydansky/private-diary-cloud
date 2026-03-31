@@ -1379,137 +1379,36 @@ class DiaryApp {
         this.showLoadingOverlay();
         try {
             const lastDay = new Date(year, month + 1, 0).getDate();
+            const startDate = `${monthKey}-01`;
+            const endDate = `${monthKey}-${String(lastDay).padStart(2, '0')}`;
             
-            // Load diary entries and include parent entry data (if any)
-            const { data: entriesData } = await this.supabase
-                .from('diary_entries')
-                .select('*, parent_entry:parent_entry_id (id, username, created_at, text)')
-                .gte('date', `${monthKey}-01`)
-                .lte('date', `${monthKey}-${String(lastDay).padStart(2, '0')}`)
-                .or(`fire_time.is.null,fire_time.lte.now`)
-                .order('date', { ascending: true });
+            // Fetch diary entries and polls for the month using helpers
+            const [entriesData, pollsData] = await Promise.all([
+                this._fetchDiaryEntries({ dateRange: [startDate, endDate] }),
+                this._fetchPolls({ dateRange: [startDate, endDate] })
+            ]);
 
+            // Group entries by date
             this.entries = {};
-            entriesData?.forEach(entry => {
+            
+            // Process diary entries
+            entriesData.forEach(entry => {
                 if (!this.entries[entry.date]) this.entries[entry.date] = [];
-                this.entries[entry.date].push({
-                    id: entry.id,
-                    user_id: entry.user_id,
-                    username: entry.username || null,
-                    text: entry.text,
-                    images: entry.images || [],
-                    createdAt: entry.created_at,
-                    updatedAt: entry.updated_at,
-                    isEdited: entry.is_edited || false,
-                    editDate: entry.edit_date || null,
-                    originalText: entry.text,
-                    originalImages: [...(entry.images || [])],
-                    type: 'entry',
-                    parentEntry: entry.parent_entry ? {
-                        id: entry.parent_entry.id,
-                        username: entry.parent_entry.username || null,
-                        text: this.truncateQuote(entry.parent_entry.text) || null,
-                        createdAt: entry.parent_entry.created_at
-                    } : null
-                });
+                this.entries[entry.date].push(this._processDiaryEntry(entry, null));
             });
 
-            // Load polls for the month
-            const { data: pollsData } = await this.supabase
-                .from('polls')
-                .select(`
-                    id,
-                    user_id,
-                    question,
-                    date,
-                    created_at,
-                    username,
-                    images,
-                    poll_options (
-                        id,
-                        option_text,
-                        position
-                    )
-                `)
-                .gte('date', `${monthKey}-01`)
-                .lte('date', `${monthKey}-${String(lastDay).padStart(2, '0')}`)
-                .order('date', { ascending: true });
-
-            // Add polls to entries
-            pollsData?.forEach(poll => {
+            // Process polls
+            pollsData.forEach(poll => {
                 const pollDate = poll.date;
                 if (!this.entries[pollDate]) this.entries[pollDate] = [];
-                
-                // Format options with vote counts (will be updated when votes are loaded)
-                const options = poll.poll_options.map(option => ({
-                    id: option.id,
-                    text: option.option_text,
-                    position: option.position,
-                    votes: 0 // Will be updated when votes are loaded
-                })).sort((a, b) => a.position - b.position);
-                
-                this.entries[pollDate].push({
-                    id: poll.id,
-                    user_id: poll.user_id,
-                    question: poll.question,
-                    options: options,
-                    createdAt: poll.created_at,
-                    username: poll.username || null,
-                    images: poll.images || [],
-                    type: 'poll'
-                });
+                this.entries[pollDate].push(this._processPoll(poll, null));
             });
 
-            // Load vote counts for all polls
-            const pollIds = pollsData?.map(poll => poll.id) || [];
+            // Load poll vote counts and user votes
+            const pollIds = pollsData.map(poll => poll.id);
             if (pollIds.length > 0) {
-                // Get vote counts for all options in these polls
-                const { data: voteCounts, error } = await this.supabase
-                    .rpc('get_poll_vote_counts', { poll_ids: pollIds });
-                
-                // Update vote counts in the entries
-                voteCounts?.forEach(voteCount => {
-                    // Find the poll and option to update
-                    for (const date in this.entries) {
-                        const poll = this.entries[date].find(entry =>
-                            entry.type === 'poll' &&
-                            entry.options.some(option => option.id === voteCount.option_id)
-                        );
-                        
-                        if (poll) {
-                            const option = poll.options.find(opt => opt.id === voteCount.option_id);
-                            if (option) {
-                                option.votes = voteCount.vote_count || 0;
-                                break;
-                            }
-                        }
-                    }
-                });
-                
-                // Load user votes for these polls
-                if (this.user) {
-                    const { data: userVotes, error: userVotesError } = await this.supabase
-                        .from('poll_votes')
-                        .select('poll_id, option_id, user_id')
-                        .in('poll_id', pollIds)
-                        .eq('user_id', this.user.id);
-                    
-                    // Add user votes to poll entries
-                    if (userVotes) {
-                        userVotes.forEach(userVote => {
-                            for (const date in this.entries) {
-                                const poll = this.entries[date].find(entry =>
-                                    entry.type === 'poll' && entry.id === userVote.poll_id
-                                );
-                                
-                                if (poll) {
-                                    poll.userVote = userVote;
-                                    break;
-                                }
-                            }
-                        });
-                    }
-                }
+                await this._loadPollVoteCounts(pollIds);
+                await this._loadUserVotesForPolls(pollIds);
             }
 
             await this.loadLikeDislikeData();
@@ -1570,6 +1469,246 @@ class DiaryApp {
             }
         } catch (error) {
             console.error('Ошибка загрузки лайков/дизлайков:', error);
+        }
+    }
+
+    // Helper to fetch diary entries with optional filters
+    async _fetchDiaryEntries({ dateRange, userId, date, limit, offset } = {}) {
+        let query = this.supabase
+            .from('diary_entries')
+            .select('*, parent_entry:parent_entry_id (id, username, created_at, text)')
+            .or(`fire_time.is.null,fire_time.lte.now`);
+
+        if (dateRange) {
+            const [start, end] = dateRange;
+            query = query.gte('date', start).lte('date', end);
+        }
+        if (userId) {
+            query = query.eq('user_id', userId);
+        }
+        if (date) {
+            query = query.eq('date', date);
+        }
+
+        // Apply ordering: if userId is provided, order descending (newest first);
+        // otherwise order ascending (chronological)
+        if (userId) {
+            query = query.order('created_at', { ascending: false });
+        } else {
+            query = query.order('created_at', { ascending: true });
+        }
+
+        if (limit) {
+            query = query.limit(limit);
+        }
+        if (offset) {
+            query = query.range(offset, offset + (limit || 1) - 1);
+        }
+
+        const { data, error } = await query;
+        if (error) {
+            console.error('Error fetching diary entries:', error);
+            return [];
+        }
+        return data || [];
+    }
+
+    // Helper to fetch polls with optional filters
+    async _fetchPolls({ dateRange, userId, date, limit, offset } = {}) {
+        let query = this.supabase
+            .from('polls')
+            .select(`
+                id,
+                user_id,
+                question,
+                date,
+                created_at,
+                username,
+                images,
+                poll_options (id, option_text, position)
+            `);
+
+        if (dateRange) {
+            const [start, end] = dateRange;
+            query = query.gte('date', start).lte('date', end);
+        }
+        if (userId) {
+            query = query.eq('user_id', userId);
+        }
+        if (date) {
+            query = query.eq('date', date);
+        }
+
+        // Apply ordering: if userId is provided, order descending (newest first);
+        // otherwise order ascending (chronological)
+        if (userId) {
+            query = query.order('created_at', { ascending: false });
+        } else {
+            query = query.order('created_at', { ascending: true });
+        }
+
+        if (limit) {
+            query = query.limit(limit);
+        }
+        if (offset) {
+            query = query.range(offset, offset + (limit || 1) - 1);
+        }
+
+        const { data, error } = await query;
+        if (error) {
+            console.error('Error fetching polls:', error);
+            return [];
+        }
+        return data || [];
+    }
+
+    // Process a raw diary entry into standardized format
+    _processDiaryEntry(entry, usernameFallback = null) {
+        return {
+            id: entry.id,
+            user_id: entry.user_id,
+            username: entry.username || usernameFallback,
+            text: entry.text,
+            images: entry.images || [],
+            createdAt: entry.created_at,
+            updatedAt: entry.updated_at,
+            isEdited: entry.is_edited || false,
+            editDate: entry.edit_date || null,
+            originalText: entry.text,
+            originalImages: [...(entry.images || [])],
+            type: 'entry',
+            date: entry.date,
+            parentEntry: entry.parent_entry ? {
+                id: entry.parent_entry.id,
+                username: entry.parent_entry.username || null,
+                text: this.truncateQuote(entry.parent_entry.text) || null,
+                createdAt: entry.parent_entry.created_at
+            } : null
+        };
+    }
+
+    // Process a raw poll into standardized format
+    _processPoll(poll, usernameFallback = null) {
+        const options = poll.poll_options.map(option => ({
+            id: option.id,
+            text: option.option_text,
+            position: option.position,
+            votes: 0
+        })).sort((a, b) => a.position - b.position);
+
+        return {
+            id: poll.id,
+            user_id: poll.user_id,
+            question: poll.question,
+            options: options,
+            createdAt: poll.created_at,
+            username: poll.username || usernameFallback,
+            images: poll.images || [],
+            type: 'poll',
+            date: poll.date
+        };
+    }
+
+    // Load poll vote counts for given poll IDs and update entries
+    async _loadPollVoteCounts(pollIds, targetEntries = null) {
+        if (!pollIds || pollIds.length === 0) return;
+
+        try {
+            const { data: voteCounts } = await this.supabase
+                .rpc('get_poll_vote_counts', { poll_ids: pollIds });
+
+            if (!voteCounts) return;
+
+            // Determine which entries to update
+            const entriesToUpdate = targetEntries || this.entries;
+            const isGroupedByDate = targetEntries === null ||
+                (typeof entriesToUpdate === 'object' && !Array.isArray(entriesToUpdate));
+
+            if (isGroupedByDate) {
+                // Update vote counts in grouped entries (by date)
+                voteCounts.forEach(voteCount => {
+                    for (const date in entriesToUpdate) {
+                        const poll = entriesToUpdate[date].find(entry =>
+                            entry.type === 'poll' &&
+                            entry.options.some(option => option.id === voteCount.option_id)
+                        );
+                        
+                        if (poll) {
+                            const option = poll.options.find(opt => opt.id === voteCount.option_id);
+                            if (option) {
+                                option.votes = voteCount.vote_count || 0;
+                                break;
+                            }
+                        }
+                    }
+                });
+            } else {
+                // Update vote counts in flat array
+                voteCounts.forEach(voteCount => {
+                    const poll = entriesToUpdate.find(entry =>
+                        entry.type === 'poll' &&
+                        entry.options.some(option => option.id === voteCount.option_id)
+                    );
+                    
+                    if (poll) {
+                        const option = poll.options.find(opt => opt.id === voteCount.option_id);
+                        if (option) {
+                            option.votes = voteCount.vote_count || 0;
+                        }
+                    }
+                });
+            }
+        } catch (error) {
+            console.error('Error loading poll vote counts:', error);
+        }
+    }
+
+    // Load user votes for given poll IDs and update entries
+    async _loadUserVotesForPolls(pollIds, targetEntries = null) {
+        if (!this.user || !pollIds || pollIds.length === 0) return;
+
+        try {
+            const { data: userVotes } = await this.supabase
+                .from('poll_votes')
+                .select('poll_id, option_id, user_id')
+                .in('poll_id', pollIds)
+                .eq('user_id', this.user.id);
+
+            if (!userVotes) return;
+
+            // Determine which entries to update
+            const entriesToUpdate = targetEntries || this.entries;
+            const isGroupedByDate = targetEntries === null ||
+                (typeof entriesToUpdate === 'object' && !Array.isArray(entriesToUpdate));
+
+            if (isGroupedByDate) {
+                // Update user votes in grouped entries (by date)
+                userVotes.forEach(userVote => {
+                    for (const date in entriesToUpdate) {
+                        const poll = entriesToUpdate[date].find(entry =>
+                            entry.type === 'poll' && entry.id === userVote.poll_id
+                        );
+                        
+                        if (poll) {
+                            poll.userVote = userVote;
+                            break;
+                        }
+                    }
+                });
+            } else {
+                // Update user votes in flat array
+                userVotes.forEach(userVote => {
+                    const poll = entriesToUpdate.find(entry =>
+                        entry.type === 'poll' && entry.id === userVote.poll_id
+                    );
+                    
+                    if (poll) {
+                        poll.userVote = userVote;
+                    }
+                });
+            }
+        } catch (error) {
+            console.error('Error loading user votes for polls:', error);
         }
     }
 
@@ -2379,7 +2518,22 @@ class DiaryApp {
         if (entry.username) {
             const authorDiv = document.createElement('div');
             authorDiv.className = 'entry-author';
-            authorDiv.innerHTML = `— ${this.escapeHtml(entry.username)} <br> `;
+            
+            // Dash and clickable username
+            const dashText = document.createTextNode('— ');
+            authorDiv.appendChild(dashText);
+            
+            const usernameSpan = document.createElement('span');
+            usernameSpan.className = 'clickable-username';
+            usernameSpan.setAttribute('title', this.t('viewUserEntries'));
+            usernameSpan.textContent = entry.username;
+            usernameSpan.addEventListener('click', () => {
+                this.showUserEntriesModal(entry.user_id, entry.username);
+            });
+            authorDiv.appendChild(usernameSpan);
+            
+            const br = document.createElement('br');
+            authorDiv.appendChild(br);
 
             const timeSpan = document.createElement('span');
             timeSpan.className = 'entry-time';
@@ -2534,8 +2688,23 @@ class DiaryApp {
             const authorDiv = document.createElement('div');
             authorDiv.className = 'entry-author';
 
+            // Dash and clickable username
+            const dashText = document.createTextNode('— ');
+            authorDiv.appendChild(dashText);
+            
+            const usernameSpan = document.createElement('span');
+            usernameSpan.className = 'clickable-username';
+            usernameSpan.setAttribute('title', this.t('viewUserEntries'));
+            usernameSpan.textContent = poll.username;
+            usernameSpan.addEventListener('click', () => {
+                this.showUserEntriesModal(poll.user_id, poll.username);
+            });
+
             const pollTime = poll.createdAt ? new Date(poll.createdAt).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }) : '';
-            authorDiv.innerHTML = `— ${this.escapeHtml(poll.username)} &bull; ${pollTime} <br> `;
+            const timeSpan = document.createElement('span');
+            timeSpan.innerHTML = ` &bull; ${pollTime} <br> `;
+            authorDiv.appendChild(usernameSpan);
+            authorDiv.appendChild(timeSpan);
 
             const countdownSpan = document.createElement('span');
             countdownSpan.className = 'poll-countdown';
@@ -2630,6 +2799,40 @@ class DiaryApp {
         // }
 
         li.appendChild(actionsDiv);
+        
+        // Make the entire poll clickable to navigate to its date
+        li.style.cursor = 'pointer';
+        li.addEventListener('click', (e) => {
+            // Don't trigger if clicking on interactive elements
+            if (e.target.closest('input[type="radio"]') || e.target.closest('.menu-btn')) {
+                return;
+            }
+            
+            const pollDate = date; // date parameter is poll.date
+            if (pollDate) {
+                const [year, month, day] = pollDate.split('-').map(Number);
+                this.currentDate = new Date(year, month - 1, day);
+                this.selectedDate = pollDate;
+                
+                // Close the user entries modal if it's open
+                if (this.modalManager.isVisible('userEntries')) {
+                    this.hideUserEntriesModal();
+                }
+
+                if (this.modalManager.isVisible('people')) {
+                    this.hidePeopleModal();
+                }
+                
+                // Navigate to the poll's date
+                this.loadEntriesForMonth(year, month - 1).then(() => {
+                    this.renderCalendar();
+                    this.showEntries(pollDate);
+                    this.entriesSection.classList.remove('hidden');
+                    this.scrollToEntry(poll.id);
+                });
+            }
+        });
+
         return li;
     }
 
@@ -4101,7 +4304,6 @@ class DiaryApp {
 
     // Show user entries modal
     async showUserEntriesModal(userId, username) {
-        console.log('showUserEntriesModal called with:', { userId, username });
         // Store current viewing user
         this.currentViewingUserId = userId;
         this.currentViewingUsername = username;
@@ -4134,10 +4336,8 @@ class DiaryApp {
         this.userEntriesHasMore = true;
         
         try {
-            console.log('Fetching user entries...');
             // Fetch user entries
             const entries = await this.getUserEntries(userId, username, 20, 0);
-            console.log('getUserEntries returned:', entries?.length, 'entries');
             
             // Hide loading
             if (loadingElement) loadingElement.classList.add('hidden');
@@ -4148,8 +4348,7 @@ class DiaryApp {
                 if (emptyElement) emptyElement.classList.remove('hidden');
                 return;
             }
-            
-            console.log('Rendering entries...');
+
             // Render entries
             this.renderUserEntries(entries, listElement);
             
@@ -4161,7 +4360,6 @@ class DiaryApp {
                 this.userEntriesHasMore = false;
             }
             
-            console.log('Showing user entries modal');
             // Show the modal
             this.modalManager.show('userEntries');
             
@@ -4190,6 +4388,13 @@ class DiaryApp {
             }
             
             listElement.appendChild(element);
+        });
+
+        // Load images for entries that have them
+        entries.forEach(entry => {
+            if (entry.images && entry.images.length > 0) {
+                this.loadEntryImages(entry.id, entry.images);
+            }
         });
         
         // Update like/dislike counts for diary entries
@@ -4338,6 +4543,39 @@ class DiaryApp {
         contentDiv.appendChild(imagesDiv);
 
         li.appendChild(contentDiv);
+
+        // Make the entire entry clickable to navigate to its date
+        li.style.cursor = 'pointer';
+        li.addEventListener('click', (e) => {
+            // Don't trigger if clicking on the parent entry quote (it has its own handler)
+            if (e.target.closest('.reply-quote')) {
+                return;
+            }
+
+            const entryDate = date; // date parameter is entry.date
+            if (entryDate) {
+                const [year, month, day] = entryDate.split('-').map(Number);
+                this.currentDate = new Date(year, month - 1, day);
+                this.selectedDate = entryDate;
+
+                // Close the user entries modal if it's open
+                if (this.modalManager.isVisible('userEntries')) {
+                    this.hideUserEntriesModal();
+                }
+
+                if (this.modalManager.isVisible('people')) {
+                    this.hidePeopleModal();
+                }
+
+                // Navigate to the entry's date
+                this.loadEntriesForMonth(year, month - 1).then(() => {
+                    this.renderCalendar();
+                    this.showEntries(entryDate);
+                    this.entriesSection.classList.remove('hidden');
+                    this.scrollToEntry(entry.id);
+                });
+            }
+        });
 
         return li;
     }
@@ -5142,128 +5380,36 @@ class DiaryApp {
     async getUserEntries(userId, username, limit = 50, offset = 0) {
         // console.log('getUserEntries called with:', { userId, username, limit, offset });
         try {
-            // Get diary entries for the user - use same query pattern as loadEntriesForMonth
-            const { data: entriesData, error: entriesError } = await this.supabase
-                .from('diary_entries')
-                .select('*, parent_entry:parent_entry_id (id, username, created_at, text)')
-                .eq('user_id', userId)
-                .or(`fire_time.is.null,fire_time.lte.now`)
-                .order('created_at', { ascending: false })
-                .range(offset, offset + limit - 1);
-
-            // if (entriesError) {
-            //     console.error('Error fetching user diary entries:', entriesError);
-            //     console.error('Entries error details:', entriesError.message, entriesError.details, entriesError.hint);
-            // } else {
-            //     console.log('Diary entries fetched:', entriesData?.length);
-            //     console.log('Diary entries data sample:', entriesData?.slice(0, 2));
-            // }
-
-            // Get polls for the user
-            const { data: pollsData, error: pollsError } = await this.supabase
-                .from('polls')
-                .select(`
-                    id,
-                    user_id,
-                    question,
-                    date,
-                    created_at,
-                    username,
-                    images,
-                    poll_options (id, option_text, position)
-                `)
-                .eq('user_id', userId)
-                .order('created_at', { ascending: false })
-                .range(offset, offset + limit - 1);
-
-            // if (pollsError) {
-            //     console.error('Error fetching user polls:', pollsError);
-            //     console.error('Polls error details:', pollsError.message, pollsError.details, pollsError.hint);
-            // } else {
-            //     console.log('Polls fetched:', pollsData?.length);
-            //     console.log('Polls data sample:', pollsData?.slice(0, 2));
-            // }
+            // Fetch diary entries and polls using helper functions
+            const [entriesData, pollsData] = await Promise.all([
+                this._fetchDiaryEntries({ userId, limit, offset }),
+                this._fetchPolls({ userId, limit, offset })
+            ]);
 
             // Combine and format entries
             const userEntries = [];
 
             // Process diary entries
             entriesData?.forEach(entry => {
-                userEntries.push({
-                    id: entry.id,
-                    user_id: entry.user_id,
-                    username: entry.username || username,
-                    text: entry.text,
-                    images: entry.images || [],
-                    createdAt: entry.created_at,
-                    updatedAt: entry.updated_at,
-                    isEdited: entry.is_edited || false,
-                    editDate: entry.edit_date || null,
-                    originalText: entry.text,
-                    originalImages: [...(entry.images || [])],
-                    type: 'entry',
-                    date: entry.date,
-                    parentEntry: entry.parent_entry ? {
-                        id: entry.parent_entry.id,
-                        username: entry.parent_entry.username || null,
-                        text: this.truncateQuote(entry.parent_entry.text) || null,
-                        createdAt: entry.parent_entry.created_at
-                    } : null
-                });
+                userEntries.push(this._processDiaryEntry(entry, username));
             });
 
             // Process polls
             pollsData?.forEach(poll => {
-                const options = poll.poll_options.map(option => ({
-                    id: option.id,
-                    text: option.option_text,
-                    position: option.position,
-                    votes: 0
-                })).sort((a, b) => a.position - b.position);
-
-                userEntries.push({
-                    id: poll.id,
-                    user_id: poll.user_id,
-                    question: poll.question,
-                    options: options,
-                    createdAt: poll.created_at,
-                    username: poll.username || username,
-                    images: poll.images || [],
-                    type: 'poll',
-                    date: poll.date
-                });
+                userEntries.push(this._processPoll(poll, username));
             });
 
             // Sort by creation date (newest first)
             userEntries.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
             // console.log('Total user entries after processing:', userEntries.length);
 
-            // Load vote counts for polls
+            // Load vote counts for polls using the helper
             const pollIds = pollsData?.map(poll => poll.id) || [];
             if (pollIds.length > 0) {
-                try {
-                    const { data: voteCounts } = await this.supabase
-                        .rpc('get_poll_vote_counts', { poll_ids: pollIds });
-
-                    // Update vote counts in the entries
-                    voteCounts?.forEach(voteCount => {
-                        const poll = userEntries.find(entry =>
-                            entry.type === 'poll' &&
-                            entry.options.some(option => option.id === voteCount.option_id)
-                        );
-
-                        if (poll) {
-                            const option = poll.options.find(opt => opt.id === voteCount.option_id);
-                            if (option) {
-                                option.votes = voteCount.vote_count || 0;
-                            }
-                        }
-                    });
-                } catch (error) {
-                    console.error('Error loading poll vote counts:', error);
-                }
+                await this._loadPollVoteCounts(pollIds, userEntries);
             }
 
+            // Note: getUserEntries does NOT load user votes or like/dislike data
             // console.log('getUserEntries returning:', userEntries.length, 'entries');
             return userEntries;
         } catch (error) {
@@ -5277,126 +5423,30 @@ class DiaryApp {
 
         this.showLoadingOverlay();
         try {
-            // Query only the selected date
-            const { data: entriesData } = await this.supabase
-                .from('diary_entries')
-                .select('*, parent_entry:parent_entry_id (id, username, created_at, text)')
-                .eq('date', this.selectedDate)
-                .or(`fire_time.is.null,fire_time.lte.now`)
-                .order('created_at', { ascending: true });
-
-            // Query polls for the selected date
-            const { data: pollsData } = await this.supabase
-                .from('polls')
-                .select(`
-                    id,
-                    user_id,
-                    question,
-                    date,
-                    created_at,
-                    username,
-                    images,
-                    poll_options (id, option_text, position)
-                `)
-                .eq('date', this.selectedDate)
-                .order('created_at', { ascending: true });
+            // Fetch entries and polls for the selected date using helper functions
+            const [entriesData, pollsData] = await Promise.all([
+                this._fetchDiaryEntries({ date: this.selectedDate }),
+                this._fetchPolls({ date: this.selectedDate })
+            ]);
 
             // Clear and rebuild entries for this date
             this.entries[this.selectedDate] = [];
 
             // Process diary entries
             entriesData?.forEach(entry => {
-                this.entries[this.selectedDate].push({
-                    id: entry.id,
-                    user_id: entry.user_id,
-                    username: entry.username || null,
-                    text: entry.text,
-                    images: entry.images || [],
-                    createdAt: entry.created_at,
-                    updatedAt: entry.updated_at,
-                    isEdited: entry.is_edited || false,
-                    editDate: entry.edit_date || null,
-                    originalText: entry.text,
-                    originalImages: [...(entry.images || [])],
-                    type: 'entry',
-                    parentEntry: entry.parent_entry ? {
-                        id: entry.parent_entry.id,
-                        username: entry.parent_entry.username || null,
-                        text: this.truncateQuote(entry.parent_entry.text) || null,
-                        createdAt: entry.parent_entry.created_at
-                    } : null
-                });
+                this.entries[this.selectedDate].push(this._processDiaryEntry(entry));
             });
 
             // Process polls
             pollsData?.forEach(poll => {
-                const options = poll.poll_options.map(option => ({
-                    id: option.id,
-                    text: option.option_text,
-                    position: option.position,
-                    votes: 0
-                })).sort((a, b) => a.position - b.position);
-
-                this.entries[this.selectedDate].push({
-                    id: poll.id,
-                    user_id: poll.user_id,
-                    question: poll.question,
-                    options: options,
-                    createdAt: poll.created_at,
-                    username: poll.username || null,
-                    images: poll.images || [],
-                    type: 'poll'
-                });
+                this.entries[this.selectedDate].push(this._processPoll(poll));
             });
 
-            // Load vote counts for polls
+            // Load vote counts and user votes for polls
             const pollIds = pollsData?.map(poll => poll.id) || [];
             if (pollIds.length > 0) {
-                // Get vote counts for all options in these polls
-                const { data: voteCounts } = await this.supabase
-                    .rpc('get_poll_vote_counts', { poll_ids: pollIds });
-
-                // Update vote counts in the entries
-                voteCounts?.forEach(voteCount => {
-                    for (const date in this.entries) {
-                        const poll = this.entries[date].find(entry =>
-                            entry.type === 'poll' &&
-                            entry.options.some(option => option.id === voteCount.option_id)
-                        );
-
-                        if (poll) {
-                            const option = poll.options.find(opt => opt.id === voteCount.option_id);
-                            if (option) {
-                                option.votes = voteCount.vote_count || 0;
-                                break;
-                            }
-                        }
-                    }
-                });
-
-                // Load user votes for these polls
-                if (this.user) {
-                    const { data: userVotes } = await this.supabase
-                        .from('poll_votes')
-                        .select('poll_id, option_id, user_id')
-                        .in('poll_id', pollIds)
-                        .eq('user_id', this.user.id);
-
-                    if (userVotes) {
-                        userVotes.forEach(userVote => {
-                            for (const date in this.entries) {
-                                const poll = this.entries[date].find(entry =>
-                                    entry.type === 'poll' && entry.id === userVote.poll_id
-                                );
-
-                                if (poll) {
-                                    poll.userVote = userVote;
-                                    break;
-                                }
-                            }
-                        });
-                    }
-                }
+                await this._loadPollVoteCounts(pollIds);
+                await this._loadUserVotesForPolls(pollIds);
             }
 
             // Load like/dislike data

@@ -165,7 +165,8 @@ const translations = {
         loadError: 'Load error',
         noUserEntries: 'No entries found for this user',
         loadMoreEntries: 'Load more entries',
-        backToPeople: 'Back to people list'
+        backToPeople: 'Back to people list',
+        viewUserEntries: 'View user entries'
     },
     fr: {
         appTitle: 'Journal Privé Cloud',
@@ -333,7 +334,8 @@ const translations = {
         loadError: 'Erreur de chargement',
         noUserEntries: 'Aucune entrée trouvée pour cet utilisateur',
         loadMoreEntries: 'Charger plus d\'entrées',
-        backToPeople: 'Retour à la liste des personnes'
+        backToPeople: 'Retour à la liste des personnes',
+        viewUserEntries: 'Voir les entrées de l\'utilisateur'
     },
     de: {
         appTitle: 'Tagebuch Cloud',
@@ -502,7 +504,8 @@ const translations = {
         loadError: 'Ladefehler',
         noUserEntries: 'Keine Einträge für diesen Benutzer gefunden',
         loadMoreEntries: 'Weitere Einträge laden',
-        backToPeople: 'Zurück zur Personenliste'
+        backToPeople: 'Zurück zur Personenliste',
+        viewUserEntries: 'Benutzereinträge anzeigen'
     },
     ru: {
         appTitle: 'Тишинка',
@@ -670,6 +673,7 @@ const translations = {
         loadError: 'Ошибка загрузки',
         noUserEntries: 'Записей не найдено',
         loadMoreEntries: 'Загрузить ещё',
-        backToPeople: 'Назад к списку пользователей'
+        backToPeople: 'Назад к списку пользователей',
+        viewUserEntries: 'Посмотреть все записи пользователя'
     }
 };

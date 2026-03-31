@@ -159,7 +159,13 @@ const translations = {
         errorSavingEntry: 'Error saving entry',
         replyingTo: 'Replying to',
         editedAt: 'Edited at',
-        refreshBtn: 'Refresh'
+        refreshBtn: 'Refresh',
+        userEntriesTitle: 'User Entries',
+        viewingUserEntries: 'Viewing entries by',
+        loadError: 'Load error',
+        noUserEntries: 'No entries found for this user',
+        loadMoreEntries: 'Load more entries',
+        backToPeople: 'Back to people list'
     },
     fr: {
         appTitle: 'Journal Privé Cloud',
@@ -321,7 +327,13 @@ const translations = {
         errorSavingEntry: 'Erreur lors de la sauvegarde de l\'entrée',
         replyingTo: 'Répondez à',
         editedAt: 'Modifié à',
-        refreshBtn: 'Actualiser'
+        refreshBtn: 'Actualiser',
+        userEntriesTitle: 'Entrées utilisateur',
+        viewingUserEntries: 'Affichage des entrées de',
+        loadError: 'Erreur de chargement',
+        noUserEntries: 'Aucune entrée trouvée pour cet utilisateur',
+        loadMoreEntries: 'Charger plus d\'entrées',
+        backToPeople: 'Retour à la liste des personnes'
     },
     de: {
         appTitle: 'Tagebuch Cloud',
@@ -484,7 +496,13 @@ const translations = {
         errorSavingEntry: 'Fehler beim Speichern des Eintrags',
         replyingTo: 'Antwortieren von',
         editedAt: 'Bearbeitet um',
-        refreshBtn: 'Schritt neu'
+        refreshBtn: 'Schritt neu',
+        userEntriesTitle: 'Benutzereinträge',
+        viewingUserEntries: 'Anzeigen von Einträgen von',
+        loadError: 'Ladefehler',
+        noUserEntries: 'Keine Einträge für diesen Benutzer gefunden',
+        loadMoreEntries: 'Weitere Einträge laden',
+        backToPeople: 'Zurück zur Personenliste'
     },
     ru: {
         appTitle: 'Тишинка',
@@ -646,6 +664,12 @@ const translations = {
         replyingTo: 'В ответ на:',
         editedAt: 'Изменено в',
         refreshBtn: 'Обновить',
-        plotNumber: 'Номер участка'
+        plotNumber: 'Номер участка',
+        userEntriesTitle: 'Записи пользователя',
+        viewingUserEntries: 'Просмотр записей пользователя',
+        loadError: 'Ошибка загрузки',
+        noUserEntries: 'Записей не найдено',
+        loadMoreEntries: 'Загрузить ещё',
+        backToPeople: 'Назад к списку пользователей'
     }
 };

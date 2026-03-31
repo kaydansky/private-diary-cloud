@@ -666,6 +666,7 @@ class DiaryApp {
 
     // Initialize app after authentication
     async init() {
+        console.log('DiaryApp init called');
         this.initTheme();
         this.initEventListeners();
         
@@ -1263,6 +1264,15 @@ class DiaryApp {
         document.getElementById('deleteAccountBtn').addEventListener('click', () => this.deleteAccountConfirm());
         document.getElementById('cancelAccountBtn').addEventListener('click', () => this.hideAccountModal());
         document.getElementById('cancelPeopleBtn').addEventListener('click', () => this.hidePeopleModal());
+        
+        // User entries modal event listeners
+        document.getElementById('backToPeopleBtn').addEventListener('click', () => {
+            this.hideUserEntriesModal();
+            this.showPeopleModal();
+        });
+        document.getElementById('closeUserEntriesBtn').addEventListener('click', () => this.hideUserEntriesModal());
+        document.getElementById('loadMoreEntriesBtn').addEventListener('click', () => this.loadMoreUserEntries());
+        
         // document.getElementById('clearCacheBtn').addEventListener('click', () => this.clearCache());
         document.addEventListener('click', () => this.hideHeaderMenu());
         this.yearSelect.addEventListener('change', () => this.resetMonthSelect());
@@ -1332,6 +1342,15 @@ class DiaryApp {
         // Info modals
         this.modalManager.register('howItWorks', 'howItWorksModal', () => this.hideHeaderMenu());
         this.modalManager.register('people', 'peopleModal', null, () => this.hideHeaderMenu());
+        this.modalManager.register('userEntries', 'userEntriesModal', null, () => {
+            this.currentViewingUserId = null;
+            this.currentViewingUsername = null;
+            this.userEntriesOffset = 0;
+            document.getElementById('userEntriesList').innerHTML = '';
+            document.getElementById('userEntriesLoading').classList.add('hidden');
+            document.getElementById('userEntriesEmpty').classList.add('hidden');
+            document.getElementById('loadMoreEntriesBtn').classList.add('hidden');
+        });
     }
 
     // Load entries for specific month from Supabase
@@ -4003,6 +4022,7 @@ class DiaryApp {
 
             if (!error && data && data.length > 0) {
                 users = data.map(u => ({
+                    id: u.id,
                     username: u?.username || u.email || 'Unknown',
                     created_at: u.created_at
                 }));
@@ -4026,10 +4046,18 @@ class DiaryApp {
                         const seen = map.get(key);
                         const created = e.created_at ? new Date(e.created_at) : null;
                         if (!seen) {
-                            map.set(key, { username: e.username || 'Unknown', created_at: e.created_at });
+                            map.set(key, {
+                                id: e.user_id,
+                                username: e.username || 'Unknown',
+                                created_at: e.created_at
+                            });
                         } else if (created && new Date(seen.created_at) > created) {
                             // keep earliest seen date as registration proxy
-                            map.set(key, { username: e.username || 'Unknown', created_at: e.created_at });
+                            map.set(key, {
+                                id: e.user_id,
+                                username: e.username || 'Unknown',
+                                created_at: e.created_at
+                            });
                         }
                     });
                 }
@@ -4040,15 +4068,25 @@ class DiaryApp {
             }
         }
 
-        // Render to people list in the modal as plain list items with shortened date
+        // Render to people list in the modal as clickable list items with shortened date
         const peopleList = document.getElementById('peopleList');
         if (peopleList) {
             peopleList.innerHTML = '';
             const dateOpts = { year: 'numeric', month: 'short', day: 'numeric' };
             users.forEach(u => {
                 const li = document.createElement('li');
+                li.className = 'clickable-user-item';
+                li.dataset.userId = u.id || '';
+                li.dataset.username = u.username || 'Unknown';
+                
                 const dateStr = u.created_at ? new Date(u.created_at).toLocaleDateString('ru-Ru', dateOpts) : '';
                 li.textContent = dateStr ? `${u.username} — ${dateStr}` : u.username;
+                
+                // Add click handler to show user entries
+                li.addEventListener('click', () => {
+                    this.showUserEntriesModal(u.id, u.username);
+                });
+                
                 peopleList.appendChild(li);
             });
         }
@@ -4059,6 +4097,300 @@ class DiaryApp {
     // Hide people modal
     hidePeopleModal() {
         this.modalManager.hide('people');
+    }
+
+    // Show user entries modal
+    async showUserEntriesModal(userId, username) {
+        console.log('showUserEntriesModal called with:', { userId, username });
+        // Store current viewing user
+        this.currentViewingUserId = userId;
+        this.currentViewingUsername = username;
+        
+        // Update modal title and user info
+        const titleElement = document.getElementById('userEntriesTitle');
+        const infoElement = document.getElementById('userEntriesInfo');
+        
+        if (titleElement) {
+            titleElement.textContent = `${this.t('userEntriesTitle') || 'Записи пользователя'}: ${username}`;
+        }
+        
+        if (infoElement) {
+            infoElement.textContent = `${this.t('viewingUserEntries') || 'Просмотр записей пользователя'}: ${username}`;
+        }
+        
+        // Show loading state
+        const loadingElement = document.getElementById('userEntriesLoading');
+        const emptyElement = document.getElementById('userEntriesEmpty');
+        const listElement = document.getElementById('userEntriesList');
+        const loadMoreBtn = document.getElementById('loadMoreEntriesBtn');
+        
+        if (loadingElement) loadingElement.classList.remove('hidden');
+        if (emptyElement) emptyElement.classList.add('hidden');
+        if (listElement) listElement.innerHTML = '';
+        if (loadMoreBtn) loadMoreBtn.classList.add('hidden');
+        
+        // Reset pagination
+        this.userEntriesOffset = 0;
+        this.userEntriesHasMore = true;
+        
+        try {
+            console.log('Fetching user entries...');
+            // Fetch user entries
+            const entries = await this.getUserEntries(userId, username, 20, 0);
+            console.log('getUserEntries returned:', entries?.length, 'entries');
+            
+            // Hide loading
+            if (loadingElement) loadingElement.classList.add('hidden');
+            
+            if (!entries || entries.length === 0) {
+                console.log('No entries found, showing empty state');
+                // Show empty state
+                if (emptyElement) emptyElement.classList.remove('hidden');
+                return;
+            }
+            
+            console.log('Rendering entries...');
+            // Render entries
+            this.renderUserEntries(entries, listElement);
+            
+            // Show load more button if there might be more entries
+            if (entries.length >= 20 && loadMoreBtn) {
+                loadMoreBtn.classList.remove('hidden');
+                this.userEntriesHasMore = true;
+            } else {
+                this.userEntriesHasMore = false;
+            }
+            
+            console.log('Showing user entries modal');
+            // Show the modal
+            this.modalManager.show('userEntries');
+            
+        } catch (error) {
+            console.error('Failed to load user entries:', error);
+            if (loadingElement) loadingElement.classList.add('hidden');
+            if (emptyElement) {
+                emptyElement.textContent = this.t('loadError') || 'Ошибка загрузки';
+                emptyElement.classList.remove('hidden');
+            }
+        }
+    }
+
+    // Render user entries to the list
+    renderUserEntries(entries, listElement) {
+        if (!listElement) return;
+        
+        entries.forEach(entry => {
+            let element;
+            if (entry.type === 'entry') {
+                element = this.createEntryElementModal(entry, entry.date);
+            } else if (entry.type === 'poll') {
+                element = this.createPollElement(entry, entry.date);
+            } else {
+                return;
+            }
+            
+            listElement.appendChild(element);
+        });
+        
+        // Update like/dislike counts for diary entries
+        const diaryEntryIds = entries
+            .filter(e => e.type === 'entry')
+            .map(e => e.id);
+            
+        if (diaryEntryIds.length > 0) {
+            this.refreshLikeDislikeCounts(diaryEntryIds);
+        }
+        
+        // Update poll countdowns
+        const polls = entries.filter(e => e.type === 'poll');
+        if (polls.length > 0) {
+            this.updatePollCountdowns(polls);
+        }
+    }
+
+    createEntryElementModal(entry, date) {
+        const li = document.createElement('li');
+        li.className = 'entry-item';
+        li.setAttribute('data-entry-id', entry.id);
+        li.dataset.userVote = entry.userVote === true ? 'true' : entry.userVote === false ? 'false' : '';
+
+        const contentDiv = document.createElement('div');
+        contentDiv.className = 'entry-content';
+
+        // Render Parent Entry Quote if exists
+        if (entry.parentEntry) {
+            const quote = document.createElement('div');
+            quote.className = 'reply-quote';
+
+            const date = entry.parentEntry.createdAt 
+            ? new Date(entry.parentEntry.createdAt).toLocaleDateString('ru-Ru', { day: '2-digit', month: '2-digit', year: 'numeric' }) 
+            + ' ' + new Date(entry.parentEntry.createdAt).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit', hour12: false }) 
+            : '';
+            
+            const author = document.createElement('span');
+            author.className = 'reply-quote-author';
+            author.innerHTML = `— ${this.escapeHtml(entry.parentEntry.username)}<br>${date}`;
+            
+            const text = document.createElement('div');
+            text.className = 'reply-quote-text';
+            
+            // Strip footnote references like [1] from the text
+            const cleanParentText = (entry.parentEntry.text || '').replace(/\[\d+\]/g, '');
+            text.innerHTML = this.truncateText(cleanParentText);
+            
+            quote.appendChild(author);
+            quote.appendChild(text);
+            contentDiv.appendChild(quote);
+
+            // Make quote clickable to navigate to parent entry
+            quote.style.cursor = 'pointer';
+            quote.addEventListener('click', () => {
+                const parentDate = entry.parentEntry.createdAt 
+                    ? new Date(entry.parentEntry.createdAt).toISOString().split('T')[0]
+                    : null;
+                if (parentDate && entry.parentEntry.id) {
+                    // Navigate to parent entry using in-app routing (preserves mobile styles)
+                    const [year, month, day] = parentDate.split('-').map(Number);
+                    this.currentDate = new Date(year, month - 1, day);
+                    this.selectedDate = parentDate;
+                    this.loadEntriesForMonth(year, month - 1).then(() => {
+                        this.renderCalendar();
+                        this.showEntries(parentDate);
+                        this.entriesSection.classList.remove('hidden');
+                        this.scrollToEntry(entry.parentEntry.id);
+                    });
+                }
+            });
+        }
+
+        // Add author and time if present
+        if (entry.username) {
+            const authorDiv = document.createElement('div');
+            authorDiv.className = 'entry-author';
+            authorDiv.innerHTML = `— ${this.escapeHtml(entry.username)} <br> `;
+
+            const timeSpan = document.createElement('span');
+            timeSpan.className = 'entry-time';
+            if (entry.createdAt) {
+                const dateStr = new Date(entry.createdAt).toLocaleDateString('ru-Ru', { day: '2-digit', month: '2-digit', year: 'numeric' });
+                const timeStr = new Date(entry.createdAt).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
+                timeSpan.textContent = `${dateStr} ${timeStr}`;
+            }
+            authorDiv.appendChild(timeSpan);
+            
+            // Add edit indicator if entry was edited
+            if (entry.isEdited && entry.editDate) {
+                const editSpan = document.createElement('span');
+                editSpan.className = 'entry-edited';
+                const editTime = new Date(entry.editDate);
+                const formattedTime = editTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
+                editSpan.textContent = ` ${this.t('editedAt')} ${formattedTime}`;
+                authorDiv.appendChild(editSpan);
+            }
+            
+            contentDiv.appendChild(authorDiv);
+        }
+
+        // Entry text
+        const textDiv = document.createElement('div');
+        textDiv.className = 'entry-text';
+        textDiv.style.userSelect = 'none';
+        textDiv.style.webkitUserSelect = 'none';
+
+        // Strip footnote references like [1] from the text
+        const cleanText = (entry.text || '').replace(/\[\d+\]/g, '');
+
+        if (this.searchQuery) {
+            textDiv.innerHTML = this.highlightText(this.truncateText(this.escapeHtml(cleanText)), this.searchQuery);
+        } else {
+            textDiv.innerHTML = this.truncateText(this.escapeHtml(cleanText));
+        }
+        contentDiv.appendChild(textDiv);
+
+        // Long press handler for replying on mobile
+        let longPressTimer;
+        textDiv.addEventListener('touchstart', (e) => {
+            longPressTimer = setTimeout(() => {
+                if (!this.user || this.user.is_anonymous === true) {
+                    alert(this.t('signInToAddEntries'));
+                    return;
+                }
+                this.parentEntry = {
+                    id: entry.id,
+                    username: entry.username || '',
+                    createdAt: entry.createdAt || '',
+                    text: this.truncateQuote(entry.text)
+                };
+                this.showEntryForm();
+            }, 600);
+        }, { passive: true });
+
+        textDiv.addEventListener('touchend', () => clearTimeout(longPressTimer));
+        textDiv.addEventListener('touchmove', () => clearTimeout(longPressTimer));
+
+        // Prevent context menu on Android
+        textDiv.addEventListener('contextmenu', (e) => e.preventDefault());
+
+        // Images container
+        const imagesDiv = document.createElement('div');
+        imagesDiv.className = 'entry-images';
+        imagesDiv.id = `images-${entry.id}`;
+        contentDiv.appendChild(imagesDiv);
+
+        li.appendChild(contentDiv);
+
+        return li;
+    }
+
+    // Load more user entries
+    async loadMoreUserEntries() {
+        if (!this.currentViewingUserId || !this.currentViewingUsername || !this.userEntriesHasMore) {
+            return;
+        }
+        
+        const loadMoreBtn = document.getElementById('loadMoreEntriesBtn');
+        const listElement = document.getElementById('userEntriesList');
+        
+        if (loadMoreBtn) loadMoreBtn.classList.add('hidden');
+        
+        this.userEntriesOffset += 20;
+        
+        try {
+            const entries = await this.getUserEntries(
+                this.currentViewingUserId,
+                this.currentViewingUsername,
+                20,
+                this.userEntriesOffset
+            );
+            
+            if (!entries || entries.length === 0) {
+                this.userEntriesHasMore = false;
+                return;
+            }
+            
+            this.renderUserEntries(entries, listElement);
+            
+            // Show load more button if there might be more entries
+            if (entries.length >= 20 && loadMoreBtn) {
+                loadMoreBtn.classList.remove('hidden');
+            } else {
+                this.userEntriesHasMore = false;
+            }
+            
+        } catch (error) {
+            console.error('Failed to load more user entries:', error);
+            this.userEntriesOffset -= 20; // Revert offset on error
+            if (loadMoreBtn) loadMoreBtn.classList.remove('hidden');
+        }
+    }
+
+    // Hide user entries modal
+    hideUserEntriesModal() {
+        this.modalManager.hide('userEntries');
+        this.currentViewingUserId = null;
+        this.currentViewingUsername = null;
+        this.userEntriesOffset = 0;
+        this.userEntriesHasMore = false;
     }
 
     // Share app
@@ -4803,6 +5135,140 @@ class DiaryApp {
         } catch (error) {
             console.error('Error AI poll voting:', error);
             this.showToast('Failed to generate AI vote');
+        }
+    }
+
+    // Get all entries for a specific user
+    async getUserEntries(userId, username, limit = 50, offset = 0) {
+        // console.log('getUserEntries called with:', { userId, username, limit, offset });
+        try {
+            // Get diary entries for the user - use same query pattern as loadEntriesForMonth
+            const { data: entriesData, error: entriesError } = await this.supabase
+                .from('diary_entries')
+                .select('*, parent_entry:parent_entry_id (id, username, created_at, text)')
+                .eq('user_id', userId)
+                .or(`fire_time.is.null,fire_time.lte.now`)
+                .order('created_at', { ascending: false })
+                .range(offset, offset + limit - 1);
+
+            // if (entriesError) {
+            //     console.error('Error fetching user diary entries:', entriesError);
+            //     console.error('Entries error details:', entriesError.message, entriesError.details, entriesError.hint);
+            // } else {
+            //     console.log('Diary entries fetched:', entriesData?.length);
+            //     console.log('Diary entries data sample:', entriesData?.slice(0, 2));
+            // }
+
+            // Get polls for the user
+            const { data: pollsData, error: pollsError } = await this.supabase
+                .from('polls')
+                .select(`
+                    id,
+                    user_id,
+                    question,
+                    date,
+                    created_at,
+                    username,
+                    images,
+                    poll_options (id, option_text, position)
+                `)
+                .eq('user_id', userId)
+                .order('created_at', { ascending: false })
+                .range(offset, offset + limit - 1);
+
+            // if (pollsError) {
+            //     console.error('Error fetching user polls:', pollsError);
+            //     console.error('Polls error details:', pollsError.message, pollsError.details, pollsError.hint);
+            // } else {
+            //     console.log('Polls fetched:', pollsData?.length);
+            //     console.log('Polls data sample:', pollsData?.slice(0, 2));
+            // }
+
+            // Combine and format entries
+            const userEntries = [];
+
+            // Process diary entries
+            entriesData?.forEach(entry => {
+                userEntries.push({
+                    id: entry.id,
+                    user_id: entry.user_id,
+                    username: entry.username || username,
+                    text: entry.text,
+                    images: entry.images || [],
+                    createdAt: entry.created_at,
+                    updatedAt: entry.updated_at,
+                    isEdited: entry.is_edited || false,
+                    editDate: entry.edit_date || null,
+                    originalText: entry.text,
+                    originalImages: [...(entry.images || [])],
+                    type: 'entry',
+                    date: entry.date,
+                    parentEntry: entry.parent_entry ? {
+                        id: entry.parent_entry.id,
+                        username: entry.parent_entry.username || null,
+                        text: this.truncateQuote(entry.parent_entry.text) || null,
+                        createdAt: entry.parent_entry.created_at
+                    } : null
+                });
+            });
+
+            // Process polls
+            pollsData?.forEach(poll => {
+                const options = poll.poll_options.map(option => ({
+                    id: option.id,
+                    text: option.option_text,
+                    position: option.position,
+                    votes: 0
+                })).sort((a, b) => a.position - b.position);
+
+                userEntries.push({
+                    id: poll.id,
+                    user_id: poll.user_id,
+                    question: poll.question,
+                    options: options,
+                    createdAt: poll.created_at,
+                    username: poll.username || username,
+                    images: poll.images || [],
+                    type: 'poll',
+                    date: poll.date
+                });
+            });
+
+            // Sort by creation date (newest first)
+            userEntries.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+            // console.log('Total user entries after processing:', userEntries.length);
+
+            // Load vote counts for polls
+            const pollIds = pollsData?.map(poll => poll.id) || [];
+            if (pollIds.length > 0) {
+                try {
+                    const { data: voteCounts } = await this.supabase
+                        .rpc('get_poll_vote_counts', { poll_ids: pollIds });
+
+                    // Update vote counts in the entries
+                    voteCounts?.forEach(voteCount => {
+                        const poll = userEntries.find(entry =>
+                            entry.type === 'poll' &&
+                            entry.options.some(option => option.id === voteCount.option_id)
+                        );
+
+                        if (poll) {
+                            const option = poll.options.find(opt => opt.id === voteCount.option_id);
+                            if (option) {
+                                option.votes = voteCount.vote_count || 0;
+                            }
+                        }
+                    });
+                } catch (error) {
+                    console.error('Error loading poll vote counts:', error);
+                }
+            }
+
+            // console.log('getUserEntries returning:', userEntries.length, 'entries');
+            return userEntries;
+        } catch (error) {
+            console.error('Error in getUserEntries:', error);
+            return [];
         }
     }
 

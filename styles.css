@@ -1782,3 +1782,146 @@ label {
     -webkit-text-fill-color: transparent;
     opacity: 0.85;
 }
+
+/* User Entries Modal Styles */
+.user-entries-content {
+    max-height: 80vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.user-entries-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 15px;
+}
+
+.user-entries-header h3 {
+    margin: 0;
+    flex: 1;
+    text-align: center;
+}
+
+.user-entries-back {
+    background: none;
+    border: none;
+    color: var(--text-color);
+    font-size: 1.2rem;
+    cursor: pointer;
+    padding: 5px;
+    border-radius: 50%;
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.user-entries-back:hover {
+    background: var(--day-hover);
+}
+
+.user-entries-info {
+    background: var(--day-bg);
+    border-radius: 10px;
+    padding: 15px;
+    margin-bottom: 15px;
+    text-align: center;
+}
+
+.user-entries-username {
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: var(--text-color);
+    margin-bottom: 5px;
+}
+
+.user-entries-stats {
+    font-size: 0.9rem;
+    color: var(--text-color);
+    opacity: 0.7;
+}
+
+.user-entries-list-container {
+    flex: 1;
+    overflow-y: auto;
+    margin-bottom: 15px;
+    border-radius: 10px;
+    background: var(--entry-bg);
+    padding: 10px;
+}
+
+.user-entries-list-container .entry-list {
+    margin: 0;
+    padding: 0;
+}
+
+.user-entries-list-container .entry-item {
+    margin-bottom: 15px;
+    background: var(--container-bg);
+    border-radius: 10px;
+    padding: 15px;
+}
+
+.user-entries-loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 30px;
+    color: var(--text-color);
+    opacity: 0.7;
+}
+
+.user-entries-loading.hidden {
+    display: none;
+}
+
+.user-entries-loading .loading-spinner.small {
+    width: 30px;
+    height: 30px;
+    margin-bottom: 10px;
+}
+
+.user-entries-empty {
+    text-align: center;
+    padding: 40px 20px;
+    color: var(--text-color);
+    opacity: 0.5;
+}
+
+#loadMoreEntriesBtn {
+    width: 100%;
+    margin-top: 10px;
+    background: var(--add-btn-bg);
+    color: white;
+}
+
+#loadMoreEntriesBtn:hover {
+    background: var(--add-btn-hover);
+}
+
+/* Make people list items clickable */
+#peopleList li {
+    cursor: pointer;
+    padding: 12px 15px;
+    border-radius: 8px;
+    transition: background-color 0.2s;
+    margin-bottom: 5px;
+}
+
+#peopleList li:hover {
+    background: var(--day-hover);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .user-entries-content {
+        max-height: 85vh;
+    }
+    
+    .user-entries-list-container {
+        max-height: 50vh;
+    }
+}

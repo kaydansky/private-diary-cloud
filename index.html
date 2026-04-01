@@ -79,11 +79,14 @@
                     <button class="header-menu-item" id="toggleThemeBtn">
                         <i class="bi bi-moon-fill" id="themeIcon"></i> <span data-i18n="toggleTheme">Toggle Theme</span>
                     </button>
-                    <button class="header-menu-item" id="languageBtn">
+                    <!-- <button class="header-menu-item" id="languageBtn">
                         <i class="bi bi-translate"></i> <span data-i18n="language">Language</span>
-                    </button>
+                    </button> -->
                     <button class="header-menu-item" id="shareAppBtn">
                         <i class="bi bi-share"></i> <span data-i18n="shareApp">Share this app</span>
+                    </button>
+                    <button class="header-menu-item" id="peopleBtn" style="display: none;">
+                        <i class="bi bi-people-fill"></i> <span data-i18n="peopleTitle">Пользователи</span>
                     </button>
                     <button class="header-menu-item" id="howItWorksBtn">
                         <i class="bi bi-info-circle"></i> <span data-i18n="howItWorks">How It Works</span>
@@ -94,9 +97,7 @@
                     <button class="header-menu-item" id="notificationsBtn" style="display: none;">
                         <i class="bi bi-bell"></i> <span data-i18n="turnOnNotifications">Turn On Notifications</span>
                     </button>
-                    <button class="header-menu-item" id="peopleBtn" style="display: none;">
-                        <i class="bi bi-people-fill"></i> <span data-i18n="peopleTitle">Пользователи</span>
-                    </button>
+                    
                     <button class="header-menu-item" id="accountBtn" style="display: none;">
                         <i class="bi bi-person-circle"></i> <span data-i18n="account">Account | {user name}</span>
                     </button>
@@ -431,8 +432,8 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="config.js?v=13"></script>
+    <script src="config.js?v=14"></script>
     <script src="translations.js?v=20"></script>
-    <script src="app.js?v=25"></script>
+    <script src="app.js?v=26"></script>
 </body>
 </html>

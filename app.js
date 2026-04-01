@@ -1254,7 +1254,7 @@ class DiaryApp {
         document.getElementById('deletePollModalBtn').addEventListener('click', () => this.handleEntryAction('delete'));
         document.getElementById('cancelEntryActionsBtn').addEventListener('click', () => this.hideEntryActionsModal());
         document.getElementById('cancelPollActionsBtn').addEventListener('click', () => this.hidePollActionsModal());
-        document.getElementById('languageBtn').addEventListener('click', () => this.showLanguageModal());
+        // document.getElementById('languageBtn').addEventListener('click', () => this.showLanguageModal());
         document.getElementById('cancelLanguageBtn').addEventListener('click', () => this.hideLanguageModal());
         document.querySelectorAll('#languageModal [data-lang]').forEach(btn => {
             btn.addEventListener('click', () => this.changeLanguage(btn.dataset.lang));
@@ -3585,7 +3585,7 @@ class DiaryApp {
             return;
         }
         const readableDate = this.formatDate(dateStr);
-        const entryUrl = `https://snt-tishinka.ru/?date=${dateStr}&entryId=${entry.id}`;
+        const entryUrl = `${APP_URL}/?date=${dateStr}&entryId=${entry.id}`;
         const hasText = entry.text && entry.text.trim() !== '';
         const hasQuestion = entry.type === 'poll' && entry.question && entry.question.trim() !== '';
         const hasImage = entry.images && entry.images.length > 0;
@@ -3992,7 +3992,7 @@ class DiaryApp {
         this.hideImageActionsModal();
         // const blob = await this.getImage(this.currentImageUrl);
         const readableDate = this.formatDate(dateStr);
-        const entryUrl = `https://snt-tishinka.ru/?date=${dateStr}&entryId=${entry.id}`;
+        const entryUrl = `${APP_URL}/?date=${dateStr}&entryId=${entry.id}`;
         const shareData = {
             title: `${this.t('appTitle')} • ${readableDate}`,
             text: `${this.t('sharedImages')} ${this.t('appTitle')}. ${this.t('lookOnSite')}:\n\n${entryUrl}\n\n`,

@@ -48,7 +48,7 @@ serve(async (req) => {
       return json({ error: 'Invalid JSON in request body' }, 400)
     }
 
-    const { username, userId, type, date, entryId } = body
+    const { username, userId, type, date, entryId, message } = body
 
     // Validate required fields
     if (!username || !userId || !type || !date) {
@@ -103,22 +103,18 @@ serve(async (req) => {
       const index = Math.floor(Math.random() * arr.length);
       return arr[index];
     }
-    const titles = ["цинкует в чат", "тусует маляву"];
-    const bodies = ["Прогон по СНТ", "Между нами, колдунами"];
+    const titles = ["цинкует в чат", "тусует маляву", ", прогон по СНТ", "(между нами, колдунами)", "дает раскладку", "прикалывает", "за всю масть", "разводит бадягу", "травит баланду", "крутит варганку", "базаргу толкает"];
     const randomTitle = getRandomItem(titles);
-    const randomBody = getRandomItem(bodies);
 
-    const notificationTitle = type === 'entry'
-      ? `${username} ${randomTitle}`
-      : type === 'poll'
-      ? `Новый опрос от ${username}`
-      : `Новое изображение от ${username}`
-
-    const notificationBody = randomBody;
-
+    // const notificationTitle = type === 'entry'
+    //   ? `${username} ${randomTitle}`
+    //   : type === 'poll'
+    //   ? `Новый опрос от ${username}`
+    //   : `Новое изображение от ${username}`
+    console.log(`Preparing notification message: ${message}`);
     const payload = JSON.stringify({
-      title: notificationTitle,
-      body: notificationBody,
+      title: `${username} ${randomTitle}:`,
+      body: message,
       icon: `${siteUrl}/assets/icons/icon.svg`,
       badge: `${siteUrl}/assets/icons/icon.svg`,
       data: {

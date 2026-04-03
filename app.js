@@ -989,7 +989,7 @@ class DiaryApp {
     }
 
     // Send push notification to all users except author
-    async sendPushNotification(type, entryId = null) {
+    async sendPushNotification(type, entryId = null, message = null) {
         // return;
         if (!this.user || this.user.is_anonymous === true) return;
 
@@ -1005,7 +1005,8 @@ class DiaryApp {
                     userId: this.user.id,
                     type: type,
                     date: this.selectedDate,
-                    entryId: entryId
+                    entryId: entryId,
+                    message: message
                 })
             });
         } catch (error) {
@@ -3193,7 +3194,7 @@ class DiaryApp {
             this.renderEntries(this.selectedDate);
             // await this.generateAiReply(question, username, pollData.id, null, true);
             // await this.voteAiPoll(question, pollData.id, optionsForAiVote);
-            await this.sendPushNotification('poll', pollData.id);
+            await this.sendPushNotification('poll', pollData.id, this.truncateMessage(question));
         } catch (error) {
             console.error('Error saving poll:', error);
             alert(this.t('alertFailedToCreatePoll'));
@@ -3338,7 +3339,7 @@ class DiaryApp {
             // Focus on newly added entry
             this.scrollToEntry(data.id);
             this.replyQuoteDisplay.classList.add('hidden');
-            await this.sendPushNotification('entry', data.id); // Send notification
+            await this.sendPushNotification('entry', data.id, this.truncateMessage(data.text)); // Send notification
         } catch (error) {
             console.error('Error saving entry:', error);
             this.showToast(this.t('errorSavingEntry'));
@@ -3788,7 +3789,7 @@ class DiaryApp {
         
         // Send push notification for image
         if (entryRef && entryRef.id) {
-            await this.sendPushNotification('image', entryRef.id);
+            await this.sendPushNotification('image', entryRef.id, this.t('entryContainsImages'));
         }
     }
 
@@ -5481,8 +5482,15 @@ class DiaryApp {
         // Return HTML with gradient fade on last 3 words
         return `${beforeLastThree}${beforeLastThree ? ' ' : ''}<span class="fade-out-text">${lastThreeWords}</span>`;
     }
-}
 
+    truncateMessage(text, maxLength = 50) {
+        if (!text) return '';   
+        if (text.length <= maxLength) {
+            return text;
+        }
+        return text.substring(0, maxLength) + '...';
+    }
+}
 // Initialize app
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => new DiaryApp());

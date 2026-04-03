@@ -4,8 +4,7 @@ import webpush from 'npm:web-push@3.6.6'
 
 serve(async (req) => {
   // CORS
-  const siteUrl = Deno.env.get('SITE_URL') ?? ''
-  // Strip trailing slash to avoid CORS mismatch (browser doesn't send trailing slash in Origin header)
+  const siteUrl = 'https://chat.snt-tishinka.ru'
   const allowedOrigin = siteUrl.replace(/\/$/, '') || '*'
   const corsHeaders: Record<string, string> = {
     'Access-Control-Allow-Origin': allowedOrigin,
@@ -35,7 +34,6 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
     const vapidPublic = Deno.env.get('VAPID_PUBLIC_KEY')
     const vapidPrivate = Deno.env.get('VAPID_PRIVATE_KEY')
-    const siteUrl = Deno.env.get('SITE_URL') ?? ''
 
     if (!supabaseUrl || !supabaseKey || !vapidPublic || !vapidPrivate) {
       console.error('Missing required environment variables')
@@ -58,7 +56,6 @@ serve(async (req) => {
       return json({ error: 'Missing required fields: username, userId, type, date' }, 400)
     }
 
-    // Validate type field
     if (type !== 'entry' && type !== 'image' && type !== 'poll') {
       console.warn('Invalid type:', type)
       return json({ error: 'Invalid type. Must be: entry, image, or poll' }, 400)
@@ -67,7 +64,7 @@ serve(async (req) => {
     const supabaseClient = createClient(supabaseUrl, supabaseKey)
 
     // Fetch subscriptions for all users except author
-    const { data: subscriptions, error: subError } = await supabaseClient
+    const { data: subscriptionsData, error: subError } = await supabaseClient
       .from('push_subscriptions')
       .select('subscription, user_id')
       .neq('user_id', userId)
@@ -77,12 +74,23 @@ serve(async (req) => {
       throw subError
     }
 
-    if (!subscriptions || subscriptions.length === 0) {
+    if (!subscriptionsData || subscriptionsData.length === 0) {
       console.log('No subscriptions found for notification')
       return json({ message: 'No subscriptions' }, 200)
     }
 
-    console.log(`Sending notification to ${subscriptions.length} subscribers`)
+    // === DEDUPLICATION: Remove duplicate subscriptions by endpoint ===
+    const uniqueSubs = new Map<string, { subscription: any; user_id: string }>()
+    for (const { subscription, user_id } of subscriptionsData) {
+      const endpoint = subscription?.endpoint
+      if (endpoint && !uniqueSubs.has(endpoint)) {
+        uniqueSubs.set(endpoint, { subscription, user_id })
+      }
+    }
+
+    const subscriptions = Array.from(uniqueSubs.values())
+
+    console.log(`Sending notification to ${subscriptions.length} unique subscribers (deduplicated from ${subscriptionsData.length} rows)`)
 
     // Set VAPID details for web push
     webpush.setVapidDetails(
@@ -90,13 +98,23 @@ serve(async (req) => {
       vapidPublic,
       vapidPrivate
     )
-    
-    const notificationTitle = type === 'entry' 
-      ? `Новое сообщение от ${username}` 
+
+    function getRandomItem(arr: string[]): string {
+      const index = Math.floor(Math.random() * arr.length);
+      return arr[index];
+    }
+    const titles = ["цинкует в чат", "тусует маляву"];
+    const bodies = ["Прогон по СНТ", "Между нами, колдунами"];
+    const randomTitle = getRandomItem(titles);
+    const randomBody = getRandomItem(bodies);
+
+    const notificationTitle = type === 'entry'
+      ? `${username} ${randomTitle}`
       : type === 'poll'
       ? `Новый опрос от ${username}`
       : `Новое изображение от ${username}`
-    const notificationBody = 'Пополнение в летопись СНТ'
+
+    const notificationBody = randomBody;
 
     const payload = JSON.stringify({
       title: notificationTitle,
@@ -114,10 +132,35 @@ serve(async (req) => {
       subscriptions.map(async ({ subscription, user_id }) => {
         try {
           return await webpush.sendNotification(subscription, payload)
-        } catch (error) {
-          // Log subscription errors but don't fail the whole operation
-          console.warn(`Push notification failed for user ${user_id}:`, error.message)
-          throw error
+        } catch (error: any) {
+          // === IMPROVED DETAILED LOGGING ===
+          const statusCode = error.statusCode || error.code
+          const endpointPreview = subscription?.endpoint
+            ? subscription.endpoint.substring(0, 80) + '...'
+            : 'unknown'
+
+          console.warn(`Push notification failed for user ${user_id}:`, {
+            statusCode,
+            body: error.body || error.message,
+            endpoint: endpointPreview,
+          })
+
+          // === CRITICAL: Auto-clean dead subscriptions (410 = expired/unsubscribed) ===
+          if (statusCode === 410 || statusCode === 404) {
+            console.log(`🗑️ Deleting expired subscription for user ${user_id}`)
+
+            const { error: deleteError } = await supabaseClient
+              .from('push_subscriptions')
+              .delete()
+              .eq('user_id', user_id)
+              .eq('endpoint', subscription.endpoint)
+
+            if (deleteError) {
+              console.error(`Failed to delete expired subscription for user ${user_id}:`, deleteError)
+            }
+          }
+
+          throw error // keep it as rejected in Promise.allSettled
         }
       })
     )
@@ -125,12 +168,18 @@ serve(async (req) => {
     const successful = results.filter(r => r.status === 'fulfilled').length
     const failed = results.filter(r => r.status === 'rejected').length
 
-    // Log any failures
     if (failed > 0) {
       console.warn(`Notification delivery: ${successful} succeeded, ${failed} failed`)
+    } else {
+      console.log(`✅ All ${successful} notifications delivered successfully`)
     }
 
-    return json({ message: 'Notifications sent', sent: successful, failed: failed }, 200)
+    return json({
+      message: 'Notifications sent',
+      sent: successful,
+      failed: failed,
+      totalUnique: subscriptions.length
+    }, 200)
 
   } catch (error) {
     console.error('Critical error in send-notification:', error)

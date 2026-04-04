@@ -1120,22 +1120,36 @@ class DiaryApp {
         this.imageModalClose.addEventListener('click', () => this.closeImageModal());
         this.fileInput.addEventListener('change', (e) => {
             const file = e.target.files[0];
+            console.log('fileInput change event fired, file:', file ? `present (${file.name}, ${file.size} bytes)` : 'absent');
             if (file) {
                 // Only create a new entry if we're not attaching to an existing entry
                 if (!this.currentEntryId) {
                     this.createEntryForImageUpload();
                 }
                 this.processImageFile(file);
+            } else {
+                // User cancelled file selection or no file selected
+                console.log('fileInput: no file selected or selection cancelled');
+                this.hideMobileOptions();
+                // Reset file input value to allow re-selection
+                e.target.value = '';
             }
         });
         this.cameraInput.addEventListener('change', (e) => {
             const file = e.target.files[0];
+            console.log('cameraInput change event fired, file:', file ? `present (${file.name}, ${file.size} bytes)` : 'absent');
             if (file) {
                 // Only create a new entry if we're not attaching to an existing entry
                 if (!this.currentEntryId) {
                     this.createEntryForImageUpload();
                 }
                 this.processImageFile(file);
+            } else {
+                // User cancelled camera or no photo taken
+                console.log('cameraInput: no photo taken or cancelled');
+                this.hideMobileOptions();
+                // Reset camera input value to allow re-selection
+                e.target.value = '';
             }
         });
         document.getElementById('selectImageBtn').addEventListener('click', () => this.fileInput.click());
@@ -3680,9 +3694,14 @@ class DiaryApp {
 
     // Handle image upload
     handleImageUpload() {
-        if (/Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
+        const isMobile = /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        console.log('handleImageUpload: isMobile:', isMobile, 'userAgent:', navigator.userAgent);
+        
+        if (isMobile) {
+            console.log('handleImageUpload: showing mobile options');
             this.showMobileOptions();
         } else {
+            console.log('handleImageUpload: triggering file input click');
             this.fileInput.click();
         }
     }
@@ -3701,13 +3720,26 @@ class DiaryApp {
     async processImageFile(file) {
         console.log('processImageFile called', { file, currentEntryDate: this.currentEntryDate, selectedDate: this.selectedDate, currentEntryId: this.currentEntryId });
         if (!file) return;
+        
+        // If currentEntryDate is not set, try to use selectedDate
         if (!this.currentEntryDate) {
-            console.warn('processImageFile: currentEntryDate is undefined, returning early');
-            return;
+            console.warn('processImageFile: currentEntryDate is undefined, trying to use selectedDate:', this.selectedDate);
+            this.currentEntryDate = this.selectedDate;
+        }
+        
+        // If still not set, default to today
+        if (!this.currentEntryDate) {
+            this.currentEntryDate = this.formatDateKey(new Date());
+            console.warn('processImageFile: both currentEntryDate and selectedDate undefined, defaulting to:', this.currentEntryDate);
         }
         
         this.hideMobileOptions();
-        const entry = this.currentEntryId ? this.entries[this.selectedDate].find(e => e.id === this.currentEntryId) : null;
+        
+        // Use currentEntryDate consistently for finding entries
+        const entryDate = this.currentEntryDate;
+        const entry = this.currentEntryId && this.entries[entryDate]
+            ? this.entries[entryDate].find(e => e.id === this.currentEntryId)
+            : null;
         
         if (file.size > 15 * 1024 * 1024) {
             alert(this.t('imageTooLarge'));
@@ -3728,44 +3760,66 @@ class DiaryApp {
             } else {
                 await this.attachImageToEntry(imageUrl);
             }
+            
+            // Reset file input to allow selecting the same file again
+            this.fileInput.value = '';
+            this.cameraInput.value = '';
         } catch (error) {
             console.error('Error processing image:', error);
             alert(this.t('alertImageProcessingFailed'));
         }
     }
 
-    async attachImageToPoll(imageUrl, poll) {        
+    async attachImageToPoll(imageUrl, poll) {
         if (!poll.images) poll.images = [];
         poll.images.push(imageUrl);
         await this.supabase
             .from('polls')
             .update({ images: poll.images })
             .eq('id', poll.id);
+        
+        // Use currentEntryDate if available, otherwise use poll's date or selectedDate
+        const targetDate = this.currentEntryDate || poll.date || this.selectedDate;
+        console.log('attachImageToPoll: using date:', targetDate, 'for poll:', poll.id);
+        
         this.loadEntriesForMonth(this.currentDate.getFullYear(), this.currentDate.getMonth(), true);
-        this.renderEntries(this.currentEntryDate);
+        this.renderEntries(targetDate);
         this.renderCalendar();
         // await this.sendPushNotification('image', poll.id);
+        
+        // Reset currentEntryDate after successful attachment
+        this.currentEntryDate = null;
     }
 
     // Attach image to entry
     async attachImageToEntry(imageUrl) {
         let entryRef;
         
+        // Use currentEntryDate if available, otherwise fall back to selectedDate
+        const targetDate = this.currentEntryDate || this.selectedDate;
+        console.log('attachImageToEntry: using date:', targetDate, 'currentEntryId:', this.currentEntryId);
+        
         if (this.currentEntryId) {
-            const entry = this.entries[this.selectedDate].find(e => e.id === this.currentEntryId);
+            // Ensure entries array exists for the target date
+            if (!this.entries[targetDate]) {
+                this.entries[targetDate] = [];
+            }
+            
+            const entry = this.entries[targetDate].find(e => e.id === this.currentEntryId);
             if (entry) {
                 if (!entry.images) entry.images = [];
                 entry.images.push(imageUrl);
                 entryRef = entry;
+                console.log('attachImageToEntry: attached to existing entry:', entry.id);
             }
             this.currentEntryId = null;
         } else {
-            if (!this.entries[this.selectedDate]) {
-                this.entries[this.selectedDate] = [];
+            if (!this.entries[targetDate]) {
+                this.entries[targetDate] = [];
             }
             
             // Check if there's already an entry for today without text
-            let existingEmptyEntry = this.entries[this.selectedDate].find(e =>
+            let existingEmptyEntry = this.entries[targetDate].find(e =>
                 e.type === 'entry' && (!e.text || e.text.trim() === '') &&
                 (!e.images || e.images.length === 0)
             );
@@ -3775,6 +3829,7 @@ class DiaryApp {
                 if (!existingEmptyEntry.images) existingEmptyEntry.images = [];
                 existingEmptyEntry.images.push(imageUrl);
                 entryRef = existingEmptyEntry;
+                console.log('attachImageToEntry: reused existing empty entry:', existingEmptyEntry.id);
             } else {
                 // Create a new entry
                 const newEntry = {
@@ -3787,19 +3842,23 @@ class DiaryApp {
                     createdAt: new Date().toISOString(),
                     updatedAt: new Date().toISOString()
                 };
-                this.entries[this.selectedDate].push(newEntry);
+                this.entries[targetDate].push(newEntry);
                 entryRef = newEntry;
+                console.log('attachImageToEntry: created new entry:', newEntry.id);
             }
         }
         
         await this.saveEntries();
-        this.renderEntries(this.selectedDate);
+        this.renderEntries(targetDate);
         this.renderCalendar();
         
         // Send push notification for image
         if (entryRef && entryRef.id) {
             await this.sendPushNotification('image', entryRef.id, this.t('entryContainsImages'));
         }
+        
+        // Reset currentEntryDate after successful attachment
+        this.currentEntryDate = null;
     }
 
     // Create entry for image upload
@@ -3807,11 +3866,19 @@ class DiaryApp {
         // Only create a new entry if currentEntryId is not already set
         // (which happens when uploading from entry actions)
         if (this.currentEntryId) {
+            console.log('createEntryForImageUpload: currentEntryId already set:', this.currentEntryId);
             return;
+        }
+        
+        // Ensure selectedDate is set, default to today if not
+        if (!this.selectedDate) {
+            this.selectedDate = this.formatDateKey(new Date());
+            console.log('createEntryForImageUpload: selectedDate was undefined, set to:', this.selectedDate);
         }
         
         // Set currentEntryDate to selectedDate for image processing
         this.currentEntryDate = this.selectedDate;
+        console.log('createEntryForImageUpload: set currentEntryDate to:', this.currentEntryDate);
         
         if (!this.entries[this.selectedDate]) {
             this.entries[this.selectedDate] = [];
@@ -3837,8 +3904,10 @@ class DiaryApp {
             };
             this.entries[this.selectedDate].push(newEntry);
             this.currentEntryId = newEntry.id;
+            console.log('createEntryForImageUpload: created new entry with id:', this.currentEntryId);
         } else {
             this.currentEntryId = existingEmptyEntry.id;
+            console.log('createEntryForImageUpload: reused existing entry with id:', this.currentEntryId);
         }
     }
     

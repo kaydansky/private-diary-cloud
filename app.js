@@ -2019,9 +2019,14 @@ class DiaryApp {
     async saveImage(blob) {
         const fileName = `${this.user.id}/${Date.now()}.jpg`;
         
-        const { data } = await this.supabase.storage
+        const { data, error } = await this.supabase.storage
             .from('diary-images')
             .upload(fileName, blob);
+
+        if (error) {
+            console.error('Supabase storage upload failed:', error);
+            throw new Error(`Image upload failed: ${error.message}`);
+        }
 
         const { data: { publicUrl } } = this.supabase.storage
             .from('diary-images')
@@ -3694,8 +3699,12 @@ class DiaryApp {
 
     // Process image file
     async processImageFile(file) {
+        console.log('processImageFile called', { file, currentEntryDate: this.currentEntryDate, selectedDate: this.selectedDate, currentEntryId: this.currentEntryId });
         if (!file) return;
-        if (!this.currentEntryDate) return
+        if (!this.currentEntryDate) {
+            console.warn('processImageFile: currentEntryDate is undefined, returning early');
+            return;
+        }
         
         this.hideMobileOptions();
         const entry = this.currentEntryId ? this.entries[this.selectedDate].find(e => e.id === this.currentEntryId) : null;
@@ -3800,6 +3809,9 @@ class DiaryApp {
         if (this.currentEntryId) {
             return;
         }
+        
+        // Set currentEntryDate to selectedDate for image processing
+        this.currentEntryDate = this.selectedDate;
         
         if (!this.entries[this.selectedDate]) {
             this.entries[this.selectedDate] = [];

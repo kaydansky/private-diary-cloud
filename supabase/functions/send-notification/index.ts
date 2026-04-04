@@ -99,21 +99,21 @@ serve(async (req) => {
       vapidPrivate
     )
 
-    function getRandomItem(arr: string[]): string {
-      const index = Math.floor(Math.random() * arr.length);
-      return arr[index];
-    }
-    const titles = ["цинкует в чат", "тусует маляву", ", прогон по СНТ", "(между нами, колдунами)", "дает раскладку", "прикалывает", "за всю масть", "разводит бадягу", "травит баланду", "крутит варганку", "базаргу толкает"];
-    const randomTitle = getRandomItem(titles);
+    // function getRandomItem(arr: string[]): string {
+    //   const index = Math.floor(Math.random() * arr.length);
+    //   return arr[index];
+    // }
+    // const titles = ["цинкует в чат", "тусует маляву", "пускает прогон по СНТ", "дает раскладку", "прикалывает", "разводит бадягу", "травит баланду", "крутит варганку", "базаргу толкает"];
+    // const randomTitle = getRandomItem(titles);
 
-    // const notificationTitle = type === 'entry'
-    //   ? `${username} ${randomTitle}`
-    //   : type === 'poll'
-    //   ? `Новый опрос от ${username}`
-    //   : `Новое изображение от ${username}`
+    const notificationTitle = type === 'entry'
+      ? `${username} сообщает: `
+      : type === 'poll'
+      ? `${username} добавляет опрос: `
+      : `${username} добавляет картинку`
     console.log(`Preparing notification message: ${message}`);
     const payload = JSON.stringify({
-      title: `${username} ${randomTitle}:`,
+      title: notificationTitle,
       body: message,
       icon: `${siteUrl}/assets/icons/icon.svg`,
       badge: `${siteUrl}/assets/icons/icon.svg`,

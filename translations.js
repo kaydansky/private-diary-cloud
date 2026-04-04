@@ -678,6 +678,6 @@ const translations = {
         loadMoreEntries: 'Загрузить ещё',
         backToPeople: 'Назад к списку пользователей',
         viewUserEntries: 'Посмотреть все записи пользователя',
-        entryContainsImages: 'Чисто добавил картинку'
+        entryContainsImages: 'Новое изображение'
     }
 };
